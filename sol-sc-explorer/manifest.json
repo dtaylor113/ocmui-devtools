@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "Speed Of Light Source Code Explorer",
+  "version": "1.0",
+  "description": "View source code at the speed of light, the time it takes the light from your monitor to reach your eyes! Displays React source code on mouse hover.",
+  "permissions": [
+    "activeTab",
+    "*://*/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"]
+    }
+  ],
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png"
+    }
+  },
+  "icons": {
+    "48": "icons/icon-48.png"
+  }
+}

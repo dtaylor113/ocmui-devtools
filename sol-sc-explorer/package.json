@@ -1,0 +1,19 @@
+{
+  "name": "sol-sc-explorer",
+  "version": "1.0.0",
+  "description": "Speed Of Light Source Code Explorer: View UI source code at the speed of light, the time it takes the light from your monitor to reach your eyes! Displays React source code on mouse hover.",
+  "main": "manifest.json",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.cee.redhat.com/service/ocmui-devtools/-/tree/main/sol-sc-explorer"
+  },
+  "keywords": [
+    "sol-sc-explorer",
+    "ocmui"
+  ],
+  "author": "David Scott Taylor",
+  "license": "ISC"
+}
