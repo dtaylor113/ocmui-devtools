@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Extension Popup</title>
+    <title>sol_sc_explorer extension popup</title>
     <style>
-        /* Add your CSS styling here */
-        button {
+        label {
             margin: 10px;
             padding: 5px 10px;
+            display: block;
         }
     </style>
 </head>
 <body>
-Press L key to toggle focus selection lock.
-<button id="toggleButton">Toggle</button>
-<button id="feature1Button">Feature 1</button>
-
+<label>
+    <input type="checkbox" id="enabledCheckbox" checked>
+    Enabled
+</label>
+<label>
+    Press L key to lock the green selection highlight
+</label>
 <script src="popup.js"></script>
 </body>
 </html>

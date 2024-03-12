@@ -25,32 +25,7 @@ function toggleLock() {
     }
 }
 
-let isBottomPanelVisible = true; // Adjust initial visibility as needed
-let isFeature1ButtonVisible = true; // Adjust initial visibility as needed
-
-// Function to toggle bottom panel
-function toggleBottomPanel() {
-    isBottomPanelVisible = !isBottomPanelVisible;
-    let panel = document.getElementById('yourPanelId'); // Replace with your panel's ID
-    panel.style.display = isBottomPanelVisible ? 'block' : 'none';
-}
-
-// Function to toggle 'Ask RedHatChat..' button
-function toggleFeature1Button() {
-    isFeature1ButtonVisible = !isFeature1ButtonVisible;
-    let button = document.getElementById('yourButtonId'); // Replace with your button's ID
-    button.style.display = isFeature1ButtonVisible ? 'block' : 'none';
-}
-
-// Message listener
-/*browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log(`script onMessage: ${message}`);
-    if (message.action === "toggleBottomPanel") {
-        toggleBottomPanel();
-    } else if (message.action === "toggleFeature1") {
-        toggleFeature1Button();
-    }
-});*/
+let extensionEnabled = true; // Default state is enabled
 
 function makePanelResizable(panel, resizeHandle) {
     let isResizing = false;
@@ -214,15 +189,63 @@ const lockedHighlightStyle = `
     }`;
 styleElement.textContent += lockedHighlightStyle;
 
-// Add event listener for 'L' key
-document.addEventListener('keydown', function(event) {
+// Function to show or hide the bottom panel and toggle event listeners
+function toggleExtensionPlugin(isEnabled) {
+    extensionEnabled = isEnabled;
+
+    // Save the current state to storage for plug-in popup.html's Enabled checkbox
+    browser.storage.local.set({ 'extensionEnabled': isEnabled });
+
+    const panel = document.getElementById('source-code-panel');
+    const resizeHandle = document.getElementById('my-extension-resize-handle');
+
+    if (extensionEnabled) {
+        // Show the bottom panel if it exists
+        if (panel) {
+            panel.style.display = 'block';
+        }
+        if (resizeHandle) {
+            resizeHandle.style.display = 'block';
+        }
+        // Start listening for mouse hover events
+        document.body.addEventListener('mouseover', handleMouseOver);
+        document.body.addEventListener('mouseout', handleMouseOut);
+        document.addEventListener('keydown', handleKeyPress);
+    } else {
+        // Hide the bottom panel if it exists
+        if (panel) {
+            panel.style.display = 'none';
+        }
+        if (resizeHandle) {
+            resizeHandle.style.display = 'none';
+        }
+        // Stop listening for mouse hover events
+        document.body.removeEventListener('mouseover', handleMouseOver);
+        document.body.removeEventListener('mouseout', handleMouseOut);
+        document.removeEventListener('keydown', handleKeyPress);
+    }
+}
+
+// Add a new handler for the "toggleExtensionPlugin" message
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "toggleExtensionPlugin") {
+        toggleExtensionPlugin(message.checked);
+    }
+    // ... other message handlers ...
+});
+
+function handleKeyPress(event) {
     if (event.key === 'L' || event.key === 'l') {
         toggleLock();
     }
-});
+}
 
-document.body.addEventListener('mouseover', async function(e) {
-    if (isLocked) return;
+// Add event listener for 'L' key
+document.addEventListener('keydown', handleKeyPress);
+
+// Separate out the mouseover event handler into an async function
+async function handleMouseOver(e) {
+    if (isLocked || !extensionEnabled) return;
 
     const panel = document.getElementById('source-code-panel');
     if (panel && panel.contains(e.target)) {
@@ -246,9 +269,12 @@ document.body.addEventListener('mouseover', async function(e) {
             console.error('Error fetching source code:', error);
         }
     }
-});
+}
 
-document.body.addEventListener('mouseout', function(e) {
+// Attach the handleMouseOver function to the mouseover event
+document.body.addEventListener('mouseover', handleMouseOver);
+
+function handleMouseOut(e) {
     const panel = document.getElementById('source-code-panel');
 
     if (panel && panel.contains(e.target)) {
@@ -256,5 +282,7 @@ document.body.addEventListener('mouseout', function(e) {
     }
 
     e.target.classList.remove(highlightClass);
-});
+}
+
+document.body.addEventListener('mouseout', handleMouseOut);
 
