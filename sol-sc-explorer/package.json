@@ -1,6 +1,6 @@
 {
   "name": "sol-sc-explorer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Speed Of Light Source Code Explorer: View UI source code at the speed of light, the time it takes the light from your monitor to reach your eyes! Displays React source code on mouse hover.",
   "main": "manifest.json",
   "scripts": {
