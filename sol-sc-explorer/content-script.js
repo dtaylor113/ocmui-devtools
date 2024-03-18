@@ -31,13 +31,13 @@ function makePanelResizable(panel, resizeHandle) {
     let isResizing = false;
     let lastY = 0;
 
-    resizeHandle.addEventListener('mousedown', function(e) {
+    resizeHandle.addEventListener('mousedown', function (e) {
         isResizing = true;
         lastY = e.clientY;
         e.preventDefault();
     });
 
-    window.addEventListener('mousemove', function(e) {
+    window.addEventListener('mousemove', function (e) {
         if (isResizing) {
             const deltaY = e.clientY - lastY; // Changed calculation of deltaY
             const newHeight = Math.max(panel.offsetHeight - deltaY, 50); // Calculate newHeight based on decreasing height as deltaY increases
@@ -51,7 +51,7 @@ function makePanelResizable(panel, resizeHandle) {
         }
     });
 
-    window.addEventListener('mouseup', function() {
+    window.addEventListener('mouseup', function () {
         isResizing = false;
     });
 }
@@ -119,7 +119,7 @@ function addAskButton(panel, fileContent) {
     askButton.style = 'margin-top: 10px; background-image: url(\'images/Logo-Red_Hat-B-Standard-RGB.png\'); background-size: 20px 20px; background-repeat: no-repeat; background-position: left center; padding-left: 30px;';
     panel.appendChild(askButton);
 
-    askButton.addEventListener('click', function() {
+    askButton.addEventListener('click', function () {
         const queryParam = encodeURIComponent(fileContent);
         const url = `https://prod.foo.redhat.com:1337/openshift/redhatchat?file=${queryParam}`;
         const windowFeatures = "width=768, height=1024, left=100, top=100, resizable=yes, scrollbars=yes, toolbar=yes, menubar=no, location=no, directories=no, status=yes";
@@ -189,12 +189,22 @@ const lockedHighlightStyle = `
     }`;
 styleElement.textContent += lockedHighlightStyle;
 
+function getStorage() {
+    if (typeof browser !== 'undefined') {
+        return browser.storage; // Firefox
+    } else if (typeof chrome !== 'undefined') {
+        return chrome.storage; // Chrome
+    } else {
+        throw new Error('Browser not supported');
+    }
+}
+
 // Function to show or hide the bottom panel and toggle event listeners
 function toggleExtensionPlugin(isEnabled) {
     extensionEnabled = isEnabled;
-
-    // Save the current state to storage for plug-in popup.html's Enabled checkbox
-    browser.storage.local.set({ 'extensionEnabled': isEnabled });
+    const storage = getStorage();
+    // Save the current state to storage
+    storage.local.set({'extensionEnabled': isEnabled});
 
     const panel = document.getElementById('source-code-panel');
     const resizeHandle = document.getElementById('my-extension-resize-handle');
@@ -226,13 +236,19 @@ function toggleExtensionPlugin(isEnabled) {
     }
 }
 
-// Add a new handler for the "toggleExtensionPlugin" message
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+function handleMessage(message, sender, sendResponse) {
     if (message.action === "toggleExtensionPlugin") {
         toggleExtensionPlugin(message.checked);
     }
-    // ... other message handlers ...
-});
+}
+
+if (typeof browser !== 'undefined') {
+    // Firefox
+    browser.runtime.onMessage.addListener(handleMessage);
+} else if (typeof chrome !== 'undefined') {
+    // Chrome
+    chrome.runtime.onMessage.addListener(handleMessage);
+}
 
 function handleKeyPress(event) {
     if (event.key === 'L' || event.key === 'l') {
