@@ -3,22 +3,99 @@
 <head>
     <title>sol_sc_explorer extension popup</title>
     <style>
+        body {
+            background-color: black; /* Black background */
+            color: white; /* White text color */
+            font-family: Arial, sans-serif; /* Clean, modern font */
+            margin: 0;
+            padding: 10px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .header img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .header-text {
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
         label {
             margin: 10px;
             padding: 5px 10px;
             display: block;
-            min-width: max-content;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin: 5px 10px;
+        }
+
+        .form-row label {
+            flex: 0 0 60px;
+            text-align: right;
+            margin-right: 10px;
+        }
+
+        .form-row input, .form-row select {
+            width: 120px;
+            margin-right: 10px;
+            background-color: #222;
+            color: white;
+            border: 1px solid #555;
+            padding: 5px;
+        }
+
+        .form-row button {
+            background-color: #444;
+            color: white;
+            border: 1px solid #666;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .form-row button:hover {
+            background-color: #666;
         }
     </style>
 </head>
 <body>
+<div class="header">
+    <img src="images/redHatBanner.png" alt="Red Hat Banner">
+    <div class="header-text">OCMUI Dev Team</div>
+</div>
+
 <label>
     <input type="checkbox" id="enabledCheckbox" checked>
-    Enabled
+    Enable Code Explorer
 </label>
 <label>
     Press L key to lock the green selection highlight
 </label>
+
+<div class="form-row">
+    <label for="jiraInput">OCMUI-</label>
+    <input type="text" id="jiraInput" maxlength="6" list="jiraDropdown">
+    <datalist id="jiraDropdown"></datalist>
+    <button id="jiraGoButton">Go</button>
+</div>
+
+<div class="form-row">
+    <label for="mrInput">MR</label>
+    <input type="text" id="mrInput" maxlength="5" list="mrDropdown">
+    <datalist id="mrDropdown"></datalist>
+    <button id="mrGoButton">Go</button>
+</div>
+
 <script src="popup.js"></script>
 </body>
 </html>
