@@ -1,39 +1,37 @@
 // background.js
-console.log('background script loaded');
+console.log('Background script loaded');
 
+// Helper to determine the correct API for cross-browser support
+const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+
+// Send a message to the active tab
 function sendMessageToTab(tabId, message) {
-    if (typeof browser !== 'undefined') {
-        return browser.tabs.sendMessage(tabId, message); // Firefox
-    } else if (typeof chrome !== 'undefined') {
-        chrome.tabs.sendMessage(tabId, message); // Chrome (callback based)
-    } else {
-        throw new Error('Browser not supported');
-    }
-}
-
-function onMessageListener(message, sender, sendResponse) {
-    if (message.action === "toggleExtensionPlugin") {
-        // Get the current active tab and send a message to its content script
-        if (typeof browser !== 'undefined') {
-            // Firefox
-            browser.tabs.query({ active: true, currentWindow: true }).then(tabs => {
-                const currentTab = tabs[0];
-                sendMessageToTab(currentTab.id, message);
-            });
-        } else if (typeof chrome !== 'undefined') {
-            // Chrome
-            chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-                const currentTab = tabs[0];
-                sendMessageToTab(currentTab.id, message);
-            });
+    console.log('sendMessageToTab:', message);
+    browserAPI.tabs.sendMessage(tabId, message, (response) => {
+        if (browserAPI.runtime.lastError) {
+            console.error('Error sending message to tab:', browserAPI.runtime.lastError.message);
         }
+    });
+}
+
+// Handle messages received from the popup
+function onMessageListener(message, sender, sendResponse) {
+    console.log('onMessageListener:', message);
+
+    if (message.action === "toggleExtensionPlugin") {
+        console.log('Forwarding toggleExtensionPlugin to content script');
+
+        // Query the active tab in the current window
+        browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length > 0) {
+                const currentTab = tabs[0];
+                sendMessageToTab(currentTab.id, message);
+            } else {
+                console.warn('No active tab found to send the message.');
+            }
+        });
     }
 }
 
-if (typeof browser !== 'undefined') {
-    browser.runtime.onMessage.addListener(onMessageListener); // Firefox
-} else if (typeof chrome !== 'undefined') {
-    chrome.runtime.onMessage.addListener(onMessageListener); // Chrome
-}
-
-
+// Register the message listener
+browserAPI.runtime.onMessage.addListener(onMessageListener);

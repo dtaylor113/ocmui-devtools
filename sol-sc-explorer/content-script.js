@@ -201,6 +201,7 @@ function getStorage() {
 
 // Function to show or hide the bottom panel and toggle event listeners
 function toggleExtensionPlugin(isEnabled) {
+    console.log("  toggleExtensionPlugin");
     extensionEnabled = isEnabled;
     const storage = getStorage();
     // Save the current state to storage
@@ -237,7 +238,9 @@ function toggleExtensionPlugin(isEnabled) {
 }
 
 function handleMessage(message, sender, sendResponse) {
+    console.log("  handleMessage")
     if (message.action === "toggleExtensionPlugin") {
+        console.log("  call toggleExtensionPlugin");
         toggleExtensionPlugin(message.checked);
     }
 }
