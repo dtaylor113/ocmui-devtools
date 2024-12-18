@@ -15,18 +15,20 @@ dropdown!
 
 ## Setup
 
+1. Clone this repo!
+
 ### Chrome Browser
 
 1. Enter URL: chrome://extensions/.  Click on "Load Unpacked"
 
-2. Select the plugin directory: **/ocmui-devtools/sol-sc-explorer**
+2. Select the plugin directory: **.../ocmui-devtools/sol-sc-explorer**
 
 * You might want to keep this open in a seperate tab as you can disable and remove the plugin from _chrome://extensions/_.
 
 ### FireFox Browser
 
 1. Enter URL: [about:debugging#/runtime/this-firefox](about:debugging#/runtime/this-firefox).  Click on "Load Temporary Add-on..."
-2. Select the manifest file in the plugin directory: **/uhc-portal/dev-tools/sol-sc-explorer**
+2. Select the manifest file in the plugin directory: **.../ocmui-devtools/sol-sc-explorer/manifest.json**
 
 You should see:
 
