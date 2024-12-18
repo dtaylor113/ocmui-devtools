@@ -3,13 +3,14 @@
 The **S**peed **O**f **L**ight **S**ource **C**ode **E**xplorer allows you to simply hover over a ocmui webpage 
 and the corresponding source code is shown instantly in a bottom panel. 
 
-![sol-sc-explorer-screenshot](images/sol-sc-explorer.png)
+![sol-sc-explorer-screenshot](sol-sc-explorer/images/sol-sc-explorer.png)
 
 In addition, clicking on the plug-in icon reveals a popup where you can also instantly load 
 a OCMUI JIRA ticket or Gitlab MR by id.  It also remembers the last 10 ids you used in each 
 dropdown!
 
-![plug-in-popup](images/sol-sc-explorer.png)
+<img src="sol-sc-explorer/images/sol-sc-explore-dlg.png" alt="plug-in-popup" width="400" />
+
 
 ## Setup
 
