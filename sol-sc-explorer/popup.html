@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>sol_sc_explorer extension popup</title>
+    <title>Speed Of Light Source Code Explorer</title>
     <style>
         body {
             background-color: black; /* Black background */
@@ -9,6 +9,7 @@
             font-family: Arial, sans-serif; /* Clean, modern font */
             margin: 0;
             padding: 10px;
+            width: 280px;
         }
 
         .header {
@@ -66,6 +67,18 @@
         .form-row button:hover {
             background-color: #666;
         }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin: 10px;
+            padding: 5px;
+        }
+
+        .toggle-container input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -74,10 +87,11 @@
     <div class="header-text">OCMUI Dev Team</div>
 </div>
 
-<label>
+<div class="toggle-container">
     <input type="checkbox" id="enabledCheckbox" checked>
-    Enable Code Explorer
-</label>
+    <label for="enabledCheckbox">Enable Code Explorer</label>
+</div>
+
 <label>
     Press L key to lock the green selection highlight
 </label>

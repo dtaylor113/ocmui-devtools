@@ -1,7 +1,5 @@
+// Simplified popup script - works directly with storage when needed
 console.log('Popup script loaded');
-
-// Helper to determine the correct API for cross-browser support
-const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
 
 // Constants
 const ENABLE_STORAGE_KEY = 'extensionEnabled';
@@ -10,43 +8,134 @@ const JIRA_STORAGE_KEY = 'recentJiraIds';
 const MR_STORAGE_KEY = 'recentMrIds';
 
 // Elements
-const enabledCheckbox = document.getElementById('enabledCheckbox');
-const jiraInput = document.getElementById('jiraInput');
-const jiraGoButton = document.getElementById('jiraGoButton');
-const jiraDropdown = document.getElementById('jiraDropdown');
-const mrInput = document.getElementById('mrInput');
-const mrGoButton = document.getElementById('mrGoButton');
-const mrDropdown = document.getElementById('mrDropdown');
+let enabledCheckbox;
+let jiraInput;
+let jiraGoButton;
+let jiraDropdown;
+let mrInput;
+let mrGoButton;
+let mrDropdown;
+let statusText;
 
-// Initialize on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-  // Load stored IDs into dropdowns
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Popup DOM loaded');
+
+  // Get DOM elements
+  enabledCheckbox = document.getElementById('enabledCheckbox');
+  jiraInput = document.getElementById('jiraInput');
+  jiraGoButton = document.getElementById('jiraGoButton');
+  jiraDropdown = document.getElementById('jiraDropdown');
+  mrInput = document.getElementById('mrInput');
+  mrGoButton = document.getElementById('mrGoButton');
+  mrDropdown = document.getElementById('mrDropdown');
+
+  // Create status text element
+  statusText = document.createElement('div');
+  statusText.id = 'statusText';
+  statusText.style.padding = '10px';
+  statusText.style.color = '#8fce00';
+  statusText.style.fontSize = '12px';
+  statusText.style.textAlign = 'center';
+  document.body.appendChild(statusText);
+
+  // Load stored IDs
   loadStoredIds(JIRA_STORAGE_KEY, jiraDropdown);
   loadStoredIds(MR_STORAGE_KEY, mrDropdown);
 
-  // Load and set the checkbox state
-  browserAPI.storage.local.get(ENABLE_STORAGE_KEY, (data) => {
-    const isEnabled = data[ENABLE_STORAGE_KEY] ?? true;
+  // Load extension state
+  loadExtensionState();
+
+  // Set up event listeners
+  setupEventListeners();
+});
+
+// Load current extension state
+function loadExtensionState() {
+  chrome.storage.local.get(ENABLE_STORAGE_KEY, function(data) {
+    const isEnabled = data.extensionEnabled !== undefined ? Boolean(data.extensionEnabled) : true;
+    console.log('Loaded state:', isEnabled);
     enabledCheckbox.checked = isEnabled;
-    sendToggleMessage(isEnabled);
   });
-});
+}
 
-// Checkbox toggle event
-enabledCheckbox.addEventListener('change', () => {
-  const isEnabled = enabledCheckbox.checked;
-  console.log(`Checkbox changed: ${isEnabled}`);
-  browserAPI.storage.local.set({ [ENABLE_STORAGE_KEY]: isEnabled });
-  sendToggleMessage(isEnabled);
-});
-
-// Send a toggle message to the background script
-function sendToggleMessage(isEnabled) {
-  console.log(`sendToggleMessage: ${isEnabled}`);
-  browserAPI.runtime.sendMessage({
-    action: "toggleExtensionPlugin",
-    checked: isEnabled
+// Set up all event listeners
+function setupEventListeners() {
+  // Checkbox toggle
+  enabledCheckbox.addEventListener('click', function() {
+    const isEnabled = enabledCheckbox.checked;
+    toggleExtension(isEnabled);
   });
+
+  // JIRA Go button
+  jiraGoButton.addEventListener('click', function() {
+    handleJiraGo();
+  });
+
+  // MR Go button
+  mrGoButton.addEventListener('click', function() {
+    handleMrGo();
+  });
+
+  // Enter key support
+  jiraInput.addEventListener('keyup', function(event) {
+    if (event.key === 'Enter') {
+      handleJiraGo();
+    }
+  });
+
+  mrInput.addEventListener('keyup', function(event) {
+    if (event.key === 'Enter') {
+      handleMrGo();
+    }
+  });
+}
+
+// Toggle extension state - work directly with storage when needed
+function toggleExtension(isEnabled) {
+  statusText.textContent = isEnabled ? "Enabling..." : "Disabling...";
+  enabledCheckbox.disabled = true;
+
+  // First update the storage directly
+  chrome.storage.local.set({extensionEnabled: isEnabled}, function() {
+    console.log('State saved to storage:', isEnabled);
+
+    // Try to notify background script, but don't rely on it
+    try {
+      chrome.runtime.sendMessage({
+        action: "toggleExtensionPlugin",
+        checked: isEnabled
+      }, function(response) {
+        // Response handler - optional
+        if (chrome.runtime.lastError) {
+          console.log('Background error:', chrome.runtime.lastError.message);
+          // Finish anyway since we've updated storage
+          finishToggle(isEnabled);
+        } else {
+          console.log('Background response:', response);
+          finishToggle(isEnabled);
+        }
+      });
+
+      // Set a timeout in case background doesn't respond
+      setTimeout(function() {
+        finishToggle(isEnabled);
+      }, 1000);
+    } catch (err) {
+      console.error('Error sending message:', err);
+      // Finish toggle even if messaging fails
+      finishToggle(isEnabled);
+    }
+  });
+}
+
+// Complete the toggle operation
+function finishToggle(isEnabled) {
+  statusText.textContent = isEnabled ? "Enabled" : "Disabled";
+  enabledCheckbox.disabled = false;
+  setTimeout(function() {
+    statusText.textContent = "";
+  }, 1500);
 }
 
 // Load stored IDs into dropdowns
@@ -55,29 +144,29 @@ function loadStoredIds(storageKey, dropdown) {
   updateDropdown(storedIds, dropdown);
 }
 
-// Update dropdown options dynamically
+// Update dropdown options
 function updateDropdown(ids, dropdown) {
   dropdown.innerHTML = '';
-  ids.forEach(id => {
+  ids.forEach(function(id) {
     const option = document.createElement('option');
     option.value = id;
     dropdown.appendChild(option);
   });
 }
 
-// Save new ID to local storage and update dropdown
+// Save new ID
 function saveId(newId, storageKey, dropdown) {
   if (!newId) return;
   let storedIds = JSON.parse(localStorage.getItem(storageKey)) || [];
   storedIds = storedIds.filter(id => id !== newId); // Remove duplicates
-  storedIds.unshift(newId); // Add to the beginning
+  storedIds.unshift(newId); // Add to beginning
   if (storedIds.length > MAX_IDS) storedIds = storedIds.slice(0, MAX_IDS);
   localStorage.setItem(storageKey, JSON.stringify(storedIds));
   updateDropdown(storedIds, dropdown);
 }
 
-// Handle JIRA Go button click
-jiraGoButton.addEventListener('click', () => {
+// Handle JIRA Go button
+function handleJiraGo() {
   const issueNumber = jiraInput.value.trim();
   if (/^\d{1,6}$/.test(issueNumber)) {
     saveId(issueNumber, JIRA_STORAGE_KEY, jiraDropdown);
@@ -86,10 +175,10 @@ jiraGoButton.addEventListener('click', () => {
   } else {
     alert('Please enter a valid 1-6 digit JIRA ID.');
   }
-});
+}
 
-// Handle MR Go button click
-mrGoButton.addEventListener('click', () => {
+// Handle MR Go button
+function handleMrGo() {
   const mrNumber = mrInput.value.trim();
   if (/^\d{1,5}$/.test(mrNumber)) {
     saveId(mrNumber, MR_STORAGE_KEY, mrDropdown);
@@ -98,4 +187,4 @@ mrGoButton.addEventListener('click', () => {
   } else {
     alert('Please enter a valid 1-5 digit MR ID.');
   }
-});
+}
