@@ -89,6 +89,19 @@ function setupEventListeners() {
       handleMrGo();
     }
   });
+
+  // Optional: Add this if you want to add a reset/cleanup button to the popup
+  /*
+  const resetButton = document.getElementById('resetButton');
+  if (resetButton) {
+    resetButton.addEventListener('click', function() {
+      if (confirm('This will reset the extension. Continue?')) {
+        triggerCleanup();
+        window.close();
+      }
+    });
+  }
+  */
 }
 
 // Toggle extension state - work directly with storage when needed
@@ -136,6 +149,23 @@ function finishToggle(isEnabled) {
   setTimeout(function() {
     statusText.textContent = "";
   }, 1500);
+}
+
+// Trigger cleanup when needed
+function triggerCleanup() {
+  try {
+    chrome.runtime.sendMessage({
+      action: "cleanup"
+    }, function(response) {
+      if (chrome.runtime.lastError) {
+        console.log('Background error:', chrome.runtime.lastError.message);
+      } else {
+        console.log('Cleanup response:', response);
+      }
+    });
+  } catch (err) {
+    console.error('Error sending cleanup message:', err);
+  }
 }
 
 // Load stored IDs into dropdowns
@@ -188,3 +218,10 @@ function handleMrGo() {
     alert('Please enter a valid 1-5 digit MR ID.');
   }
 }
+
+// Before window closes, trigger cleanup if extension is disabled
+window.addEventListener('beforeunload', function() {
+  if (!enabledCheckbox.checked) {
+    triggerCleanup();
+  }
+});

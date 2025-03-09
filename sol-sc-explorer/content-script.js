@@ -406,7 +406,7 @@ function debounce(func, wait) {
 // Browser compatibility layer
 const browserCompat = {
     // Detect browser environment
-    detectBrowser: function() {
+    detectBrowser: function () {
         const isBrowser = typeof window !== 'undefined';
         const isChrome = isBrowser && !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
         const isFirefox = isBrowser && typeof InstallTrigger !== 'undefined';
@@ -427,11 +427,11 @@ const browserCompat = {
     },
 
     // Load state from storage
-    loadStateFromStorage: function(callback) {
+    loadStateFromStorage: function (callback) {
         try {
             // Check if chrome.storage is available (Chrome, Edge, Arc)
             if (typeof chrome !== 'undefined' && chrome.storage) {
-                chrome.storage.local.get(CONSTANTS.STORAGE_KEYS.EXTENSION_ENABLED, function(data) {
+                chrome.storage.local.get(CONSTANTS.STORAGE_KEYS.EXTENSION_ENABLED, function (data) {
                     const isEnabled = data[CONSTANTS.STORAGE_KEYS.EXTENSION_ENABLED] !== undefined ?
                         Boolean(data[CONSTANTS.STORAGE_KEYS.EXTENSION_ENABLED]) : true;
                     logger.log('info', `Loaded state from chrome storage: ${isEnabled}`);
@@ -439,7 +439,7 @@ const browserCompat = {
                 });
 
                 // Also listen for storage changes
-                chrome.storage.onChanged.addListener(function(changes, namespace) {
+                chrome.storage.onChanged.addListener(function (changes, namespace) {
                     if (namespace === 'local' && changes[CONSTANTS.STORAGE_KEYS.EXTENSION_ENABLED]) {
                         const isEnabled = Boolean(changes[CONSTANTS.STORAGE_KEYS.EXTENSION_ENABLED].newValue);
                         logger.log('info', `State changed in storage: ${isEnabled}`);
@@ -459,7 +459,7 @@ const browserCompat = {
                 });
 
                 // Also listen for storage changes in Firefox
-                browser.storage.onChanged.addListener(function(changes, namespace) {
+                browser.storage.onChanged.addListener(function (changes, namespace) {
                     if (namespace === 'local' && changes[CONSTANTS.STORAGE_KEYS.EXTENSION_ENABLED]) {
                         const isEnabled = Boolean(changes[CONSTANTS.STORAGE_KEYS.EXTENSION_ENABLED].newValue);
                         logger.log('info', `State changed in storage: ${isEnabled}`);
@@ -483,55 +483,115 @@ const browserCompat = {
         }
     },
 
-    // Setup message listeners for different browsers
+    // Replace the setupMessageListeners method inside the browserCompat object
+// in content-script.js with this improved version:
+
+// Setup message listeners for different browsers
     setupMessageListeners: function(callback) {
+        // Detect browser environment
+        const isFirefox = typeof browser !== 'undefined';
+        const isChrome = !isFirefox && typeof chrome !== 'undefined';
+        const runtime = isFirefox ? browser.runtime : (isChrome ? chrome.runtime : null);
+
+        // First try to clean up any previous message handlers
         try {
-            // Chrome, Edge, and Arc implementation
-            if (typeof chrome !== 'undefined' && chrome.runtime) {
-                chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-                    logger.log('debug', `Content script received Chrome message: ${JSON.stringify(message)}`);
-
-                    if (message.action === "toggleExtensionPlugin") {
-                        callback(message.checked);
-                        sendResponse({status: "OK"});
-                    }
-
-                    return false; // No async response needed
-                });
-
-                return true;
-            }
-            // Firefox implementation
-            else if (typeof browser !== 'undefined' && browser.runtime) {
-                browser.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-                    logger.log('debug', `Content script received Firefox message: ${JSON.stringify(message)}`);
-
-                    if (message.action === "toggleExtensionPlugin") {
-                        callback(message.checked);
-                        return Promise.resolve({status: "OK"}); // Firefox uses promises for responses
-                    }
-                });
-
-                return true;
-            }
-            // Fallback for Arc or other browsers if runtime API is not available
-            else {
-                logger.log('info', 'No runtime API detected for messaging');
-                // Add a fallback toggle method if runtime API is unavailable
-                window.addEventListener('message', function(event) {
-                    if (event.data && event.data.action === "toggleExtensionPlugin") {
-                        callback(event.data.checked);
-                    }
-                });
-
-                return false;
+            if (window._extensionMessageHandler && runtime) {
+                try {
+                    runtime.onMessage.removeListener(window._extensionMessageHandler);
+                    logger.log('debug', 'Removed existing message listener');
+                } catch (e) {
+                    logger.log('debug', 'Could not remove existing listener: ' + e.message);
+                }
             }
         } catch (error) {
-            logger.log('error', `Error setting up message listeners: ${error.message}`);
+            logger.log('debug', 'Error cleaning up message listeners: ' + error.message);
+        }
+
+        // Exit early if no runtime API available
+        if (!runtime) {
+            logger.log('info', 'No runtime API detected for messaging');
             return false;
         }
+
+        // Create message handler functions for Chrome and Firefox
+        // They're different because Firefox uses promises for responses
+        if (isFirefox) {
+            // Firefox handler
+            window._extensionMessageHandler = function(message) {
+                try {
+                    // Validate message
+                    if (!message || typeof message !== 'object') {
+                        logger.log('error', 'Received invalid message format in Firefox');
+                        return Promise.resolve({error: "Invalid message format"});
+                    }
+
+                    logger.log('debug', `Firefox content script received message: ${JSON.stringify(message)}`);
+
+                    if (message.action === "toggleExtensionPlugin") {
+                        callback(Boolean(message.checked));
+                        return Promise.resolve({status: "OK"});
+                    }
+
+                    return Promise.resolve({status: "Unknown action"});
+                } catch (error) {
+                    logger.log('error', `Error processing message in Firefox: ${error.message}`);
+                    return Promise.resolve({error: error.message});
+                }
+            };
+
+            // Add the listener in Firefox
+            browser.runtime.onMessage.addListener(window._extensionMessageHandler);
+            logger.log('info', 'Firefox message listener attached');
+        } else {
+            // Chrome/Arc handler
+            window._extensionMessageHandler = function(message, sender, sendResponse) {
+                try {
+                    // Validate message
+                    if (!message || typeof message !== 'object') {
+                        logger.log('error', 'Received invalid message format in Chrome');
+                        sendResponse({error: "Invalid message format"});
+                        return false;
+                    }
+
+                    logger.log('debug', `Chrome content script received message: ${JSON.stringify(message)}`);
+
+                    if (message.action === "toggleExtensionPlugin") {
+                        callback(Boolean(message.checked));
+                        sendResponse({status: "OK"});
+                    } else {
+                        sendResponse({status: "Unknown action"});
+                    }
+                } catch (error) {
+                    logger.log('error', `Error processing message in Chrome: ${error.message}`);
+                    sendResponse({error: error.message});
+                }
+                return false; // No async response
+            };
+
+            // Add the listener in Chrome/Arc
+            chrome.runtime.onMessage.addListener(window._extensionMessageHandler);
+            logger.log('info', 'Chrome message listener attached');
+        }
+
+        // Set up a fallback for other communication methods
+        try {
+            window.addEventListener('message', function(event) {
+                try {
+                    const data = event.data;
+                    if (data && typeof data === 'object' && data.action === "toggleExtensionPlugin") {
+                        callback(Boolean(data.checked));
+                    }
+                } catch (e) {
+                    logger.log('error', 'Error processing window message: ' + e.message);
+                }
+            });
+        } catch (e) {
+            logger.log('warn', 'Could not setup window message listener: ' + e.message);
+        }
+
+        return true;
     }
-};
+}
 
 // HTML escape function
 function escapeHtml(html) {
@@ -1534,6 +1594,84 @@ function detachEventListeners() {
 // 8. INITIALIZATION AND MAIN FUNCTIONALITY
 // ===================================================================
 
+// Complete cleanup function for extension uninstall/disable
+function cleanupExtension() {
+    logger.log('info', 'Performing complete extension cleanup');
+
+    try {
+        // 1. Hide and remove UI elements
+        if (elements.panel) {
+            domUtils.setElementVisibility(elements.panel, false);
+            elements.panel.remove();
+            elements.panel = null;
+        }
+
+        if (elements.fileTreePanel) {
+            domUtils.setElementVisibility(elements.fileTreePanel, false);
+            elements.fileTreePanel.remove();
+            elements.fileTreePanel = null;
+        }
+
+        if (elements.resizeHandle) {
+            domUtils.setElementVisibility(elements.resizeHandle, false);
+            elements.resizeHandle.remove();
+            elements.resizeHandle = null;
+        }
+
+        if (elements.horizontalResizeHandle) {
+            domUtils.setElementVisibility(elements.horizontalResizeHandle, false);
+            elements.horizontalResizeHandle.remove();
+            elements.horizontalResizeHandle = null;
+        }
+
+        // 2. Remove style element
+        if (elements.styleElement) {
+            elements.styleElement.remove();
+            elements.styleElement = null;
+        }
+
+        // 3. Remove any highlights from DOM elements
+        document.querySelectorAll(`.${CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT}`)
+            .forEach(el => el.classList.remove(CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT));
+
+        document.querySelectorAll(`.${CONSTANTS.CLASSES.LOCKED_HIGHLIGHT}`)
+            .forEach(el => el.classList.remove(CONSTANTS.CLASSES.LOCKED_HIGHLIGHT));
+
+        // 4. Detach all event listeners
+        detachEventListeners();
+
+        // 5. Reset state
+        state = {
+            isInitialized: false,
+            isLocked: false,
+            lockedElement: null,
+            extensionEnabled: false,
+            isResizing: false,
+            isHorizontalResizing: false,
+            lastY: 0,
+            lastX: 0,
+            eventListenersAttached: false,
+            rightPanelWidth: CONSTANTS.SIZES.DEFAULT_RIGHT_PANEL_WIDTH,
+            fileTree: {}
+        };
+
+        // 6. Clear elements reference object
+        elements = {
+            panel: null,
+            fileTreePanel: null,
+            resizeHandle: null,
+            horizontalResizeHandle: null,
+            styleElement: null
+        };
+
+        logger.log('info', 'Extension cleanup completed successfully');
+        return true;
+    } catch (error) {
+        logger.log('error', `Error during extension cleanup: ${error.message}`);
+        return false;
+    }
+}
+
 // Initialize the extension
 function initializeExtension() {
     if (state.isInitialized) return;
@@ -1599,8 +1737,8 @@ function toggleExtensionPlugin(isEnabled) {
 
     state.extensionEnabled = Boolean(isEnabled);
 
-    // Make sure UI is initialized
-    if (!state.isInitialized) {
+    // Make sure UI is initialized if we're enabling
+    if (state.extensionEnabled && !state.isInitialized) {
         initializeExtension();
     }
 
@@ -1622,13 +1760,8 @@ function toggleExtensionPlugin(isEnabled) {
         scanForSourceFiles();
         setTimeout(scanForSourceFiles, 750);
     } else {
-        // Hide panels
-        domUtils.setElementVisibility(elements.panel, false);
-        domUtils.setElementVisibility(elements.fileTreePanel, false);
-        domUtils.setElementVisibility(elements.resizeHandle, false);
-        domUtils.setElementVisibility(elements.horizontalResizeHandle, false);
-
-        detachEventListeners();
+        // Perform full cleanup when disabling
+        cleanupExtension();
     }
 }
 
