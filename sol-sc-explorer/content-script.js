@@ -81,7 +81,7 @@ const styles = `
         background-color: #272822;
         color: #F8F8F2;
         border-top: 1px solid #ddd;
-        overflow: auto;
+        overflow: hidden;
         padding: 10px;
         box-sizing: border-box;
         z-index: 9999;
@@ -546,24 +546,59 @@ function initializeUI() {
 function updateBottomPanel(elementInfo, fileContent) {
     if (!elements.panel) return;
 
-    const preBlock = prepareSourceCode(fileContent, elementInfo);
+    // Clear previous content
+    elements.panel.innerHTML = '';
 
+    // Create a fixed header for the filepath
     let pathSegments = elementInfo.sourceFile.split('/');
     let fileNameAndLineNumber = pathSegments.pop();
     let remainingPath = pathSegments.join('/');
 
-    elements.panel.innerHTML = `
-    <div>${remainingPath}/<strong style="font-size: large; color: #8fce00;">${fileNameAndLineNumber}::${elementInfo.sourceLine}</strong></div>
-  `;
-    elements.panel.appendChild(preBlock);
+    const header = domUtils.createElement('div', {
+        styles: {
+            padding: '5px',
+            borderBottom: '1px solid #444',
+            position: 'absolute', // Changed from 'sticky' to 'absolute'
+            top: '0',
+            left: '0',
+            right: '0',
+            backgroundColor: '#272822',
+            zIndex: '1',
+            height: '30px', // Fixed height for header
+            boxSizing: 'border-box',
+            display: 'flex',
+            alignItems: 'center'
+        },
+        innerHTML: `${remainingPath}/<strong style="font-size: large; color: #8fce00;">${fileNameAndLineNumber}::${elementInfo.sourceLine}</strong>`
+    });
+
+    // Create a container for the code with its own scrollbar
+    const codeContainer = domUtils.createElement('div', {
+        styles: {
+            position: 'absolute',
+            top: '30px', // Position below the fixed header
+            left: '0',
+            right: '0',
+            bottom: '0',
+            overflow: 'auto', // This is the only scrollbar now
+            padding: '10px',
+            boxSizing: 'border-box'
+        }
+    });
+
+    // Add the code to the container
+    const preBlock = prepareSourceCode(fileContent, elementInfo);
+    codeContainer.appendChild(preBlock);
+
+    // Add both elements to the panel
+    elements.panel.appendChild(header);
+    elements.panel.appendChild(codeContainer);
 
     // Scroll to highlighted line
     setTimeout(() => {
         const highlightedLine = document.getElementById(CONSTANTS.DOM_IDS.HIGHLIGHTED_LINE);
         if (highlightedLine) {
-            const lineHeight = getLineHeight(preBlock);
-            const offsetAdjustment = 4;
-            preBlock.scrollTop = highlightedLine.offsetTop - offsetAdjustment * lineHeight;
+            highlightedLine.scrollIntoView({ block: 'center', behavior: 'auto' });
         }
     }, 0);
 
@@ -588,9 +623,12 @@ function prepareSourceCode(fileContent, elementInfo) {
     const preBlock = domUtils.createElement('pre', {
         styles: {
             fontSize: '12px',
-            border: '1px solid black',
-            overflowY: 'scroll',
-            maxHeight: '800px'
+            margin: '0',
+            padding: '10px',
+            border: 'none',
+            backgroundColor: 'transparent',
+            overflowX: 'auto',
+            overflowY: 'visible'  // Remove the scrollbar from the pre element
         },
         innerHTML: `<code style="font-size: 12px;">${formattedLines}</code>`
     });
@@ -701,8 +739,8 @@ function highlightTreeFile(filePath) {
         // Also make sure the file is visible by expanding all parent folders
         ensureFileVisible(fileElement);
 
-        // Scroll the file into view if needed
-        fileElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Scroll the file into view and position it in the middle of the panel
+        scrollElementToMiddle(fileElement, elements.fileTreePanel);
 
         logger.log('info', `File found and highlighted: ${filePath}`);
     } else {
@@ -714,13 +752,35 @@ function highlightTreeFile(filePath) {
         if (fileByName) {
             fileByName.classList.add(CONSTANTS.CLASSES.TREE_FILE_SELECTED);
             ensureFileVisible(fileByName);
-            fileByName.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            scrollElementToMiddle(fileByName, elements.fileTreePanel);
             logger.log('info', `File found by name and highlighted: ${fileName}`);
         } else {
             // If we still can't find it, highlight parent folders that match part of the path
             highlightParentFolders(filePath);
         }
     }
+}
+
+// Helper function to scroll an element to the middle of its container
+function scrollElementToMiddle(element, container) {
+    if (!element || !container) return;
+
+    // Calculate the position to scroll to
+    const elementRect = element.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    // Element position relative to container
+    const elementRelativeTop = elementRect.top - containerRect.top;
+
+    // Calculate target scroll position (element at middle of container)
+    const targetScrollTop = elementRelativeTop + container.scrollTop -
+        (containerRect.height / 2) + (elementRect.height / 2);
+
+    // Smoothly scroll to the calculated position
+    container.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+    });
 }
 
 // Build a hierarchical tree from flat file paths
