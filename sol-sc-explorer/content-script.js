@@ -23,8 +23,10 @@ const CONSTANTS = {
     CLASSES: {
         EXTENSION_HIGHLIGHT: 'my-extension-highlight',
         LOCKED_HIGHLIGHT: 'locked-highlight',
+        FILE_LOCKED_HIGHLIGHT: 'file-locked-highlight',
         TREE_FILE: 'tree-file',
         TREE_FILE_SELECTED: 'tree-file-selected',
+        TREE_FILE_HOVER_SELECTED: 'tree-file-hover-selected',
         TREE_FOLDER: 'tree-folder',
         TREE_FOLDER_SELECTED: 'tree-folder-selected',
         TREE_CHILDREN: 'tree-children',
@@ -32,7 +34,11 @@ const CONSTANTS = {
         TREE_EXPAND_ICON: 'tree-expand-icon',
         FILE_TREE_NODE: 'file-tree-node',
         FILE_TREE_REFRESH: 'file-tree-refresh',
-        FILE_TREE_TITLE: 'file-tree-title'
+        FILE_TREE_TITLE: 'file-tree-title',
+        TREE_LOCK_ICON: 'tree-lock-icon',
+        HIGHLIGHTED_SOURCE_LINE: 'highlighted-source-line',
+        HOVER_HIGHLIGHTED_SOURCE_LINE: 'hover-highlighted-source-line',
+        FILE_HIGHLIGHTED_SOURCE_LINE: 'file-highlighted-source-line'
     },
 
     // URLs
@@ -67,6 +73,12 @@ const styles = `
     .${CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT} {
         border-radius: 10px;
         box-shadow: 0 0 8px 2px #2F8464;
+    }
+    
+    .${CONSTANTS.CLASSES.FILE_LOCKED_HIGHLIGHT} {
+        border-radius: 6px;
+        border: 2px solid #FF8C00;
+        box-shadow: none;
     }
     
     .${CONSTANTS.CLASSES.LOCKED_HIGHLIGHT} {
@@ -152,11 +164,27 @@ const styles = `
     }
     
     .${CONSTANTS.CLASSES.TREE_FILE_SELECTED} {
-        color: white !important;
+        color: #FF8C00 !important; /* Orange for file-based selection */
+    }
+    
+    .${CONSTANTS.CLASSES.TREE_FILE_HOVER_SELECTED} {
+        color: white !important; /* White for hover-based selection */
     }
     
     .${CONSTANTS.CLASSES.TREE_FOLDER_SELECTED} {
         color: white !important;
+    }
+    
+    .${CONSTANTS.CLASSES.HOVER_HIGHLIGHTED_SOURCE_LINE} {
+        background-color: rgba(47, 132, 100, 0.5); 
+        color: white; 
+        display: block;
+    }
+    
+    .${CONSTANTS.CLASSES.FILE_HIGHLIGHTED_SOURCE_LINE} {
+        background-color: rgba(47, 132, 100, 0.5); 
+        color: #FF8C00; 
+        display: block;
     }
     
     /* New class for selected tree nodes */
@@ -175,6 +203,14 @@ const styles = `
     .${CONSTANTS.CLASSES.TREE_INDENT} {
         display: inline-block;
         width: 16px;
+    }
+    
+    .${CONSTANTS.CLASSES.TREE_LOCK_ICON} {
+        display: inline-block;
+        width: 16px;
+        margin-left: 5px;
+        text-align: center;
+        color: #F92672;
     }
     
     .${CONSTANTS.CLASSES.FILE_TREE_REFRESH} {
@@ -233,7 +269,7 @@ const styles = `
     
     .source-code-header strong {
         font-size: 16px;
-        color: #8fce00;
+        /* Color is now set dynamically in the updateBottomPanel function */
     }
     
     .file-tree-content {
@@ -267,6 +303,8 @@ let state = {
     isInitialized: false,
     isLocked: false,
     lockedElement: null,
+    lockedFile: null,
+    elementHighlighting: false,
     extensionEnabled: false,
     isResizing: false,
     isHorizontalResizing: false,
@@ -483,10 +521,7 @@ const browserCompat = {
         }
     },
 
-    // Replace the setupMessageListeners method inside the browserCompat object
-// in content-script.js with this improved version:
-
-// Setup message listeners for different browsers
+    // Setup message listeners for different browsers
     setupMessageListeners: function(callback) {
         // Detect browser environment
         const isFirefox = typeof browser !== 'undefined';
@@ -591,7 +626,7 @@ const browserCompat = {
 
         return true;
     }
-}
+};
 
 // HTML escape function
 function escapeHtml(html) {
@@ -677,11 +712,16 @@ function updateBottomPanel(elementInfo, fileContent) {
     const arrowSpan = '<span style="font-size: 10px; margin: 0 4px;"> ▶ </span>';
     let formattedPath = pathSegments.join(arrowSpan);
 
+    // Determine header color based on whether we're in hover mode or tree selection mode
+    const headerColor = state.elementHighlighting ? '#8fce00' : '#FF8C00';
+
+    logger.log('debug', `Updating panel with state: locked=${state.isLocked}, elementHighlighting=${state.elementHighlighting}, lockedFile=${state.lockedFile}`);
+
     const header = domUtils.createElement('div', {
         classes: ['source-code-header'],
         innerHTML: formattedPath ?
-            `/ ${formattedPath}${arrowSpan}<strong style="margin-left: 2px;">${fileNameAndLineNumber}::${elementInfo.sourceLine}</strong>` :
-            `/ <strong>${fileNameAndLineNumber}::${elementInfo.sourceLine}</strong>`
+            `/ ${formattedPath}${arrowSpan}<strong style="margin-left: 2px; color: ${headerColor};">${fileNameAndLineNumber}::${elementInfo.sourceLine}</strong>` :
+            `/ <strong style="color: ${headerColor};">${fileNameAndLineNumber}::${elementInfo.sourceLine}</strong>`
     });
 
     // Create a container for the code with its own scrollbar
@@ -713,12 +753,60 @@ function updateBottomPanel(elementInfo, fileContent) {
 function prepareSourceCode(fileContent, elementInfo) {
     const lines = fileContent.split('\n');
     const scrollToLine = parseInt(elementInfo.sourceLine);
+
+    // Find all elements with this source file to highlight their lines
+    let elementLines = [];
+
+    try {
+        // Always look for all elements with this source file, whether in hover or file-based mode
+        const sourceFile = elementInfo.sourceFile;
+        logger.log('debug', `Looking for elements with source file: ${sourceFile}`);
+
+        // Use wildcard attribute selector to ensure we find all elements
+        const elements = document.querySelectorAll(`[data-source-file]`);
+        logger.log('debug', `Found ${elements.length} total elements with data-source-file attributes`);
+
+        // Filter matching elements and collect their line numbers
+        elements.forEach(element => {
+            const elementSourceFile = element.getAttribute('data-source-file');
+            if (elementSourceFile === sourceFile) {
+                const line = parseInt(element.getAttribute('data-source-line'));
+                if (!isNaN(line)) {
+                    elementLines.push(line);
+                    logger.log('debug', `Added line ${line} from element to highlight list`);
+                }
+            }
+        });
+
+        logger.log('debug', `Total matching lines to highlight: ${elementLines.length}`);
+    } catch (e) {
+        logger.log('warn', `Error finding element lines: ${e.message}`);
+    }
+
     const formattedLines = lines.map((line, index) => {
         const escapedLine = escapeHtml(line);
         const lineNumber = index + 1;
+
+        // Highlight the line we're scrolling to as the primary highlight
         if (lineNumber === scrollToLine) {
-            return `<span id="${CONSTANTS.DOM_IDS.HIGHLIGHTED_LINE}" style="background-color: #2F8464; color: white; display: block;">${lineNumber}: ${escapedLine}</span>`;
-        } else {
+            // Choose color based on mode
+            if (state.elementHighlighting) {
+                return `<span id="${CONSTANTS.DOM_IDS.HIGHLIGHTED_LINE}" class="${CONSTANTS.CLASSES.HIGHLIGHTED_SOURCE_LINE}" style="background-color: #2F8464; color: white; display: block;">${lineNumber}: ${escapedLine}</span>`;
+            } else {
+                return `<span id="${CONSTANTS.DOM_IDS.HIGHLIGHTED_LINE}" class="${CONSTANTS.CLASSES.HIGHLIGHTED_SOURCE_LINE}" style="background-color: #2F8464; color: #FF8C00; display: block;">${lineNumber}: ${escapedLine}</span>`;
+            }
+        }
+        // Highlight other lines that correspond to elements
+        else if (elementLines.includes(lineNumber)) {
+            // Choose color based on mode
+            if (state.elementHighlighting) {
+                return `<span class="${CONSTANTS.CLASSES.HOVER_HIGHLIGHTED_SOURCE_LINE}">${lineNumber}: ${escapedLine}</span>`;
+            } else {
+                return `<span class="${CONSTANTS.CLASSES.FILE_HIGHLIGHTED_SOURCE_LINE}">${lineNumber}: ${escapedLine}</span>`;
+            }
+        }
+        // Regular line
+        else {
             return `<span style="display: block;">${lineNumber}: ${escapedLine}</span>`;
         }
     }).join('');
@@ -833,16 +921,121 @@ function highlightParentFolders(filePath) {
     });
 }
 
+// Find and highlight page elements that are associated with a source file
+function highlightPageElementsByFile(sourceFile, specificLine = null) {
+    // First clear any existing highlights from previous file selections
+    clearAllHighlights();
+
+    // Set the state as locked to prevent hover interactions from removing highlights
+    state.isLocked = true;
+    state.elementHighlighting = false;
+    state.lockedFile = sourceFile;
+
+    logger.log('info', `Scanning for elements from file: ${sourceFile}`);
+    try {
+        // Find all elements with this source file
+        const elements = document.querySelectorAll(`[data-source-file="${sourceFile}"]`);
+
+        logger.log('info', `Found ${elements.length} elements for file: ${sourceFile}`);
+
+        // Highlight all elements with the file-locked highlight style (orange)
+        elements.forEach(element => {
+            // Apply the file locked highlight style to all elements
+            element.classList.add(CONSTANTS.CLASSES.FILE_LOCKED_HIGHLIGHT);
+        });
+
+        // If we have a specific line, find that element and scroll to it
+        if (specificLine && elements.length > 0) {
+            // Try to find the exact element with this line
+            let targetElement = null;
+
+            for (const element of elements) {
+                const elementLine = element.getAttribute('data-source-line');
+                if (elementLine === specificLine) {
+                    targetElement = element;
+                    break;
+                }
+            }
+
+            // If we can't find the exact line, find the closest
+            if (!targetElement) {
+                logger.log('info', `No exact line match found for line ${specificLine}, finding closest`);
+
+                // Convert all line numbers to numbers for comparison
+                const elementLines = Array.from(elements).map(el => {
+                    return {
+                        element: el,
+                        line: parseInt(el.getAttribute('data-source-line') || '0')
+                    };
+                });
+
+                // Sort by closest line number to the specific line
+                elementLines.sort((a, b) => {
+                    return Math.abs(a.line - parseInt(specificLine)) - Math.abs(b.line - parseInt(specificLine));
+                });
+
+                if (elementLines[0]) {
+                    targetElement = elementLines[0].element;
+                }
+            }
+
+            // Scroll to the target element if found
+            if (targetElement) {
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    } catch (error) {
+        logger.log('error', `Error highlighting page elements: ${error.message}`);
+    }
+}
+
+// Clear all highlighted elements on the page
+function clearAllHighlights() {
+    // Clear extension highlights (green - for hover)
+    const highlightedElements = document.querySelectorAll(`.${CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT}`);
+    highlightedElements.forEach(element => {
+        element.classList.remove(CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT);
+    });
+
+    // Clear file locked highlights (orange - for tree selection)
+    const fileLockElements = document.querySelectorAll(`.${CONSTANTS.CLASSES.FILE_LOCKED_HIGHLIGHT}`);
+    fileLockElements.forEach(element => {
+        element.classList.remove(CONSTANTS.CLASSES.FILE_LOCKED_HIGHLIGHT);
+    });
+
+    // Clear any old red locked highlights
+    const lockedElements = document.querySelectorAll(`.${CONSTANTS.CLASSES.LOCKED_HIGHLIGHT}`);
+    lockedElements.forEach(element => {
+        element.classList.remove(CONSTANTS.CLASSES.LOCKED_HIGHLIGHT);
+    });
+
+    // Reset locked element state
+    state.lockedElement = null;
+    state.lockedFile = null;
+}
+
+// Remove all lock icons from file tree
+function removeAllLockIcons() {
+    const lockIcons = elements.fileTreePanel.querySelectorAll(`.${CONSTANTS.CLASSES.TREE_LOCK_ICON}`);
+    lockIcons.forEach(icon => {
+        icon.remove();
+    });
+}
+
 // Function to highlight a file in the tree view
 function highlightTreeFile(filePath) {
     if (!elements.fileTreePanel) return;
 
     logger.log('info', `Highlighting file in tree: ${filePath}`);
 
+    // Remove any existing lock icons first
+    removeAllLockIcons();
+
     // First, clear any existing highlights
     const allFiles = elements.fileTreePanel.querySelectorAll(`.${CONSTANTS.CLASSES.TREE_FILE}`);
     allFiles.forEach(file => {
         file.classList.remove(CONSTANTS.CLASSES.TREE_FILE_SELECTED);
+        file.classList.remove(CONSTANTS.CLASSES.TREE_FILE_HOVER_SELECTED);
         // Also remove selected background from parent node
         const parentNode = file.closest(`.${CONSTANTS.CLASSES.FILE_TREE_NODE}`);
         if (parentNode) {
@@ -870,12 +1063,27 @@ function highlightTreeFile(filePath) {
     // Find and highlight the file
     const fileElement = elements.fileTreePanel.querySelector(`.${CONSTANTS.CLASSES.TREE_FILE}[data-path="${filePath}"]`);
     if (fileElement) {
-        fileElement.classList.add(CONSTANTS.CLASSES.TREE_FILE_SELECTED);
+        // Apply the appropriate class based on hover vs. file selection mode
+        if (state.elementHighlighting) {
+            fileElement.classList.add(CONSTANTS.CLASSES.TREE_FILE_HOVER_SELECTED); // White text for hover mode
+        } else {
+            fileElement.classList.add(CONSTANTS.CLASSES.TREE_FILE_SELECTED); // Orange text for file selection mode
+        }
 
         // Add selected background to parent node for full-width highlight
         const parentNode = fileElement.closest(`.${CONSTANTS.CLASSES.FILE_TREE_NODE}`);
         if (parentNode) {
             parentNode.classList.add('file-tree-node-selected');
+        }
+
+        // If this file is locked, add the lock icon
+        if (state.lockedFile === filePath && !state.elementHighlighting) {
+            const lockIcon = domUtils.createElement('span', {
+                classes: [CONSTANTS.CLASSES.TREE_LOCK_ICON],
+                textContent: '🔒',
+                attributes: { 'title': 'Click to unlock' }
+            });
+            fileElement.parentNode.insertBefore(lockIcon, fileElement.nextSibling);
         }
 
         // Also make sure the file is visible by expanding all parent folders
@@ -892,12 +1100,27 @@ function highlightTreeFile(filePath) {
         const fileName = filePath.split('/').pop();
         const fileByName = elements.fileTreePanel.querySelector(`.${CONSTANTS.CLASSES.TREE_FILE}[data-filename="${fileName}"]`);
         if (fileByName) {
-            fileByName.classList.add(CONSTANTS.CLASSES.TREE_FILE_SELECTED);
+            // Apply the appropriate class based on hover vs. file selection mode
+            if (state.elementHighlighting) {
+                fileByName.classList.add(CONSTANTS.CLASSES.TREE_FILE_HOVER_SELECTED); // White text for hover mode
+            } else {
+                fileByName.classList.add(CONSTANTS.CLASSES.TREE_FILE_SELECTED); // Orange text for file selection mode
+            }
 
             // Add selected background to parent node for full-width highlight
             const parentNode = fileByName.closest(`.${CONSTANTS.CLASSES.FILE_TREE_NODE}`);
             if (parentNode) {
                 parentNode.classList.add('file-tree-node-selected');
+            }
+
+            // If this file is locked, add the lock icon
+            if (state.lockedFile === filePath && !state.elementHighlighting) {
+                const lockIcon = domUtils.createElement('span', {
+                    classes: [CONSTANTS.CLASSES.TREE_LOCK_ICON],
+                    textContent: '🔒',
+                    attributes: { 'title': 'Click to unlock' }
+                });
+                fileByName.parentNode.insertBefore(lockIcon, fileByName.nextSibling);
             }
 
             ensureFileVisible(fileByName);
@@ -1091,9 +1314,28 @@ function renderTreeNode(container, node, level) {
                 nodeElement.appendChild(linesSpan);
             }
 
-            // Changed from mouseover to click event
+            // Handle file click event
             nodeElement.addEventListener('click', async function() {
                 try {
+                    // If this file is already locked, unlock it
+                    if (state.lockedFile === nodeInfo._path && !state.elementHighlighting) {
+                        logger.log('info', `Unlocking file: ${nodeInfo._path}`);
+                        state.isLocked = false;
+                        state.lockedFile = null;
+                        state.elementHighlighting = true;
+
+                        // Clear all highlights
+                        clearAllHighlights();
+
+                        // Remove the lock icon
+                        removeAllLockIcons();
+
+                        // Still keep the file selected in the tree
+                        highlightTreeFile(nodeInfo._path);
+
+                        return;
+                    }
+
                     const sourceCodeUrl = `${CONSTANTS.URLS.BASE_API_URL}${nodeInfo._path}`;
                     logger.log('info', `Fetching source code from: ${sourceCodeUrl}`);
                     const fileContent = await fetchSourceCode(nodeInfo._path);
@@ -1105,8 +1347,17 @@ function renderTreeNode(container, node, level) {
                         };
                         updateBottomPanel(elementInfo, fileContent);
 
-                        // Select this file in the tree
+                        // Lock the current file
+                        state.isLocked = true;
+                        state.lockedFile = nodeInfo._path;
+                        state.elementHighlighting = false;
+
+                        // Select this file in the tree (adds lock icon)
                         highlightTreeFile(nodeInfo._path);
+
+                        // Highlight all page elements that come from this file
+                        // and specifically highlight the element matching our line number
+                        highlightPageElementsByFile(nodeInfo._path, elementInfo.sourceLine);
                     }
                 } catch (error) {
                     logger.log('error', `Error loading file from tree: ${error.message}`);
@@ -1500,10 +1751,12 @@ function toggleLock() {
     state.isLocked = !state.isLocked;
     logger.log('info', `Lock state: ${state.isLocked}`);
 
-    if (state.isLocked && state.lockedElement) {
-        state.lockedElement.classList.add(CONSTANTS.CLASSES.LOCKED_HIGHLIGHT);
-    } else if (state.lockedElement) {
-        state.lockedElement.classList.remove(CONSTANTS.CLASSES.LOCKED_HIGHLIGHT);
+    if (!state.isLocked) {
+        // If we're unlocking, remove all highlights
+        clearAllHighlights();
+        state.elementHighlighting = true;
+        state.lockedFile = null;
+        removeAllLockIcons();
     }
 
     // Debug the file tree when toggling lock
@@ -1527,19 +1780,34 @@ function handleKeyPress(e) {
 
 // Handle mouseover event
 async function handleMouseOver(e) {
-    if (state.isLocked || !state.extensionEnabled) return;
+    // If extension is disabled, exit
+    if (!state.extensionEnabled) return;
+
+    // If we're in file-locked mode, ignore hover events
+    if (state.lockedFile && !state.elementHighlighting) return;
 
     // Skip if the target is in any of our panels
     if ((elements.panel && elements.panel.contains(e.target)) ||
         (elements.fileTreePanel && elements.fileTreePanel.contains(e.target))) return;
 
-    state.lockedElement = e.target;
+    // Check if this element has source information
     const elementInfo = {
         sourceFile: e.target.getAttribute('data-source-file'),
         sourceLine: e.target.getAttribute('data-source-line')
     };
 
     if (elementInfo.sourceFile && elementInfo.sourceLine) {
+        // Clear previous highlights when directly interacting with elements
+        clearAllHighlights();
+
+        // Set state to element highlighting mode
+        state.elementHighlighting = true;
+        state.lockedFile = null;
+
+        // Remove any lock icons from the file tree
+        removeAllLockIcons();
+
+        state.lockedElement = e.target;
         e.target.classList.add(CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT);
 
         try {
@@ -1555,13 +1823,15 @@ async function handleMouseOver(e) {
 
 // Handle mouseout event
 function handleMouseOut(e) {
-    if (state.isLocked || !state.extensionEnabled) return;
+    // If we're in locked mode (either element or file), don't remove highlights
+    if (state.isLocked || !state.extensionEnabled || (state.lockedFile && !state.elementHighlighting)) return;
 
     // Skip if the target is in any of our panels
     if ((elements.panel && elements.panel.contains(e.target)) ||
         (elements.fileTreePanel && elements.fileTreePanel.contains(e.target))) return;
 
-    if (e.target.classList.contains(CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT)) {
+    // Only remove the highlight from this specific element if we're in element highlighting mode
+    if (state.elementHighlighting && e.target.classList.contains(CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT)) {
         e.target.classList.remove(CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT);
     }
 }
@@ -1645,6 +1915,8 @@ function cleanupExtension() {
             isInitialized: false,
             isLocked: false,
             lockedElement: null,
+            lockedFile: null,
+            elementHighlighting: true,
             extensionEnabled: false,
             isResizing: false,
             isHorizontalResizing: false,
