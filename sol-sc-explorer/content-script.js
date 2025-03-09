@@ -51,7 +51,8 @@ const CONSTANTS = {
         MAX_PANEL_HEIGHT_RATIO: 0.8,
         MIN_PANEL_WIDTH: 200,
         MAX_PANEL_WIDTH_RATIO: 0.8,
-        DEFAULT_RIGHT_PANEL_WIDTH: 375
+        DEFAULT_RIGHT_PANEL_WIDTH: 375,
+        HEADER_HEIGHT: 40 // Standardized header height for both panels
     },
 
     // Key bindings
@@ -82,7 +83,7 @@ const styles = `
         color: #F8F8F2;
         border-top: 1px solid #ddd;
         overflow: hidden;
-        padding: 10px;
+        padding: 0;
         box-sizing: border-box;
         z-index: 9999;
         display: none;
@@ -98,11 +99,13 @@ const styles = `
         color: #F8F8F2;
         border-top: 1px solid #ddd;
         border-left: 1px solid #444;
-        overflow: auto;
-        padding: 10px;
+        padding: 0;
         box-sizing: border-box;
         z-index: 9999;
         display: none;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* Prevent outer panel from scrolling */
     }
     
     #${CONSTANTS.DOM_IDS.RESIZE_HANDLE} {
@@ -149,16 +152,17 @@ const styles = `
     }
     
     .${CONSTANTS.CLASSES.TREE_FILE_SELECTED} {
-        color: #FD971F !important;
-        font-weight: bold;
-        background-color: rgba(253, 151, 31, 0.2);
-        border-radius: 2px;
-        padding: 0 2px;
+        color: white !important;
     }
     
     .${CONSTANTS.CLASSES.TREE_FOLDER_SELECTED} {
-        background-color: rgba(102, 217, 239, 0.2);
-        border-radius: 2px;
+        color: white !important;
+    }
+    
+    /* New class for selected tree nodes */
+    .file-tree-node-selected {
+        background-color: #2F8464;
+        width: 100%;
     }
     
     .${CONSTANTS.CLASSES.TREE_EXPAND_ICON} {
@@ -175,7 +179,7 @@ const styles = `
     
     .${CONSTANTS.CLASSES.FILE_TREE_REFRESH} {
         position: absolute;
-        top: 8px;
+        top: 10px;
         right: 10px;
         background-color: #66D9EF;
         color: #272822;
@@ -192,9 +196,65 @@ const styles = `
     
     .${CONSTANTS.CLASSES.FILE_TREE_TITLE} {
         font-weight: bold;
-        margin-bottom: 10px;
-        padding-bottom: 5px;
+        font-size: 16px;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .file-tree-header {
+        position: sticky;
+        top: 0;
+        background-color: #272822;
+        padding: 0 10px;
         border-bottom: 1px solid #444;
+        z-index: 1;
+        height: ${CONSTANTS.SIZES.HEADER_HEIGHT}px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .source-code-header {
+        padding: 0 10px;
+        border-bottom: 1px solid #444;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: #272822;
+        z-index: 1;
+        height: ${CONSTANTS.SIZES.HEADER_HEIGHT}px;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .source-code-header strong {
+        font-size: 16px;
+        color: #8fce00;
+    }
+    
+    .file-tree-content {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: auto;
+        padding: 10px;
+        max-height: calc(100% - ${CONSTANTS.SIZES.HEADER_HEIGHT}px);
+        box-sizing: border-box;
+    }
+    
+    .source-code-content {
+        position: absolute;
+        top: ${CONSTANTS.SIZES.HEADER_HEIGHT}px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow-y: auto;
+        overflow-x: auto;
+        padding: 10px;
+        box-sizing: border-box;
     }
 `;
 
@@ -550,40 +610,23 @@ function updateBottomPanel(elementInfo, fileContent) {
     elements.panel.innerHTML = '';
 
     // Create a fixed header for the filepath
-    let pathSegments = elementInfo.sourceFile.split('/');
+    let pathSegments = elementInfo.sourceFile.split('/').filter(part => part.length > 0);
     let fileNameAndLineNumber = pathSegments.pop();
-    let remainingPath = pathSegments.join('/');
+
+    // Create formatted path with smaller arrow and proper spacing
+    const arrowSpan = '<span style="font-size: 10px; margin: 0 4px;"> ▶ </span>';
+    let formattedPath = pathSegments.join(arrowSpan);
 
     const header = domUtils.createElement('div', {
-        styles: {
-            padding: '5px',
-            borderBottom: '1px solid #444',
-            position: 'absolute', // Changed from 'sticky' to 'absolute'
-            top: '0',
-            left: '0',
-            right: '0',
-            backgroundColor: '#272822',
-            zIndex: '1',
-            height: '30px', // Fixed height for header
-            boxSizing: 'border-box',
-            display: 'flex',
-            alignItems: 'center'
-        },
-        innerHTML: `${remainingPath}/<strong style="font-size: large; color: #8fce00;">${fileNameAndLineNumber}::${elementInfo.sourceLine}</strong>`
+        classes: ['source-code-header'],
+        innerHTML: formattedPath ?
+            `/ ${formattedPath}${arrowSpan}<strong style="margin-left: 2px;">${fileNameAndLineNumber}::${elementInfo.sourceLine}</strong>` :
+            `/ <strong>${fileNameAndLineNumber}::${elementInfo.sourceLine}</strong>`
     });
 
     // Create a container for the code with its own scrollbar
     const codeContainer = domUtils.createElement('div', {
-        styles: {
-            position: 'absolute',
-            top: '30px', // Position below the fixed header
-            left: '0',
-            right: '0',
-            bottom: '0',
-            overflow: 'auto', // This is the only scrollbar now
-            padding: '10px',
-            boxSizing: 'border-box'
-        }
+        classes: ['source-code-content']
     });
 
     // Add the code to the container
@@ -686,12 +729,25 @@ function ensureFileVisible(fileElement) {
 function highlightParentFolders(filePath) {
     const pathParts = filePath.split('/').filter(part => part.length > 0);
 
+    // Find the scrollable content container
+    const contentContainer = elements.fileTreePanel.querySelector('.file-tree-content');
+    if (!contentContainer) {
+        logger.log('error', 'Cannot find file-tree-content element for highlighting parent folders');
+        return;
+    }
+
     // Highlight any folder that matches a part of the path
     pathParts.forEach(part => {
         const folders = elements.fileTreePanel.querySelectorAll(`.${CONSTANTS.CLASSES.TREE_FOLDER}`);
         folders.forEach(folder => {
             if (folder.textContent === part) {
                 folder.classList.add(CONSTANTS.CLASSES.TREE_FOLDER_SELECTED);
+
+                // Add selected background to parent node for full-width highlight
+                const parentNode = folder.closest(`.${CONSTANTS.CLASSES.FILE_TREE_NODE}`);
+                if (parentNode) {
+                    parentNode.classList.add('file-tree-node-selected');
+                }
 
                 // Make sure the folder is visible
                 let parent = folder.parentElement;
@@ -709,6 +765,9 @@ function highlightParentFolders(filePath) {
                     }
                     parent = parent.parentElement;
                 }
+
+                // Scroll to the highlighted folder
+                scrollElementToMiddle(folder, contentContainer);
             }
         });
     });
@@ -724,23 +783,46 @@ function highlightTreeFile(filePath) {
     const allFiles = elements.fileTreePanel.querySelectorAll(`.${CONSTANTS.CLASSES.TREE_FILE}`);
     allFiles.forEach(file => {
         file.classList.remove(CONSTANTS.CLASSES.TREE_FILE_SELECTED);
+        // Also remove selected background from parent node
+        const parentNode = file.closest(`.${CONSTANTS.CLASSES.FILE_TREE_NODE}`);
+        if (parentNode) {
+            parentNode.classList.remove('file-tree-node-selected');
+        }
     });
 
     const allFolders = elements.fileTreePanel.querySelectorAll(`.${CONSTANTS.CLASSES.TREE_FOLDER}`);
     allFolders.forEach(folder => {
         folder.classList.remove(CONSTANTS.CLASSES.TREE_FOLDER_SELECTED);
+        // Also remove selected background from parent node
+        const parentNode = folder.closest(`.${CONSTANTS.CLASSES.FILE_TREE_NODE}`);
+        if (parentNode) {
+            parentNode.classList.remove('file-tree-node-selected');
+        }
     });
+
+    // Find the scrollable content container
+    const contentContainer = elements.fileTreePanel.querySelector('.file-tree-content');
+    if (!contentContainer) {
+        logger.log('error', 'Cannot find file-tree-content element');
+        return;
+    }
 
     // Find and highlight the file
     const fileElement = elements.fileTreePanel.querySelector(`.${CONSTANTS.CLASSES.TREE_FILE}[data-path="${filePath}"]`);
     if (fileElement) {
         fileElement.classList.add(CONSTANTS.CLASSES.TREE_FILE_SELECTED);
 
+        // Add selected background to parent node for full-width highlight
+        const parentNode = fileElement.closest(`.${CONSTANTS.CLASSES.FILE_TREE_NODE}`);
+        if (parentNode) {
+            parentNode.classList.add('file-tree-node-selected');
+        }
+
         // Also make sure the file is visible by expanding all parent folders
         ensureFileVisible(fileElement);
 
         // Scroll the file into view and position it in the middle of the panel
-        scrollElementToMiddle(fileElement, elements.fileTreePanel);
+        scrollElementToMiddle(fileElement, contentContainer);
 
         logger.log('info', `File found and highlighted: ${filePath}`);
     } else {
@@ -751,8 +833,15 @@ function highlightTreeFile(filePath) {
         const fileByName = elements.fileTreePanel.querySelector(`.${CONSTANTS.CLASSES.TREE_FILE}[data-filename="${fileName}"]`);
         if (fileByName) {
             fileByName.classList.add(CONSTANTS.CLASSES.TREE_FILE_SELECTED);
+
+            // Add selected background to parent node for full-width highlight
+            const parentNode = fileByName.closest(`.${CONSTANTS.CLASSES.FILE_TREE_NODE}`);
+            if (parentNode) {
+                parentNode.classList.add('file-tree-node-selected');
+            }
+
             ensureFileVisible(fileByName);
-            scrollElementToMiddle(fileByName, elements.fileTreePanel);
+            scrollElementToMiddle(fileByName, contentContainer);
             logger.log('info', `File found by name and highlighted: ${fileName}`);
         } else {
             // If we still can't find it, highlight parent folders that match part of the path
@@ -763,24 +852,45 @@ function highlightTreeFile(filePath) {
 
 // Helper function to scroll an element to the middle of its container
 function scrollElementToMiddle(element, container) {
-    if (!element || !container) return;
+    if (!element || !container) {
+        logger.log('debug', 'Missing element or container for scrolling');
+        return;
+    }
 
-    // Calculate the position to scroll to
-    const elementRect = element.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
+    logger.log('debug', `Scrolling element to middle. Container: ${container.className}`);
 
-    // Element position relative to container
-    const elementRelativeTop = elementRect.top - containerRect.top;
+    try {
+        // Calculate the position to scroll to
+        const elementRect = element.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
 
-    // Calculate target scroll position (element at middle of container)
-    const targetScrollTop = elementRelativeTop + container.scrollTop -
-        (containerRect.height / 2) + (elementRect.height / 2);
+        // Ensure element is fully visible in the container
+        const elementTop = element.offsetTop;
+        const elementHeight = element.offsetHeight;
+        const containerVisibleHeight = container.clientHeight;
+        const currentScroll = container.scrollTop;
 
-    // Smoothly scroll to the calculated position
-    container.scrollTo({
-        top: targetScrollTop,
-        behavior: 'smooth'
-    });
+        // Calculate target scroll position (element at middle of container)
+        let targetScrollTop;
+
+        // If element doesn't fit in the viewport, scroll to top of element
+        if (elementHeight > containerVisibleHeight) {
+            targetScrollTop = elementTop;
+        } else {
+            // Otherwise center the element
+            targetScrollTop = elementTop - (containerVisibleHeight / 2) + (elementHeight / 2);
+        }
+
+        // Ensure the target scroll position is within bounds
+        targetScrollTop = Math.max(0, Math.min(targetScrollTop, container.scrollHeight - containerVisibleHeight));
+
+        logger.log('debug', `Scrolling to position: ${targetScrollTop}. Element top: ${elementTop}, container height: ${containerVisibleHeight}`);
+
+        // Smoothly scroll to the calculated position
+        container.scrollTop = targetScrollTop;
+    } catch (error) {
+        logger.log('error', `Error scrolling element to middle: ${error.message}`);
+    }
 }
 
 // Build a hierarchical tree from flat file paths
@@ -957,14 +1067,19 @@ function renderFileTree() {
 
     logger.log('info', 'Rendering file tree');
 
-    // Create a document fragment for better performance
-    const fragment = document.createDocumentFragment();
+    // Clear previous content
+    elements.fileTreePanel.innerHTML = '';
+
+    // Create header section (fixed at top)
+    const headerSection = domUtils.createElement('div', {
+        classes: ['file-tree-header']
+    });
 
     const titleDiv = domUtils.createElement('div', {
         classes: [CONSTANTS.CLASSES.FILE_TREE_TITLE],
-        textContent: 'Source Files'
+        textContent: 'Web Page Source Files'
     });
-    fragment.appendChild(titleDiv);
+    headerSection.appendChild(titleDiv);
 
     // Add a refresh button
     const refreshButton = domUtils.createElement('button', {
@@ -977,7 +1092,20 @@ function renderFileTree() {
             }
         }
     });
-    fragment.appendChild(refreshButton);
+    headerSection.appendChild(refreshButton);
+
+    // Add header to panel
+    elements.fileTreePanel.appendChild(headerSection);
+
+    // Create scrollable content section
+    const contentSection = domUtils.createElement('div', {
+        classes: ['file-tree-content'],
+        styles: {
+            'overflow-y': 'auto',
+            'max-height': `calc(100% - ${CONSTANTS.SIZES.HEADER_HEIGHT}px)`,
+            'box-sizing': 'border-box'
+        }
+    });
 
     // Check if file tree is empty
     if (!state.fileTree || Object.keys(state.fileTree).length === 0) {
@@ -985,23 +1113,22 @@ function renderFileTree() {
             styles: { color: '#F92672', padding: '10px' },
             textContent: 'No source files found'
         });
-        fragment.appendChild(emptyMessage);
+        contentSection.appendChild(emptyMessage);
 
-        // Update the panel content
-        elements.fileTreePanel.innerHTML = '';
-        elements.fileTreePanel.appendChild(fragment);
         logger.log('info', 'No files in the tree to render');
-        return;
+    } else {
+        const treeRoot = document.createElement('div');
+        renderTreeNode(treeRoot, state.fileTree, 0);
+        contentSection.appendChild(treeRoot);
+
+        logger.log('info', 'Tree rendering complete');
     }
 
-    const treeRoot = document.createElement('div');
-    renderTreeNode(treeRoot, state.fileTree, 0);
-    fragment.appendChild(treeRoot);
+    // Add content section to panel
+    elements.fileTreePanel.appendChild(contentSection);
 
-    // Update the panel content
-    elements.fileTreePanel.innerHTML = '';
-    elements.fileTreePanel.appendChild(fragment);
-    logger.log('info', 'Tree rendering complete');
+    // Log scrollable container info for debugging
+    logger.log('debug', `File tree content height: ${contentSection.scrollHeight}, visible height: ${contentSection.clientHeight}`);
 }
 
 // ===================================================================
