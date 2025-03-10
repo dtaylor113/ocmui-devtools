@@ -312,7 +312,9 @@ let state = {
     lastX: 0,
     eventListenersAttached: false,
     rightPanelWidth: CONSTANTS.SIZES.DEFAULT_RIGHT_PANEL_WIDTH,
-    fileTree: {}
+    fileTree: {},
+    viewMode: 'filetree',           // New property: 'filetree' or 'domhierarchy'
+    originalFileTree: {}            // New property: Store original tree when in hierarchy view
 };
 
 // UI elements
@@ -638,6 +640,33 @@ function escapeHtml(html) {
         .replace(/'/g, "&#039;");
 }
 
+// Helper function to get a readable identifier for an element
+function getElementIdentifier(element) {
+    let identifier = element.tagName.toLowerCase();
+
+    if (element.id) {
+        identifier += `#${element.id}`;
+    } else if (element.className) {
+        // Format class list properly
+        const classList = Array.from(element.classList)
+            .filter(cls => !cls.startsWith('my-extension-') &&
+                !cls.includes('highlight') &&
+                !cls.includes('locked'))
+            .join('.');
+        if (classList) {
+            identifier += `.${classList}`;
+        }
+    }
+
+    // Add a hint about element content if it's short
+    const textContent = element.textContent?.trim().substring(0, 20);
+    if (textContent && textContent.length > 0) {
+        identifier += ` "${textContent}${textContent.length > 20 ? '...' : ''}"`;
+    }
+
+    return identifier;
+}
+
 // ===================================================================
 // 4. UI COMPONENT FUNCTIONS
 // ===================================================================
@@ -845,6 +874,23 @@ function getLineHeight(element) {
     element.removeChild(tempDiv);
 
     return lineHeight;
+}
+
+// Helper to update the file tree header with view type
+function updateFileTreeHeader(title) {
+    if (elements.fileTreePanel) {
+        const headerSection = elements.fileTreePanel.querySelector('.file-tree-header');
+        if (headerSection) {
+            const titleDiv = headerSection.querySelector(`.${CONSTANTS.CLASSES.FILE_TREE_TITLE}`);
+            if (titleDiv) {
+                // Get view type label
+                const viewTypeLabel = state.viewMode === 'domhierarchy' ? 'composite' : 'filepath';
+
+                // Update the title with the view type label
+                titleDiv.innerHTML = `${title} <span style="font-size: 0.8em; color: #FD971F; margin-left: 8px;">[${viewTypeLabel}]</span>`;
+            }
+        }
+    }
 }
 
 // ===================================================================
@@ -1219,6 +1265,291 @@ function buildFileTree(filePathMap) {
     return root;
 }
 
+// Build a DOM hierarchy tree for the locked element
+function buildDomHierarchyTree(lockedElement) {
+    // Store the result
+    const hierarchyTree = {};
+
+    // Start with the locked element
+    let currentElement = lockedElement;
+    let path = [];
+
+    logger.log('info', 'Building DOM hierarchy tree for locked element');
+
+    // Traverse up the DOM tree to collect all elements with data-source-file
+    while (currentElement && currentElement !== document.body) {
+        // Check if current element has source file data
+        const sourceFile = currentElement.getAttribute('data-source-file');
+        const sourceLine = currentElement.getAttribute('data-source-line');
+
+        if (sourceFile && sourceLine) {
+            // Create a unique identifier for this element
+            const elementId = getElementIdentifier(currentElement);
+
+            // Add to our path (processing from bottom up)
+            path.unshift({
+                element: currentElement,
+                id: elementId,
+                sourceFile: sourceFile,
+                sourceLine: sourceLine
+            });
+
+            logger.log('debug', `Added element to hierarchy: ${elementId} (${sourceFile}:${sourceLine})`);
+        }
+
+        // Move up to parent
+        currentElement = currentElement.parentElement;
+    }
+
+    // Now construct the tree structure
+    if (path.length > 0) {
+        // Start with the root
+        let current = hierarchyTree;
+
+        // Process each level
+        for (let i = 0; i < path.length; i++) {
+            const item = path[i];
+            const isLeaf = (i === path.length - 1);
+
+            // Create the node for this level
+            const nodeName = isLeaf ?
+                `${item.id}` :
+                `${item.id}`;
+
+            if (isLeaf) {
+                // This is our locked element - the leaf
+                current[nodeName] = {
+                    _isFile: true,
+                    _path: item.sourceFile,
+                    _lines: [item.sourceLine],
+                    _element: item.element,  // Store reference to the actual DOM element
+                    _isSelectedElement: true
+                };
+            } else {
+                // This is a container
+                if (!current[nodeName]) {
+                    current[nodeName] = {
+                        _isDir: true,
+                        _children: {},
+                        _path: item.sourceFile,
+                        _sourceLine: item.sourceLine,
+                        _element: item.element  // Store reference to the actual DOM element
+                    };
+                }
+                current = current[nodeName]._children;
+            }
+        }
+    } else {
+        // If we couldn't find any hierarchy, create a simple entry for the locked element
+        const sourceFile = lockedElement.getAttribute('data-source-file');
+        const sourceLine = lockedElement.getAttribute('data-source-line');
+        const elementId = getElementIdentifier(lockedElement);
+
+        if (sourceFile && sourceLine) {
+            hierarchyTree[elementId] = {
+                _isFile: true,
+                _path: sourceFile,
+                _lines: [sourceLine],
+                _element: lockedElement,
+                _isSelectedElement: true
+            };
+        }
+    }
+
+    return hierarchyTree;
+}
+
+// Switch to DOM hierarchy view
+function switchToDomHierarchyView(lockedElement) {
+    logger.log('info', '=== SWITCHING TO DOM HIERARCHY VIEW ===');
+    logger.log('debug', `Locked element: ${lockedElement ? lockedElement.tagName : 'none'}`);
+
+    if (!lockedElement) {
+        logger.log('error', 'Cannot switch to hierarchy view: No locked element provided');
+        return;
+    }
+
+    // Check if element has source data
+    const sourceFile = lockedElement.getAttribute('data-source-file');
+    const sourceLine = lockedElement.getAttribute('data-source-line');
+
+    if (!sourceFile || !sourceLine) {
+        logger.log('error', `Element lacks source data - file: ${sourceFile}, line: ${sourceLine}`);
+        return;
+    }
+
+    // Save the current file tree if not already saved
+    if (!state.originalFileTree || Object.keys(state.originalFileTree).length === 0) {
+        logger.log('info', 'Saving original file tree');
+        try {
+            state.originalFileTree = JSON.parse(JSON.stringify(state.fileTree));
+            logger.log('debug', `Original tree saved with ${Object.keys(state.originalFileTree).length} root nodes`);
+        } catch (error) {
+            logger.log('error', `Error saving original tree: ${error.message}`);
+            // Create empty object as fallback
+            state.originalFileTree = {};
+        }
+    }
+
+    // Build new hierarchy tree
+    logger.log('info', 'Building DOM hierarchy tree');
+    try {
+        state.fileTree = buildDomHierarchyTree(lockedElement);
+        logger.log('debug', `Hierarchy tree built with ${Object.keys(state.fileTree).length} root nodes`);
+    } catch (error) {
+        logger.log('error', `Error building hierarchy tree: ${error.message}`);
+        // Keep original tree as fallback
+        state.fileTree = state.originalFileTree || {};
+        return;
+    }
+
+    // Update view mode
+    state.viewMode = 'domhierarchy';
+
+    // Update panel header to indicate we're in hierarchy view
+    try {
+        updateFileTreeHeader('DOM Hierarchy View');
+        logger.log('debug', 'Updated file tree header');
+    } catch (error) {
+        logger.log('error', `Error updating header: ${error.message}`);
+    }
+
+    // Re-render the tree with the new structure
+    try {
+        logger.log('info', 'Rendering hierarchy tree');
+        renderFileTree();
+        logger.log('info', 'DOM hierarchy view switch complete');
+    } catch (error) {
+        logger.log('error', `Error rendering hierarchy tree: ${error.message}`);
+    }
+}
+
+// Switch back to regular file tree view
+function switchToFileTreeView() {
+    logger.log('info', '=== SWITCHING BACK TO FILE TREE VIEW ===');
+
+    // Restore the original file tree if we have one
+    if (state.originalFileTree && Object.keys(state.originalFileTree).length > 0) {
+        logger.log('info', 'Restoring original file tree');
+        try {
+            state.fileTree = state.originalFileTree;
+            state.originalFileTree = {};
+            logger.log('debug', `Restored tree with ${Object.keys(state.fileTree).length} root nodes`);
+        } catch (error) {
+            logger.log('error', `Error restoring original tree: ${error.message}`);
+            // Fallback to scanning if restoration fails
+            scanForSourceFiles();
+        }
+    } else {
+        // If for some reason we don't have the original tree, rescan
+        logger.log('info', 'No original tree found, rescanning for files');
+        scanForSourceFiles();
+    }
+
+    // Update view mode
+    state.viewMode = 'filetree';
+
+    // Update panel header
+    try {
+        updateFileTreeHeader('Web Page Source Files');
+        logger.log('debug', 'Updated file tree header for file tree view');
+    } catch (error) {
+        logger.log('error', `Error updating header: ${error.message}`);
+    }
+
+    // Re-render the tree
+    try {
+        logger.log('info', 'Rendering file tree');
+        renderFileTree();
+        logger.log('info', 'File tree view switch complete');
+    } catch (error) {
+        logger.log('error', `Error rendering file tree: ${error.message}`);
+    }
+}
+
+// Render the file tree
+function renderFileTree() {
+    if (!elements.fileTreePanel) {
+        logger.log('error', 'File tree panel not initialized');
+        return;
+    }
+
+    logger.log('info', `Rendering file tree in ${state.viewMode} mode`);
+
+    // Clear previous content
+    elements.fileTreePanel.innerHTML = '';
+
+    // Create header section (fixed at top)
+    const headerSection = domUtils.createElement('div', {
+        classes: ['file-tree-header']
+    });
+
+    // Create title with view type label
+    const viewTypeLabel = state.viewMode === 'domhierarchy' ? 'composite' : 'filepath';
+    const titleDiv = domUtils.createElement('div', {
+        classes: [CONSTANTS.CLASSES.FILE_TREE_TITLE],
+        innerHTML: `Web Page Source Files <span style="font-size: 0.8em; color: #FD971F; margin-left: 8px;">[${viewTypeLabel}]</span>`
+    });
+    headerSection.appendChild(titleDiv);
+
+    // Add a refresh button
+    const refreshButton = domUtils.createElement('button', {
+        classes: [CONSTANTS.CLASSES.FILE_TREE_REFRESH],
+        textContent: 'Refresh',
+        eventListeners: {
+            click: function() {
+                logger.log('info', 'Manual refresh requested');
+                if (state.viewMode === 'domhierarchy' && state.lockedElement) {
+                    // In composite view, refresh means rebuilding the hierarchy
+                    switchToDomHierarchyView(state.lockedElement);
+                } else {
+                    // In file tree view, refresh means rescanning
+                    scanForSourceFiles();
+                }
+            }
+        }
+    });
+    headerSection.appendChild(refreshButton);
+
+    // Add header to panel
+    elements.fileTreePanel.appendChild(headerSection);
+
+    // Create scrollable content section
+    const contentSection = domUtils.createElement('div', {
+        classes: ['file-tree-content'],
+        styles: {
+            'overflow-y': 'auto',
+            'max-height': `calc(100% - ${CONSTANTS.SIZES.HEADER_HEIGHT}px)`,
+            'box-sizing': 'border-box'
+        }
+    });
+
+    // Check if file tree is empty
+    if (!state.fileTree || Object.keys(state.fileTree).length === 0) {
+        const emptyMessage = domUtils.createElement('div', {
+            styles: { color: '#F92672', padding: '10px' },
+            textContent: state.viewMode === 'domhierarchy' ?
+                'No DOM hierarchy found for locked element' :
+                'No source files found'
+        });
+        contentSection.appendChild(emptyMessage);
+
+        logger.log('info', 'No files in the tree to render');
+    } else {
+        const treeRoot = document.createElement('div');
+        renderTreeNode(treeRoot, state.fileTree, 0);
+        contentSection.appendChild(treeRoot);
+
+        logger.log('info', `Tree rendering complete in ${state.viewMode} mode`);
+    }
+
+    // Add content section to panel
+    elements.fileTreePanel.appendChild(contentSection);
+
+    // Log scrollable container info for debugging
+    logger.log('debug', `File tree content height: ${contentSection.scrollHeight}, visible height: ${contentSection.clientHeight}`);
+}
+
 // Render a single node in the tree
 function renderTreeNode(container, node, level) {
     // Debug what we're rendering
@@ -1267,11 +1598,79 @@ function renderTreeNode(container, node, level) {
             const folderSpan = domUtils.createElement('span', {
                 classes: [CONSTANTS.CLASSES.TREE_FOLDER],
                 textContent: key,
-                attributes: { 'data-path': nodeInfo._path || key }
+                attributes: {
+                    'data-path': nodeInfo._path || key,
+                    'data-source-line': nodeInfo._sourceLine || '1' // Add source line info for folders
+                }
             });
             nodeElement.appendChild(folderSpan);
 
+            // If we're in DOM hierarchy view and this is a parent element with source info,
+            // add the source file and line as a hint
+            if (state.viewMode === 'domhierarchy' && nodeInfo._path && nodeInfo._sourceLine) {
+                const sourceInfo = domUtils.createElement('span', {
+                    styles: {
+                        color: '#75715E',
+                        fontSize: '0.8em',
+                        marginLeft: '5px'
+                    },
+                    textContent: `(${nodeInfo._path}:${nodeInfo._sourceLine})`
+                });
+                nodeElement.appendChild(sourceInfo);
+            }
+
             container.appendChild(nodeElement);
+
+            // In composite view, make the folder node clickable like a file
+            if (state.viewMode === 'domhierarchy' && nodeInfo._path) {
+                nodeElement.style.cursor = 'pointer';
+
+                // Handle folder click in composite view similar to file click
+                nodeElement.addEventListener('click', async function(e) {
+                    // Don't handle click if it was on the expand icon
+                    if (e.target === expandIcon) return;
+
+                    try {
+                        logger.log('info', `Folder clicked in composite view: ${nodeInfo._path}`);
+
+                        if (nodeInfo._element) {
+                            // First clear all highlights
+                            clearAllHighlights();
+
+                            // Highlight the DOM element with orange border
+                            nodeInfo._element.classList.add(CONSTANTS.CLASSES.FILE_LOCKED_HIGHLIGHT);
+
+                            // Scroll the element into view
+                            nodeInfo._element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                            // Load source code
+                            const fileContent = await fetchSourceCode(nodeInfo._path);
+                            if (fileContent) {
+                                const elementInfo = {
+                                    sourceFile: nodeInfo._path,
+                                    sourceLine: nodeInfo._sourceLine || '1'
+                                };
+
+                                // Lock the current file
+                                state.isLocked = true;
+                                state.lockedFile = nodeInfo._path;
+                                state.elementHighlighting = false;
+
+                                // Update bottom panel with source code
+                                updateBottomPanel(elementInfo, fileContent);
+
+                                // Select this file in the tree
+                                highlightTreeFile(nodeInfo._path);
+
+                                // Highlight all page elements that come from this file
+                                highlightPageElementsByFile(nodeInfo._path, elementInfo.sourceLine);
+                            }
+                        }
+                    } catch (error) {
+                        logger.log('error', `Error handling folder click: ${error.message}`);
+                    }
+                });
+            }
 
             // Create container for children
             const childContainer = domUtils.createElement('div', {
@@ -1289,75 +1688,121 @@ function renderTreeNode(container, node, level) {
             });
             nodeElement.appendChild(iconSpace);
 
-            // Add file icon and name
+            // Add file icon and name - highlight if it's the selected element in hierarchy view
             const fileSpan = domUtils.createElement('span', {
-                classes: [CONSTANTS.CLASSES.TREE_FILE],
+                classes: [
+                    CONSTANTS.CLASSES.TREE_FILE,
+                    // Highlight selected element in hierarchy view
+                    ...(nodeInfo._isSelectedElement ? [CONSTANTS.CLASSES.TREE_FILE_SELECTED] : [])
+                ],
                 textContent: key,
                 attributes: {
                     'title': nodeInfo._path,
                     'data-path': nodeInfo._path,
-                    'data-filename': key
+                    'data-filename': nodeInfo._path.split('/').pop()
                 }
             });
             nodeElement.appendChild(fileSpan);
 
             // Add line numbers as a small hint
             if (nodeInfo._lines && nodeInfo._lines.length > 0) {
+                const linesText = state.viewMode === 'domhierarchy' ?
+                    `(${nodeInfo._path}:${nodeInfo._lines[0]})` :
+                    `(${nodeInfo._lines.length} line${nodeInfo._lines.length > 1 ? 's' : ''})`;
+
                 const linesSpan = domUtils.createElement('span', {
                     styles: {
                         color: '#75715E',
                         fontSize: '0.8em',
                         marginLeft: '5px'
                     },
-                    textContent: `(${nodeInfo._lines.length} line${nodeInfo._lines.length > 1 ? 's' : ''})`
+                    textContent: linesText
                 });
                 nodeElement.appendChild(linesSpan);
             }
 
-            // Handle file click event
+            // Handle file click event - behavior differs between view modes
             nodeElement.addEventListener('click', async function() {
                 try {
-                    // If this file is already locked, unlock it
-                    if (state.lockedFile === nodeInfo._path && !state.elementHighlighting) {
-                        logger.log('info', `Unlocking file: ${nodeInfo._path}`);
-                        state.isLocked = false;
-                        state.lockedFile = null;
-                        state.elementHighlighting = true;
+                    if (state.viewMode === 'domhierarchy' && nodeInfo._element) {
+                        // In DOM hierarchy view, clicking an element should highlight it on the page
 
-                        // Clear all highlights
+                        // First clear all highlights
                         clearAllHighlights();
 
-                        // Remove the lock icon
-                        removeAllLockIcons();
+                        // Highlight the DOM element
+                        if (nodeInfo._isSelectedElement) {
+                            // For the locked element, keep it with red border
+                            nodeInfo._element.classList.add(CONSTANTS.CLASSES.LOCKED_HIGHLIGHT);
+                        } else {
+                            // For other elements, use orange border like file-based selection
+                            nodeInfo._element.classList.add(CONSTANTS.CLASSES.FILE_LOCKED_HIGHLIGHT);
+                        }
 
-                        // Still keep the file selected in the tree
-                        highlightTreeFile(nodeInfo._path);
+                        // Scroll the element into view
+                        nodeInfo._element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                        return;
-                    }
+                        // Load its source code
+                        const fileContent = await fetchSourceCode(nodeInfo._path);
+                        if (fileContent) {
+                            const elementInfo = {
+                                sourceFile: nodeInfo._path,
+                                sourceLine: nodeInfo._lines ? nodeInfo._lines[0] : (nodeInfo._sourceLine || '1')
+                            };
 
-                    const sourceCodeUrl = `${CONSTANTS.URLS.BASE_API_URL}${nodeInfo._path}`;
-                    logger.log('info', `Fetching source code from: ${sourceCodeUrl}`);
-                    const fileContent = await fetchSourceCode(nodeInfo._path);
+                            // Lock the current file
+                            state.lockedFile = nodeInfo._path;
+                            state.elementHighlighting = false;
 
-                    if (fileContent) {
-                        const elementInfo = {
-                            sourceFile: nodeInfo._path,
-                            sourceLine: nodeInfo._lines[0] || '1' // Default to first line
-                        };
-                        updateBottomPanel(elementInfo, fileContent);
+                            updateBottomPanel(elementInfo, fileContent);
 
-                        // Lock the current file
-                        state.isLocked = true;
-                        state.lockedFile = nodeInfo._path;
-                        state.elementHighlighting = false;
+                            // Select this file in the tree
+                            highlightTreeFile(nodeInfo._path);
+                        }
+                    } else {
+                        // Standard file tree behavior (same as original code)
+                        // If this file is already locked, unlock it
+                        if (state.lockedFile === nodeInfo._path && !state.elementHighlighting) {
+                            logger.log('info', `Unlocking file: ${nodeInfo._path}`);
+                            state.isLocked = false;
+                            state.lockedFile = null;
+                            state.elementHighlighting = true;
 
-                        // Select this file in the tree (adds lock icon)
-                        highlightTreeFile(nodeInfo._path);
+                            // Clear all highlights
+                            clearAllHighlights();
 
-                        // Highlight all page elements that come from this file
-                        // and specifically highlight the element matching our line number
-                        highlightPageElementsByFile(nodeInfo._path, elementInfo.sourceLine);
+                            // Remove the lock icon
+                            removeAllLockIcons();
+
+                            // Still keep the file selected in the tree
+                            highlightTreeFile(nodeInfo._path);
+
+                            return;
+                        }
+
+                        const sourceCodeUrl = `${CONSTANTS.URLS.BASE_API_URL}${nodeInfo._path}`;
+                        logger.log('info', `Fetching source code from: ${sourceCodeUrl}`);
+                        const fileContent = await fetchSourceCode(nodeInfo._path);
+
+                        if (fileContent) {
+                            const elementInfo = {
+                                sourceFile: nodeInfo._path,
+                                sourceLine: nodeInfo._lines[0] || '1' // Default to first line
+                            };
+                            updateBottomPanel(elementInfo, fileContent);
+
+                            // Lock the current file
+                            state.isLocked = true;
+                            state.lockedFile = nodeInfo._path;
+                            state.elementHighlighting = false;
+
+                            // Select this file in the tree (adds lock icon)
+                            highlightTreeFile(nodeInfo._path);
+
+                            // Highlight all page elements that come from this file
+                            // and specifically highlight the element matching our line number
+                            highlightPageElementsByFile(nodeInfo._path, elementInfo.sourceLine);
+                        }
                     }
                 } catch (error) {
                     logger.log('error', `Error loading file from tree: ${error.message}`);
@@ -1367,79 +1812,6 @@ function renderTreeNode(container, node, level) {
             container.appendChild(nodeElement);
         }
     }
-}
-
-// Render the file tree
-function renderFileTree() {
-    if (!elements.fileTreePanel) {
-        logger.log('error', 'File tree panel not initialized');
-        return;
-    }
-
-    logger.log('info', 'Rendering file tree');
-
-    // Clear previous content
-    elements.fileTreePanel.innerHTML = '';
-
-    // Create header section (fixed at top)
-    const headerSection = domUtils.createElement('div', {
-        classes: ['file-tree-header']
-    });
-
-    const titleDiv = domUtils.createElement('div', {
-        classes: [CONSTANTS.CLASSES.FILE_TREE_TITLE],
-        textContent: 'Web Page Source Files'
-    });
-    headerSection.appendChild(titleDiv);
-
-    // Add a refresh button
-    const refreshButton = domUtils.createElement('button', {
-        classes: [CONSTANTS.CLASSES.FILE_TREE_REFRESH],
-        textContent: 'Refresh',
-        eventListeners: {
-            click: function() {
-                logger.log('info', 'Manual refresh requested');
-                scanForSourceFiles();
-            }
-        }
-    });
-    headerSection.appendChild(refreshButton);
-
-    // Add header to panel
-    elements.fileTreePanel.appendChild(headerSection);
-
-    // Create scrollable content section
-    const contentSection = domUtils.createElement('div', {
-        classes: ['file-tree-content'],
-        styles: {
-            'overflow-y': 'auto',
-            'max-height': `calc(100% - ${CONSTANTS.SIZES.HEADER_HEIGHT}px)`,
-            'box-sizing': 'border-box'
-        }
-    });
-
-    // Check if file tree is empty
-    if (!state.fileTree || Object.keys(state.fileTree).length === 0) {
-        const emptyMessage = domUtils.createElement('div', {
-            styles: { color: '#F92672', padding: '10px' },
-            textContent: 'No source files found'
-        });
-        contentSection.appendChild(emptyMessage);
-
-        logger.log('info', 'No files in the tree to render');
-    } else {
-        const treeRoot = document.createElement('div');
-        renderTreeNode(treeRoot, state.fileTree, 0);
-        contentSection.appendChild(treeRoot);
-
-        logger.log('info', 'Tree rendering complete');
-    }
-
-    // Add content section to panel
-    elements.fileTreePanel.appendChild(contentSection);
-
-    // Log scrollable container info for debugging
-    logger.log('debug', `File tree content height: ${contentSection.scrollHeight}, visible height: ${contentSection.clientHeight}`);
 }
 
 // ===================================================================
@@ -1746,30 +2118,78 @@ function handleMouseUp() {
     state.isHorizontalResizing = false;
 }
 
-// Toggle lock state
+// Toggle lock state - Modified to handle DOM hierarchy view
 function toggleLock() {
+    const previousState = state.isLocked;
     state.isLocked = !state.isLocked;
-    logger.log('info', `Lock state: ${state.isLocked}`);
+    logger.log('info', `Lock state changed: ${previousState} → ${state.isLocked}`);
 
-    if (!state.isLocked) {
+    if (state.isLocked) {
+        // If we're locking, add red border to currently hovered element
+        if (state.elementHighlighting && !state.lockedFile) {
+            // Find the currently highlighted element
+            const highlightedElement = document.querySelector(`.${CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT}`);
+
+            logger.log('debug', `Found highlighted element: ${highlightedElement ? 'Yes' : 'No'}`);
+
+            if (highlightedElement) {
+                logger.log('debug', `Element tag: ${highlightedElement.tagName}, classes: ${highlightedElement.className}`);
+
+                // Check if element has source file data
+                const sourceFile = highlightedElement.getAttribute('data-source-file');
+                const sourceLine = highlightedElement.getAttribute('data-source-line');
+                logger.log('debug', `Element source info - file: ${sourceFile}, line: ${sourceLine}`);
+
+                // Remove green highlight and add red locked highlight
+                highlightedElement.classList.remove(CONSTANTS.CLASSES.EXTENSION_HIGHLIGHT);
+                highlightedElement.classList.add(CONSTANTS.CLASSES.LOCKED_HIGHLIGHT);
+
+                // Store reference to locked element
+                state.lockedElement = highlightedElement;
+                logger.log('info', 'Element locked with red border');
+
+                // Switch to DOM hierarchy view
+                logger.log('info', 'Calling switchToDomHierarchyView()');
+                switchToDomHierarchyView(highlightedElement);
+
+                // Log state after switching view
+                logger.log('debug', `After view switch - viewMode: ${state.viewMode}, fileTree keys: ${Object.keys(state.fileTree).length}`);
+            } else {
+                logger.log('warn', 'No highlighted element found to lock');
+            }
+        } else {
+            logger.log('debug', `Not in element highlighting mode or file is locked - elementHighlighting: ${state.elementHighlighting}, lockedFile: ${state.lockedFile}`);
+        }
+    } else {
         // If we're unlocking, remove all highlights
+        logger.log('info', 'Unlocking element, clearing highlights');
         clearAllHighlights();
         state.elementHighlighting = true;
         state.lockedFile = null;
+        state.lockedElement = null;
         removeAllLockIcons();
-    }
 
-    // Debug the file tree when toggling lock
-    if (state.isLocked) {
-        logger.log('debug', 'Current file tree keys:', Object.keys(state.fileTree));
+        // Switch back to file tree view
+        logger.log('info', 'Calling switchToFileTreeView()');
+        switchToFileTreeView();
+
+        // Log state after switching view
+        logger.log('debug', `After view switch back - viewMode: ${state.viewMode}, fileTree keys: ${Object.keys(state.fileTree).length}`);
     }
 }
 
-// Handle key press for lock and other keyboard shortcuts
+// Handle key press for lock and other keyboard shortcuts - Modified with debugging
 function handleKeyPress(e) {
+    // Debug log for key presses to verify key detection
+    logger.log('debug', `Key pressed: ${e.key} (code: ${e.code}, shift: ${e.shiftKey}, alt: ${e.altKey})`);
+
     // Toggle lock with 'l' or 'L' key
     if (e.key.toLowerCase() === CONSTANTS.KEYS.TOGGLE_LOCK.key.toLowerCase()) {
+        logger.log('info', `Lock key ('${CONSTANTS.KEYS.TOGGLE_LOCK.key}') detected, calling toggleLock()`);
         toggleLock();
+
+        // Add a debug message to check after toggleLock call
+        logger.log('debug', `After toggleLock - isLocked: ${state.isLocked}, viewMode: ${state.viewMode}`);
     }
 
     // Toggle extension with Alt+Shift+T
@@ -1778,10 +2198,13 @@ function handleKeyPress(e) {
     }
 }
 
-// Handle mouseover event
+// Handle mouseover event - Modified to prevent highlighting when locked
 async function handleMouseOver(e) {
     // If extension is disabled, exit
     if (!state.extensionEnabled) return;
+
+    // If we have a locked element, prevent new highlights
+    if (state.isLocked && state.lockedElement) return;
 
     // If we're in file-locked mode, ignore hover events
     if (state.lockedFile && !state.elementHighlighting) return;
@@ -1860,6 +2283,43 @@ function detachEventListeners() {
     state.eventListenersAttached = false;
 }
 
+// Direct test function for composite view
+function testCompositeView() {
+    logger.log('info', '=== TESTING COMPOSITE VIEW ===');
+
+    // Find a suitable element with data-source-file to use as our locked element
+    const sourceElements = document.querySelectorAll('[data-source-file]');
+
+    logger.log('info', `Found ${sourceElements.length} elements with data-source-file attributes`);
+
+    if (sourceElements.length > 0) {
+        const testElement = sourceElements[0];
+        logger.log('info', `Test element: ${testElement.tagName}, source file: ${testElement.getAttribute('data-source-file')}`);
+
+        // Set it as locked
+        state.isLocked = true;
+        state.lockedElement = testElement;
+        state.elementHighlighting = false;
+
+        // Apply locked highlight
+        testElement.classList.add(CONSTANTS.CLASSES.LOCKED_HIGHLIGHT);
+
+        // Switch to DOM hierarchy view
+        switchToDomHierarchyView(testElement);
+
+        // Scroll to the element to make it visible
+        testElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        return true;
+    } else {
+        logger.log('error', 'No elements with data-source-file found for testing');
+        return false;
+    }
+}
+
+// Add this to initializeExtension() or attach it to a global variable for testing
+window.testCompositeView = testCompositeView;
+
 // ===================================================================
 // 8. INITIALIZATION AND MAIN FUNCTIONALITY
 // ===================================================================
@@ -1924,7 +2384,9 @@ function cleanupExtension() {
             lastX: 0,
             eventListenersAttached: false,
             rightPanelWidth: CONSTANTS.SIZES.DEFAULT_RIGHT_PANEL_WIDTH,
-            fileTree: {}
+            fileTree: {},
+            viewMode: 'filetree',
+            originalFileTree: {}
         };
 
         // 6. Clear elements reference object
