@@ -1,0 +1,45 @@
+*DS_store
+.idea
+.vscode
+*.log
+
+# Dependencies
+/node_modules
+
+# Build output
+/dist
+
+# Yarn specific files (optional, but often ignored)
+yarn-error.log
+yarn-debug.log*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.* # For Yarn PnP if you ever use it
+
+# IDE / Editor specific files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw? # Vim swap files
+
+# OS generated files
+.DS_Store # macOS
+Thumbs.db # Windows
+ehthumbs.db # Windows
+
+# Log files
+*.log
+npm-debug.log*
+
+# Environment variables (if you use .env files)
+.env
+.env.local
+.env.*.local
+
+# Coverage directory
+coverage/

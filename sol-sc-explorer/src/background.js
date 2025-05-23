@@ -1,3 +1,6 @@
+// /repos/ocmui-devtools/sol-sc-explorer/src/background.js
+// (Content of your existing background.js file)
+
 // Cross-browser compatible background script for Firefox, Chrome and Arc
 console.log('Background script loaded');
 
@@ -43,19 +46,19 @@ function sendMessageToTab(tabId, message) {
         if (isFirefox) {
             browser.tabs.sendMessage(tabId, message).catch(err => {
                 // Ignore errors for Firefox - tab might not be ready
-                console.log(`Firefox: Error sending message to tab ${tabId}:`, err);
+                // console.log(`Firefox: Error sending message to tab ${tabId}:`, err.message);
             });
         } else {
             chrome.tabs.sendMessage(tabId, message, function(response) {
                 // Ignore errors for Chrome - tab might not be ready
                 if (chrome.runtime.lastError) {
-                    console.log(`Chrome: Error sending message to tab ${tabId}:`, chrome.runtime.lastError.message);
+                    // console.log(`Chrome: Error sending message to tab ${tabId}:`, chrome.runtime.lastError.message);
                 }
             });
         }
     } catch (err) {
         // Ignore generic errors - some tabs may not have content scripts
-        console.log(`Error sending message to tab ${tabId}:`, err);
+        // console.log(`Error sending message to tab ${tabId}:`, err.message);
     }
 }
 
@@ -64,19 +67,27 @@ function broadcastStateToAllTabs() {
     if (isFirefox) {
         browser.tabs.query({}).then(tabs => {
             for (let tab of tabs) {
-                sendMessageToTab(tab.id, {
-                    action: "toggleExtensionPlugin",
-                    checked: extensionEnabled
-                });
+                if (tab.id) {
+                   sendMessageToTab(tab.id, {
+                        action: "toggleExtensionPlugin",
+                        checked: extensionEnabled
+                    });
+                }
             }
-        });
+        }).catch(err => console.log("Error querying tabs in Firefox:", err.message));
     } else {
         chrome.tabs.query({}, function(tabs) {
+            if (chrome.runtime.lastError) {
+                console.log("Error querying tabs in Chrome:", chrome.runtime.lastError.message);
+                return;
+            }
             for (let tab of tabs) {
-                sendMessageToTab(tab.id, {
-                    action: "toggleExtensionPlugin",
-                    checked: extensionEnabled
-                });
+                if (tab.id) {
+                    sendMessageToTab(tab.id, {
+                        action: "toggleExtensionPlugin",
+                        checked: extensionEnabled
+                    });
+                }
             }
         });
     }
@@ -110,7 +121,7 @@ runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (!request || typeof request !== 'object') {
         console.error('Received invalid message format:', request);
         sendResponse({error: "Invalid message format"});
-        return false;
+        return true; // Indicate async response for older Chrome, or just return for newer.
     }
 
     // Always respond to pings immediately
@@ -138,17 +149,17 @@ runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.action === "cleanup") {
         performCleanup();
         sendResponse({status: "Cleanup complete"});
-        return false;
+        return false; // No async response needed
     }
 
     // Default response for unknown actions
-    sendResponse({error: "Unknown action"});
-    return false; // No async response for other messages
+    sendResponse({error: "Unknown action: " + request.action});
+    return true; // Indicate async response for older Chrome, or just return for newer.
 });
 
 // When a tab updates, send current state
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if (changeInfo.status === 'complete') {
+    if (changeInfo.status === 'complete' && tab.url && (tab.url.startsWith('http://') || tab.url.startsWith('https://'))) {
         // Wait a moment for content scripts to initialize
         setTimeout(function() {
             sendMessageToTab(tabId, {
