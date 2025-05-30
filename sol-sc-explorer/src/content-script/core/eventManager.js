@@ -4,18 +4,19 @@ import { state, elements, updateState } from '../state.js';
 import { logger } from '../utils/logger.js';
 import { fetchSourceCode } from './sourceDiscovery.js';
 import { updateSourceCodePanel } from '../ui/panelController.js';
+import { highlightTreeFileNode } from '../features/fileTree/fileTreeInteraction.js';
 
-console.log('[eventManager.js] Attempting to import from pageHighlighter.js...');
+// console.log('[eventManager.js] Attempting to import from pageHighlighter.js...');
 import * as PageHighlighterModule from '../ui/pageHighlighter.js';
-console.log('[eventManager.js] Imported PageHighlighterModule:', PageHighlighterModule);
+// console.log('[eventManager.js] Imported PageHighlighterModule:', PageHighlighterModule);
 
 const clearAllPageHighlights = PageHighlighterModule.clearAllPageHighlights;
 const applyElementLockHighlight = PageHighlighterModule.applyElementLockHighlight;
 const applyElementHoverHighlight = PageHighlighterModule.applyElementHoverHighlight;
 const removeElementHoverHighlight = PageHighlighterModule.removeElementHoverHighlight;
 
-console.log('[eventManager.js] typeof clearAllPageHighlights after destructure:', typeof clearAllPageHighlights);
-console.log('[eventManager.js] typeof updateSourceCodePanel after import:', typeof updateSourceCodePanel);
+// console.log('[eventManager.js] typeof clearAllPageHighlights after destructure:', typeof clearAllPageHighlights);
+// console.log('[eventManager.js] typeof updateSourceCodePanel after import:', typeof updateSourceCodePanel);
 
 function handlePanelMouseMove(e) {
     if (state.isResizing && elements.panel && elements.rightPanelContainer && elements.resizeHandle && elements.horizontalResizeHandle) {
@@ -44,27 +45,26 @@ function handlePanelMouseMove(e) {
 
 function handlePanelMouseUp() {
     if (state.isResizing || state.isHorizontalResizing) {
-        logger.log('debug', 'EventManager: Panel resize mouseup.');
+        // logger.log('debug', 'EventManager: Panel resize mouseup.');
     }
     updateState({ isResizing: false, isHorizontalResizing: false });
 }
 
 function setupResizeListeners() {
-    logger.log('debug', 'EventManager: Setting up window resize listeners.');
+    // logger.log('debug', 'EventManager: Setting up window resize listeners.');
     window.addEventListener('mousemove', handlePanelMouseMove);
     window.addEventListener('mouseup', handlePanelMouseUp);
 }
 
 function cleanupResizeListeners() {
-    logger.log('debug', 'EventManager: Cleaning up window resize listeners.');
+    // logger.log('debug', 'EventManager: Cleaning up window resize listeners.');
     window.removeEventListener('mousemove', handlePanelMouseMove);
     window.removeEventListener('mouseup', handlePanelMouseUp);
 }
 
 async function handlePageMouseOver(e) {
-    logger.log('DEBUG_STATE', `EventManager - START OF handlePageMouseOver: elements.panel is ${elements.panel ? elements.panel.id : 'NULL'}`); // DEBUG_STATE
-
-    logger.log('debug', `EVENT_MGR_HOVER (0) - Entered. Target: ${e.target?.tagName || 'unknown'}, ID: ${e.target?.id || 'none'}, Class: ${e.target?.className || 'none'}`);
+    // logger.log('DEBUG_STATE', `EventManager - START OF handlePageMouseOver: elements.panel is ${elements.panel ? elements.panel.id : 'NULL'}`); // DEBUG_STATE
+    // logger.log('debug', `EVENT_MGR_HOVER (0) - Entered. Target: ${e.target?.tagName || 'unknown'}, ID: ${e.target?.id || 'none'}, Class: ${e.target?.className || 'none'}`);
 
     if (!state.extensionEnabled || state.isLocked) {
         return;
@@ -77,58 +77,73 @@ async function handlePageMouseOver(e) {
     const targetElement = e.target;
     const sourceFileAttr = targetElement.getAttribute('data-source-file');
     const sourceLineAttr = targetElement.getAttribute('data-source-line');
-    logger.log('debug', `EVENT_MGR_HOVER (1) - Checking attributes on ${targetElement.tagName}. data-source-file: [${sourceFileAttr}], data-source-line: [${sourceLineAttr}]`);
 
     if (sourceFileAttr && sourceLineAttr) {
-        const sourceFile = sourceFileAttr;
+        const pathFromAttribute = sourceFileAttr;
+        let normalizedPathForProcessing = sourceFileAttr;
+        if (typeof sourceFileAttr === 'string' && sourceFileAttr.startsWith('/')) {
+            normalizedPathForProcessing = sourceFileAttr.substring(1);
+        }
+        // logger.log('debug', `EVENT_MGR_HOVER (1.5) - Path from attribute: [${pathFromAttribute}], Normalized for processing: [${normalizedPathForProcessing}]`);
+
+        const sourceFile = normalizedPathForProcessing;
         const sourceLine = sourceLineAttr;
 
-        logger.log('info', `EVENT_MGR_HOVER (2) - Valid source attrs found: ${sourceFile}:${sourceLine}. CurrentHovered (before update): ${state.currentHoveredElement?.tagName || 'null'}`);
+        logger.log('info', `EVENT_MGR_HOVER: Hovering over element from [${sourceFile}:${sourceLine}]`);
         
         const processingElement = targetElement;
         updateState({ currentHoveredElement: processingElement, elementHighlighting: true });
 
-        if (typeof applyElementHoverHighlight === 'function') {
-            applyElementHoverHighlight(processingElement);
+        if (typeof PageHighlighterModule.applyElementHoverHighlight === 'function') {
+            PageHighlighterModule.applyElementHoverHighlight(processingElement);
         } else {
-            logger.log('error', 'EVENT_MGR_HOVER (2.1) - applyElementHoverHighlight IS NOT A FUNCTION.');
+            logger.log('error', 'EVENT_MGR_HOVER: applyElementHoverHighlight is not a function.');
         }
         
         try {
-            logger.log('info', `EVENT_MGR_HOVER (3) - TRY_BLOCK: Attempting fetch for ${sourceFile} (element: ${processingElement.tagName})`);
-            const fileContent = await fetchSourceCode(sourceFile);
-            logger.log('info', `EVENT_MGR_HOVER (4) - TRY_BLOCK: Fetch complete for ${sourceFile}. Content type: ${typeof fileContent}, length: ${fileContent?.length}. CurrentHovered (after await): ${state.currentHoveredElement?.tagName || 'null'}, ProcessingThisEvent: ${processingElement.tagName}`);
+            logger.log('info', `EVENT_MGR_HOVER: Fetching source for [${sourceFile}] (element: ${processingElement.tagName})`);
+            const fileContent = await fetchSourceCode(pathFromAttribute);
+            // logger.log('info', `EVENT_MGR_HOVER (4) - TRY_BLOCK: Fetch complete for path used: [${pathFromAttribute}]. Content type: ${typeof fileContent}, length: ${fileContent?.length}. CurrentHovered (after await): ${state.currentHoveredElement?.tagName || 'null'}, ProcessingThisEvent: ${processingElement.tagName}`);
 
-            if (state.currentHoveredElement !== processingElement || state.isLocked) {
-                logger.log('warn', `EVENT_MGR_HOVER (4.1) - Stale hover or locked. CurrentHovered: ${state.currentHoveredElement?.tagName || 'null'}, ProcessingThisEvent: ${processingElement.tagName}, isLocked: ${state.isLocked}. Aborting panel update for this old ${sourceFile} event.`);
+            if (state.isLocked) {
+                logger.log('warn', `EVENT_MGR_HOVER: Panel is locked. Aborting panel update for [${sourceFile}].`);
                 return; 
             }
 
             if (typeof fileContent === 'string') {
-                logger.log('info', `EVENT_MGR_HOVER (5) - TRY_BLOCK: fileContent is string. About to call updateSourceCodePanel for ${sourceFile}.`);
+                // logger.log('info', `EVENT_MGR_HOVER (5) - TRY_BLOCK: fileContent is string. About to call updateSourceCodePanel. Using sourceFile: [${sourceFile}].`);
                 if (typeof updateSourceCodePanel === 'function') {
-                    updateSourceCodePanel({ sourceFile, sourceLine }, fileContent);
-                    logger.log('info', `EVENT_MGR_HOVER (6) - TRY_BLOCK: updateSourceCodePanel CALLED for ${sourceFile}.`);
+                    updateSourceCodePanel({ sourceFile: pathFromAttribute, sourceLine }, fileContent);
+                    // logger.log('info', `EVENT_MGR_HOVER (6) - TRY_BLOCK: updateSourceCodePanel CALLED. Path used for panel: [${pathFromAttribute}].`);
+                    
+                    if (!elements.rightPanelContentArea) {
+                        logger.log('error', 'EVENT_MGR_HOVER: rightPanelContentArea is NULL before calling highlightTreeFileNode!');
+                    } else {
+                        // const displayStyle = window.getComputedStyle(elements.rightPanelContentArea).display;
+                        // logger.log('debug', `EVENT_MGR_HOVER (6.05) - rightPanelContentArea FOUND. ID: [${elements.rightPanelContentArea.id || 'none'}], Class: [${elements.rightPanelContentArea.className || 'none'}], Display: [${displayStyle}]`);
+                    }
+                    // logger.log('debug', `EVENT_MGR_HOVER (6.1) - Attempting to highlight file in tree. Passing normalized sourceFile: [${sourceFile}] to highlightTreeFileNode.`);
+                    highlightTreeFileNode(sourceFile, true);
                 } else { 
-                    logger.log('error', 'EVENT_MGR_HOVER (5.1) - updateSourceCodePanel IS NOT A FUNCTION (fileContent is string).'); 
+                    logger.log('error', 'EVENT_MGR_HOVER: updateSourceCodePanel is not a function (fileContent is string).'); 
                 }
             } else {
-                logger.log('warn', `EVENT_MGR_HOVER (7) - TRY_BLOCK: fileContent is NOT a string (type: ${typeof fileContent}) for ${sourceFile}. Updating panel with fetch error message.`);
+                logger.log('warn', `EVENT_MGR_HOVER: fileContent is NOT a string for [${pathFromAttribute}]. Updating panel with error.`);
                 if (typeof updateSourceCodePanel === 'function') {
-                    updateSourceCodePanel({ sourceFile, sourceLine }, `/* Could not load: ${sourceFile} (content type: ${typeof fileContent}) */`);
+                    updateSourceCodePanel({ sourceFile: pathFromAttribute, sourceLine }, `/* Could not load: ${pathFromAttribute} (content type: ${typeof fileContent}) */`);
                 } else { 
-                    logger.log('error', 'EVENT_MGR_HOVER (7.1) - updateSourceCodePanel IS NOT A FUNCTION (fileContent not string).'); 
+                    logger.log('error', 'EVENT_MGR_HOVER: updateSourceCodePanel is not a function (fileContent not string).'); 
                 }
             }
-            logger.log('info', `EVENT_MGR_HOVER (8) - TRY_BLOCK END for ${sourceFile}.`);
+            // logger.log('info', `EVENT_MGR_HOVER (8) - TRY_BLOCK END for path: [${sourceFile}].`);
         } catch (error) {
-            logger.log('error', `EVENT_MGR_HOVER (9) - CATCH_BLOCK: Error for ${sourceFile}: ${error.message}`);
-            console.error(`EVENT_MGR_HOVER: Full error object for ${sourceFile}:`, error);
+            logger.log('error', `EVENT_MGR_HOVER: CATCH_BLOCK Error for [${sourceFile}]: ${error.message}`);
+            console.error(`EVENT_MGR_HOVER: Full error object for path [${sourceFile}]:`, error);
             if (typeof updateSourceCodePanel === 'function') {
-                updateSourceCodePanel({ sourceFile, sourceLine }, `/* Exception loading source: ${error.message} */`);
+                updateSourceCodePanel({ sourceFile: pathFromAttribute, sourceLine }, `/* Exception loading source: ${error.message} */`);
             }
         }
-        logger.log('info', `EVENT_MGR_HOVER (10) - End of sourceFile/sourceLine block for ${sourceFile}.`);
+        // logger.log('info', `EVENT_MGR_HOVER (10) - End of sourceFile/sourceLine block for path: [${sourceFile}].`);
     }
 }
 
@@ -140,7 +155,7 @@ function handlePageMouseOut(e) {
     }
     const targetElement = e.target;
     if (state.currentHoveredElement === targetElement && !state.isLocked) { 
-        logger.log('debug', `EVENT_MGR_HOUT (1) - MouseOut from currentHoveredElement: ${targetElement.tagName}`);
+        // logger.log('debug', `EVENT_MGR_HOUT (1) - MouseOut from currentHoveredElement: ${targetElement.tagName}`);
         if (typeof removeElementHoverHighlight === 'function') {
             removeElementHoverHighlight(targetElement);
         }
@@ -150,7 +165,7 @@ function handlePageMouseOut(e) {
 
 function toggleElementLock() {
     const newLockState = !state.isLocked;
-    logger.log('info', `EventManager: 'L' key pressed. Attempting to toggle page element lock. Current isLocked: ${state.isLocked}`);
+    logger.log('info', `EventManager: Toggling page element lock. New state will be: ${newLockState ? 'LOCKED' : 'UNLOCKED'}`);
 
     if (newLockState) {
         if (state.currentHoveredElement && state.currentHoveredElement.getAttribute('data-source-file')) {
@@ -159,11 +174,11 @@ function toggleElementLock() {
                 lockedElement: state.currentHoveredElement,
                 elementHighlighting: false 
             });
-            logger.log('debug', `EventManager: L-Locking element: ${state.lockedElement?.tagName}`);
-            if (typeof removeElementHoverHighlight === 'function') removeElementHoverHighlight(state.lockedElement); else logger.log('error', "removeElementHoverHighlight not a function in toggleLock");
-            if (typeof applyElementLockHighlight === 'function') applyElementLockHighlight(state.lockedElement); else logger.log('error', "applyElementLockHighlight not a function in toggleLock");
+            // logger.log('debug', `EventManager: L-Locking element: ${state.lockedElement?.tagName}`);
+            if (typeof removeElementHoverHighlight === 'function') removeElementHoverHighlight(state.lockedElement); else logger.log('error', "EventManager: removeElementHoverHighlight not a function in toggleLock");
+            if (typeof applyElementLockHighlight === 'function') applyElementLockHighlight(state.lockedElement); else logger.log('error', "EventManager: applyElementLockHighlight not a function in toggleLock");
         } else {
-            logger.log('warn', 'EventManager: "L" Lock pressed to lock, but no valid element was hovered. No change to lock state.');
+            logger.log('warn', 'EventManager: Lock pressed to lock, but no valid element was hovered. No change to lock state.');
             return; 
         }
     } else { 
@@ -172,8 +187,8 @@ function toggleElementLock() {
             lockedElement: null,
             elementHighlighting: true, 
         });
-        logger.log('debug', 'EventManager: L-Unlocking page element.');
-        if (typeof clearAllPageHighlights === 'function') clearAllPageHighlights(); else logger.log('error', "clearAllPageHighlights not a function in toggleLock");
+        // logger.log('debug', 'EventManager: L-Unlocking page element.');
+        if (typeof clearAllPageHighlights === 'function') clearAllPageHighlights(); else logger.log('error', "EventManager: clearAllPageHighlights not a function in toggleLock");
     }
 }
 
@@ -192,7 +207,7 @@ function handlePageKeyPress(e) {
 
 export function attachCoreEventListeners() {
     if (state.eventListenersAttached) {
-        logger.log('debug', 'EventManager: Core event listeners already attached.');
+        // logger.log('debug', 'EventManager: Core event listeners already attached.');
         return;
     }
     logger.log('info', 'EventManager: Attaching core event listeners.');
@@ -201,12 +216,12 @@ export function attachCoreEventListeners() {
     document.body.addEventListener('mouseout', handlePageMouseOut);
     document.addEventListener('keydown', handlePageKeyPress);
     updateState({ eventListenersAttached: true });
-    logger.log('info', 'EventManager: Core event listeners attached.');
+    // logger.log('info', 'EventManager: Core event listeners attached.'); // Redundant with the one above
 }
 
 export function detachCoreEventListeners() {
     if (!state.eventListenersAttached) {
-        logger.log('debug', 'EventManager: Core event listeners already detached.');
+        // logger.log('debug', 'EventManager: Core event listeners already detached.');
         return;
     }
     logger.log('info', 'EventManager: Detaching core event listeners.');
@@ -215,5 +230,20 @@ export function detachCoreEventListeners() {
     document.body.removeEventListener('mouseout', handlePageMouseOut);
     document.removeEventListener('keydown', handlePageKeyPress);
     updateState({ eventListenersAttached: false });
-    logger.log('info', 'EventManager: Core event listeners detached.');
+    // logger.log('info', 'EventManager: Core event listeners detached.'); // Redundant with the one above
 }
+
+// Unused local functions - replaced by highlightTreeFileNode from fileTreeInteraction.js
+/*
+function highlightTreeFile(filePath) {
+    // ... (removed old function content)
+}
+
+function ensureFileVisible(fileElement) {
+    // ... (removed old function content)
+}
+
+function scrollElementToMiddle(element, container) {
+    // ... (removed old function content)
+}
+*/

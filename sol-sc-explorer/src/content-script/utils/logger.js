@@ -1,25 +1,35 @@
 // /repos/ocmui-devtools/sol-sc-explorer/src/content-script/utils/logger.js
 
+export const showDebugLogs = false; // Set to true for development, false for production/check-in
+
 // Centralized logging utility
 export const logger = {
-    // Log levels: error, warn, info, debug
-    logLevel: 'info', // Default, can be changed dynamically
+    logLevel: 'debug', // Default to debug; actual output controlled by showDebugLogs and this level
     levels: { error: 0, warn: 1, info: 2, debug: 3 },
 
     setLogLevel: function(level) {
         if (this.levels.hasOwnProperty(level)) {
             this.logLevel = level;
-            this.log('info', `Log level set to: ${level}`);
+            if (showDebugLogs && this.levels['info'] <= this.levels[this.logLevel]) {
+                console.log(`[SourceViewer][${new Date().toLocaleTimeString()}] Log level set to: ${level}`);
+            }
         } else {
-            this.log('warn', `Invalid log level: ${level}. Keeping current: ${this.logLevel}`);
+            if (showDebugLogs && this.levels['warn'] <= this.levels[this.logLevel]) {
+                console.warn(`[SourceViewer][${new Date().toLocaleTimeString()}] Invalid log level: ${level}. Keeping current: ${this.logLevel}`);
+            }
         }
     },
 
     log: function(level, message) {
+        if (!showDebugLogs) {
+            return; // Suppress ALL messages from this logger if showDebugLogs is false
+        }
+
+        // If showDebugLogs is true, proceed with normal leveled logging
         if (this.levels[level] <= this.levels[this.logLevel]) {
             const timestamp = new Date().toLocaleTimeString();
             let prefix = `[SourceViewer][${timestamp}]`;
-            if (level === 'debug' && this.logLevel === 'debug') prefix += '[Debug]'; // Make debug prefix conditional
+            if (level === 'debug' && this.logLevel === 'debug') prefix += '[Debug]';
 
             switch(level) {
                 case 'error':
@@ -32,8 +42,7 @@ export const logger = {
                     console.log(`${prefix} ${message}`);
                     break;
                 case 'debug':
-                    // Only log debug if explicitly set
-                    if (this.logLevel === 'debug') {
+                    if (this.logLevel === 'debug') { 
                         console.log(`${prefix} ${message}`);
                     }
                     break;

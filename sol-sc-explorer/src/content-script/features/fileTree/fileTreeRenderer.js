@@ -9,13 +9,12 @@ import * as PageHighlighterModule from '../../ui/pageHighlighter.js';
 import { highlightTreeFileNode, removeAllLockIconsFromTree, clearAllTreeNodeSelections } from './fileTreeInteraction.js';
 
 export async function renderFileTree() {
-    logger.log('DEBUG_STATE', `FileTreeRenderer - START OF renderFileTree: elements.panel is ${elements.panel ? elements.panel.id : 'NULL'}`);
     if (!elements.rightPanelContentArea) {
         logger.log('error', 'FileTreeRenderer: Right panel content area not found for rendering file tree.');
         return;
     }
     elements.rightPanelContentArea.innerHTML = '';
-    logger.log('info', `FileTreeRenderer: Rendering file tree content into tab area.`);
+    logger.log('info', `FileTreeRenderer: Rendering file tree.`);
     clearAllTreeNodeSelections();
     removeAllLockIconsFromTree();
 
@@ -30,7 +29,7 @@ export async function renderFileTree() {
         styles: { position: 'relative', top: 'auto', right: 'auto'},
         eventListeners: {
             click: async function() {
-                logger.log('info', 'FileTreeRenderer: File tree refresh button clicked.');
+                logger.log('info', 'FileTreeRenderer: File tree refresh clicked.');
                 const { scanForSourceFilesOnPage } = await import('../../core/sourceDiscovery.js');
                 scanForSourceFilesOnPage();
             }
@@ -58,11 +57,8 @@ export async function renderFileTree() {
     elements.rightPanelContentArea.appendChild(treeContentContainer);
 
     if (state.lockedFile && !state.elementHighlighting && state.isLocked && !state.lockedElement) {
-        logger.log('debug', `FileTreeRenderer: Re-applying lock and selection for "${state.lockedFile}" after re-render.`);
         highlightTreeFileNode(state.lockedFile, false);
     }
-    logger.log('info', `FileTreeRenderer: File tree tab content rendered.`);
-    logger.log('DEBUG_STATE', `FileTreeRenderer - END OF renderFileTree: elements.panel is ${elements.panel ? elements.panel.id : 'NULL'}`);
 }
 
 function renderStandardTree(container, nodeData, level) {
@@ -101,9 +97,9 @@ function renderStandardTree(container, nodeData, level) {
             container.appendChild(nodeElement);
 
             nodeElement.addEventListener('click', async () => {
-                logger.log('info', `FileTreeRenderer: File node clicked: ${nodeInfo._path}`);
+                logger.log('info', `FileTree: Clicked ${nodeInfo._isFile ? 'file' : 'folder'}: ${nodeInfo._path}`);
                 if (state.lockedFile === nodeInfo._path && state.isLocked && !state.lockedElement) {
-                    logger.log('info', `FileTreeRenderer: Unlocking file (deselecting): ${nodeInfo._path}`);
+                    logger.log('info', `FileTree: Unlocking file: ${nodeInfo._path}`);
                     updateState({ isLocked: false, lockedFile: null, elementHighlighting: true });
                     if (typeof PageHighlighterModule.clearAllPageHighlights === 'function') { PageHighlighterModule.clearAllPageHighlights(); }
                     removeAllLockIconsFromTree();
