@@ -55,6 +55,7 @@ export async function renderRightPanelContent() {
 }
 
 export function initializeMainPanels() {
+    // logger.log('debug', `PANEL_CTRL: initializeMainPanels called. elements.panel exists? ${elements.panel ? 'Yes' : 'No'}. In DOM? ${elements.panel && document.body.contains(elements.panel) ? 'Yes' : 'No'}`); // To be removed
     if (elements.panel && document.body.contains(elements.panel) &&
         elements.rightPanelContainer && document.body.contains(elements.rightPanelContainer)) {
         if (!elements.rightPanelContentArea && elements.rightPanelContainer) {
@@ -149,21 +150,26 @@ export function showAllPanels() {
     if (elements.rightPanelContainer) elements.rightPanelContainer.style.height = panelHeightStyle;
     if (elements.resizeHandle) elements.resizeHandle.style.bottom = panelHeightStyle;
     if (elements.horizontalResizeHandle) elements.horizontalResizeHandle.style.height = panelHeightStyle;
-
-    // Log computed styles after application
-    if (elements.panel && elements.rightPanelContainer) {
-        const panelComputed = window.getComputedStyle(elements.panel);
-        const rightPanelComputed = window.getComputedStyle(elements.rightPanelContainer);
-        logger.log('debug', `SHOW_PANELS Panel - display: ${panelComputed.display}, position: ${panelComputed.position}, left: ${panelComputed.left}, right: ${panelComputed.right}, width: ${panelComputed.width}, height: ${panelComputed.height}, z-index: ${panelComputed.zIndex}`);
-        logger.log('debug', `SHOW_PANELS RightPanel - display: ${rightPanelComputed.display}, position: ${rightPanelComputed.position}, left: ${rightPanelComputed.left}, right: ${rightPanelComputed.right}, width: ${rightPanelComputed.width}, height: ${rightPanelComputed.height}, z-index: ${rightPanelComputed.zIndex}`);
-    }
 }
 
 export function hideAllPanels() {
-    if (elements.panel) domUtils.setElementVisibility(elements.panel, false);
-    if (elements.rightPanelContainer) domUtils.setElementVisibility(elements.rightPanelContainer, false);
-    if (elements.resizeHandle) domUtils.setElementVisibility(elements.resizeHandle, false);
-    if (elements.horizontalResizeHandle) domUtils.setElementVisibility(elements.horizontalResizeHandle, false);
+    // logger.log('debug', `PANEL_CTRL: hideAllPanels called.`); // To be removed
+    if (elements.panel) {
+        // logger.log('debug', `PANEL_CTRL: Hiding panel with ID: ${elements.panel.id}`); // To be removed
+        domUtils.setElementVisibility(elements.panel, false);
+    }
+    if (elements.rightPanelContainer) {
+        // logger.log('debug', `PANEL_CTRL: Hiding rightPanelContainer with ID: ${elements.rightPanelContainer.id}`); // To be removed
+        domUtils.setElementVisibility(elements.rightPanelContainer, false);
+    }
+    if (elements.resizeHandle) {
+        // logger.log('debug', `PANEL_CTRL: Hiding resizeHandle with ID: ${elements.resizeHandle.id}`); // To be removed
+        domUtils.setElementVisibility(elements.resizeHandle, false);
+    }
+    if (elements.horizontalResizeHandle) {
+        // logger.log('debug', `PANEL_CTRL: Hiding horizontalResizeHandle with ID: ${elements.horizontalResizeHandle.id}`); // To be removed
+        domUtils.setElementVisibility(elements.horizontalResizeHandle, false);
+    }
 }
 
 function clearSearchHighlights() {

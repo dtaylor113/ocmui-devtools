@@ -84,14 +84,25 @@ export function initializeExtension() {
     logger.log('info', 'Core Initializer: Initializing extension...');
 
     try {
+        // logger.log('debug', 'INIT_CTRL: initializeExtension - Before injectCoreStyles'); // To be removed
         injectCoreStyles();
-        initializeMainPanels(); // This will log "PanelController: Initializing main UI panel elements."
+        // logger.log('debug', 'INIT_CTRL: initializeExtension - After injectCoreStyles, before initializeMainPanels'); // To be removed
+        initializeMainPanels(); 
+        // logger.log('debug', 'INIT_CTRL: initializeExtension - After initializeMainPanels, before loadStateFromStorage'); // To be removed
         browserCompat.setupMessageListeners(toggleExtensionPlugin);
         browserCompat.loadStateFromStorage(toggleExtensionPlugin);
-        setupNavigationListeners(); // This will log "Core Initializer: Navigation listeners set up."
+        setupNavigationListeners(); 
 
         updateState({ isInitialized: true });
-        logger.log('info', 'Core Initializer: Extension initialization sequence complete.');
+        logger.log('info', 'Core Initializer: Extension initialization sequence complete (isInitialized = true).');
+
+        // Safeguard: After all initialization steps, if the extension is supposed to be disabled,
+        // ensure any just-created panels are explicitly hidden.
+        if (!state.extensionEnabled) {
+            // logger.log('debug', 'INIT_CTRL: initializeExtension END - state is DISABLED. Explicitly calling hideAllPanels.'); // To be removed
+            hideAllPanels();
+        }
+
     } catch (error) {
         logger.log('error', `Core Initializer: Error during initialization: ${error.message}`);
         console.error(error);
@@ -103,30 +114,23 @@ export function toggleExtensionPlugin(isEnabled) {
 
     const alreadyInTargetState = state.extensionEnabled === isEnabled;
 
-    // If attempting to enable and not initialized, OR if state is being forced
     if (isEnabled && !state.isInitialized) {
         logger.log('info', 'Core Initializer: Enabling an uninitialized extension. Running initializeExtension first.');
-        initializeExtension(); // This will set state.isInitialized = true, inject styles, create panels.
+        initializeExtension(); 
     } else if (isEnabled && state.isInitialized) {
-        // If enabling an already initialized extension (e.g., it was hidden)
-        // Ensure panel DOM elements exist, as they might be removed by a previous cleanup without full re-init.
         if (!elements.panel || !elements.rightPanelContainer || !document.body.contains(elements.panel)) {
             logger.log('info', 'Core Initializer: Panel DOM elements missing for an initialized extension. Re-creating via initializeMainPanels.');
-            initializeMainPanels(); // This recreates DOM elements. Styles should persist from initial injectCoreStyles.
+            initializeMainPanels(); 
         }
     }
 
-    // Update the extensionEnabled state *after* potential initialization
     updateState({ extensionEnabled: Boolean(isEnabled) });
 
     if (alreadyInTargetState && state.isInitialized) {
-        // If it was already in the target state (e.g. true -> true) AND initialized,
-        // ensure visibility if enabled, then skip further redundant processing.
-        // This handles cases where toggle is called multiple times with the same value.
         if (state.extensionEnabled) {
             logger.log('debug', 'Core Initializer: Extension already enabled and initialized. Ensuring panels are visible.');
             showAllPanels();
-            attachCoreEventListeners(); // Ensure listeners are attached
+            attachCoreEventListeners(); 
         }
         return;
     }
@@ -134,6 +138,7 @@ export function toggleExtensionPlugin(isEnabled) {
     if (state.extensionEnabled) {
         // At this point, if we are enabling, panels and core styles should be correctly in place.
         logger.log('info', 'Core Initializer: Setting up UI for enabled extension.');
+        // logger.log('debug', `INIT_CTRL: toggleExtensionPlugin(true) - before showAllPanels. elements.panel in DOM? ${elements.panel && document.body.contains(elements.panel) ? 'Yes' : 'No'}`); // To be removed
 
         const currentPanelHeight = state.panelHeight || '50%';
         if (elements.panel) elements.panel.style.height = currentPanelHeight;
@@ -141,7 +146,7 @@ export function toggleExtensionPlugin(isEnabled) {
         if (elements.resizeHandle) elements.resizeHandle.style.bottom = currentPanelHeight;
         if (elements.horizontalResizeHandle) elements.horizontalResizeHandle.style.height = currentPanelHeight;
 
-        showAllPanels(); // Applies visibility and dimensions.
+        showAllPanels(); 
         attachCoreEventListeners();
 
         logger.log('info', 'Core Initializer: Extension enabled. Performing initial source file scans.');
@@ -151,12 +156,14 @@ export function toggleExtensionPlugin(isEnabled) {
     } else {
         // Only call cleanup if we are actually transitioning to a disabled state
         logger.log('info', 'Core Initializer: Disabling extension. Calling cleanupExtension.');
-        cleanupExtension(); // This will set state.isInitialized = false
+        // logger.log('debug', `INIT_CTRL: toggleExtensionPlugin(false) - before cleanup. elements.panel in DOM? ${elements.panel && document.body.contains(elements.panel) ? 'Yes' : 'No'}`); // To be removed
+        cleanupExtension(); 
     }
 }
 
 export function cleanupExtension() {
     logger.log('info', 'Core Initializer: Performing complete extension cleanup...');
+    // logger.log('debug', `INIT_CTRL: cleanupExtension START - elements.panel in DOM? ${elements.panel && document.body.contains(elements.panel) ? 'Yes' : 'No'}`); // To be removed
     try {
         detachCoreEventListeners();
         cleanupNavigationListeners();

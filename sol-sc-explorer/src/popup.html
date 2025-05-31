@@ -1,50 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Speed Of Light Source Code Explorer</title>
+    <title>SOL UI Explorer</title>
     <style>
         body {
             background-color: black; /* Black background */
             color: white; /* White text color */
             font-family: Arial, sans-serif; /* Clean, modern font */
             margin: 0;
-            padding: 10px;
-            width: 280px;
+            padding: 10px; /* Default padding */
+            padding-right: 20px; /* Added more padding to the right */
+            width: 290px; /* Slightly increased width to accommodate padding */
+            box-sizing: border-box; /* Ensure padding is included in width */
+            /* min-height: 320px; */ /* Optional: if explicit height needed */
         }
 
         .header {
             display: flex;
-            align-items: center;
-            margin-bottom: 15px;
+            align-items: flex-start;
+            margin-bottom: 10px; /* Reduced bottom margin */
         }
 
         .header img {
             height: 40px;
             margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .header-content {
+            display: flex;
+            flex-direction: column;
         }
 
         .header-text {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
             white-space: nowrap;
+            margin-bottom: 4px; /* Space between title and subtitle */
+        }
+        .header-text .highlight-sol {
+            color: #FF8C00; /* Orange for S.O.L. */
+        }
+        .header-subtitle {
+            font-size: 12px;
+            color: #ccc;
+            white-space: normal;
+            line-height: 1.4;
+            margin-bottom: 10px;
         }
 
-        label {
+        label { /* General label styling */
             margin: 10px;
             padding: 5px 10px;
             display: block;
+        }
+        
+        /* Specific label styling for checkbox container to override general label margin if needed */
+        .toggle-container > label {
+            margin: 0 0 0 8px;
+            padding: 0;
+            display: inline;
+            font-size: 12px;
         }
 
         .form-row {
             display: flex;
             align-items: center;
-            margin: 5px 10px;
+            margin: 8px 10px; /* Adjusted margin for form rows */
         }
 
         .form-row label {
             flex: 0 0 60px;
             text-align: right;
             margin-right: 10px;
+            padding: 0; /* Reset padding for form-row labels */
+            margin-top: 0; /* Reset margin for form-row labels */
+            margin-bottom: 0; /* Reset margin for form-row labels */
         }
 
         .form-row input, .form-row select {
@@ -71,30 +102,48 @@
         .toggle-container {
             display: flex;
             align-items: center;
-            margin: 10px;
-            padding: 5px;
+            margin: 15px 10px 5px 10px; /* Adjusted bottom margin */
+            padding: 5px 0; /* Adjusted padding */
         }
 
         .toggle-container input[type="checkbox"] {
-            margin-right: 8px;
+            margin-right: 0; /* Let the label's margin handle spacing */
             cursor: pointer;
+        }
+
+        .instructions-list {
+            font-size: 12px; /* Increased font size from 11px */
+            color: #bbb;
+            margin: 8px 10px 15px 30px; /* Adjusted top margin */
+            padding-left: 0;
+            list-style-position: outside;
+        }
+        .instructions-list li {
+            margin-bottom: 5px; /* Adjusted space between list items */
+        }
+
+        .footer-text {
+            font-size: 9px; /* Smaller font for footer */
+            color: #888; /* Dim color */
+            text-align: center;
+            margin-top: 15px; /* Space above footer */
+            padding-top: 5px;
+            border-top: 1px solid #333; /* Subtle separator */
         }
     </style>
 </head>
 <body>
 <div class="header">
     <img src="images/redHatBanner.png" alt="Red Hat Banner">
-    <div class="header-text">OCMUI Dev Team</div>
+    <div class="header-content">
+        <div class="header-text">
+            <span class="highlight-sol">S</span><span class="highlight-sol">O</span><span class="highlight-sol">L</span> UI Explorer
+        </div>
+        <div class="header-subtitle">
+            Instantly view UI React source code; at the speed of light by simply hovering over an HTML element
+        </div>
+    </div>
 </div>
-
-<div class="toggle-container">
-    <input type="checkbox" id="enabledCheckbox" checked>
-    <label for="enabledCheckbox">Enable Code Explorer</label>
-</div>
-
-<label>
-    Press L key to lock the green selection highlight
-</label>
 
 <div class="form-row">
     <label for="jiraInput">OCMUI-</label>
@@ -104,10 +153,24 @@
 </div>
 
 <div class="form-row">
-    <label for="mrInput">MR</label>
-    <input type="text" id="mrInput" maxlength="5" list="mrDropdown">
-    <datalist id="mrDropdown"></datalist>
-    <button id="mrGoButton">Go</button>
+    <label for="prInput">PR</label>
+    <input type="text" id="prInput" maxlength="5" list="prDropdown">
+    <datalist id="prDropdown"></datalist>
+    <button id="prGoButton">Go</button>
+</div>
+
+<div class="toggle-container">
+    <input type="checkbox" id="enabledCheckbox" checked>
+    <label for="enabledCheckbox">Enable Code Explorer</label>
+</div>
+
+<ul class="instructions-list">
+    <li>Press L key to lock the green hover highlight.</li>
+    <li>Click a filename in the File Tree to highlight its page elements.</li>
+</ul>
+
+<div class="footer-text">
+    Developed by the RedHat OCM UI team
 </div>
 
 <script src="popup.js"></script>

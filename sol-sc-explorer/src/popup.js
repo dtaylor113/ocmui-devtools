@@ -2,22 +2,24 @@
 // (Content of your existing popup.js file)
 
 // Simplified popup script - works directly with storage when needed
-console.log('Popup script loaded');
+// console.log('Popup script loaded'); // Keeping this commented as it was originally
+
+const popupDebugMode = false; // Set to true to enable specific debug logs below
 
 // Constants
 const ENABLE_STORAGE_KEY = 'extensionEnabled';
 const MAX_IDS = 10;
 const JIRA_STORAGE_KEY = 'recentJiraIds';
-const MR_STORAGE_KEY = 'recentMrIds';
+const PR_STORAGE_KEY = 'recentPrIds';
 
 // Elements
 let enabledCheckbox;
 let jiraInput;
 let jiraGoButton;
 let jiraDropdown;
-let mrInput;
-let mrGoButton;
-let mrDropdown;
+let prInput;
+let prGoButton;
+let prDropdown;
 let statusText;
 
 // Initialize when DOM is loaded
@@ -29,9 +31,9 @@ document.addEventListener('DOMContentLoaded', function() {
   jiraInput = document.getElementById('jiraInput');
   jiraGoButton = document.getElementById('jiraGoButton');
   jiraDropdown = document.getElementById('jiraDropdown');
-  mrInput = document.getElementById('mrInput');
-  mrGoButton = document.getElementById('mrGoButton');
-  mrDropdown = document.getElementById('mrDropdown');
+  prInput = document.getElementById('prInput');
+  prGoButton = document.getElementById('prGoButton');
+  prDropdown = document.getElementById('prDropdown');
 
   // Create status text element
   statusText = document.createElement('div');
@@ -47,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load stored IDs
   loadStoredIds(JIRA_STORAGE_KEY, jiraDropdown);
-  loadStoredIds(MR_STORAGE_KEY, mrDropdown);
+  loadStoredIds(PR_STORAGE_KEY, prDropdown);
 
   // Load extension state
   loadExtensionState();
@@ -86,10 +88,10 @@ function setupEventListeners() {
   }
 
 
-  // MR Go button
-  if (mrGoButton) {
-    mrGoButton.addEventListener('click', function() {
-      handleMrGo();
+  // PR Go button
+  if (prGoButton) {
+    prGoButton.addEventListener('click', function() {
+      handlePrGo();
     });
   }
 
@@ -103,10 +105,12 @@ function setupEventListeners() {
     });
   }
 
-  if (mrInput) {
-    mrInput.addEventListener('keyup', function(event) {
+  if (prInput) {
+    prInput.addEventListener('keydown', function(event) {
       if (event.key === 'Enter') {
-        handleMrGo();
+        event.preventDefault();
+        if (popupDebugMode) console.log('[popup.js] Enter key pressed in PR input, calling handlePrGo.');
+        handlePrGo();
       }
     });
   }
@@ -236,16 +240,22 @@ function handleJiraGo() {
   }
 }
 
-// Handle MR Go button
-function handleMrGo() {
-  if (!mrInput) return;
-  const mrNumber = mrInput.value.trim();
-  if (/^\d{1,5}$/.test(mrNumber)) {
-    saveId(mrNumber, MR_STORAGE_KEY, mrDropdown);
-    const mrUrl = `https://gitlab.cee.redhat.com/service/uhc-portal/-/merge_requests/${mrNumber}`;
-    window.open(mrUrl, '_blank');
+// Handle PR Go button
+function handlePrGo() {
+  if (!prInput) {
+    return;
+  }
+  const prNumber = prInput.value.trim();
+
+  if (/^\d{1,5}$/.test(prNumber)) {
+    saveId(prNumber, PR_STORAGE_KEY, prDropdown);
+    const prUrl = `https://github.com/RedHatInsights/uhc-portal/pull/${prNumber}`;
+    setTimeout(() => {
+        window.open(prUrl, '_blank');
+        if (popupDebugMode) console.log('[popup.js] handlePrGo: window.open attempt has been made.');
+    }, 0);
   } else {
-    alert('Please enter a valid 1-5 digit MR ID.');
+    alert('Please enter a valid 1-5 digit PR ID.');
   }
 }
 
