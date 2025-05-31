@@ -33,9 +33,6 @@ export function scanForSourceFilesOnPage() {
     if (!state.extensionEnabled) {
         return;
     }
-    if (state.viewMode === 'domhierarchy' && !state.isRefreshingHierarchy) {
-        return;
-    }
     logger.log('info', `SourceDiscovery: Scanning page for source files.`);
     try {
         const filePathMap = {};
@@ -73,17 +70,17 @@ export function scanForSourceFilesOnPage() {
             logger.log('info', `SourceDiscovery: Found ${Object.keys(filePathMap).length} unique source files.`);
             const treeData = buildFileTree(filePathMap);
             if (Object.keys(treeData).length !== Object.keys(state.fileTree).length || JSON.stringify(treeData) !== JSON.stringify(state.fileTree)) {
-                updateState({ fileTree: treeData, originalFileTree: { ...treeData } }); 
+                updateState({ fileTree: treeData });
                 renderFileTree();
             }
         } else {
             logger.log('info', 'SourceDiscovery: No source files found on the page.');
-            if (Object.keys(state.fileTree).length > 0) { updateState({ fileTree: {}, originalFileTree: {} }); renderFileTree(); }
+            if (Object.keys(state.fileTree).length > 0) { updateState({ fileTree: {} }); renderFileTree(); }
         }
     } catch (error) {
         logger.log('error', `SourceDiscovery: Error during source file scanning: ${error.message}`);
         console.error(error);
-        if (Object.keys(state.fileTree).length > 0) { updateState({ fileTree: {}, originalFileTree: {} }); renderFileTree(); }
+        if (Object.keys(state.fileTree).length > 0) { updateState({ fileTree: {} }); renderFileTree(); }
     }
 }
 

@@ -10,12 +10,9 @@ import { renderFileTree } from '../features/fileTree/fileTreeRenderer.js';
 let originalCodeContentHTML = ''; // To restore content when clearing search
 
 async function handleRightPanelTabClick(tabName) {
-    if (state.activeRightPanelTab === tabName && tabName !== 'domHierarchy') {
-        if (tabName === 'domHierarchy' && elements.domHierarchyTabButton?.dataset.lockedElementId !== state.lockedElement?.id) {
-            // Allow re-render
-        } else {
-            return;
-        }
+    // Simplified: if already active, do nothing.
+    if (state.activeRightPanelTab === tabName) {
+        return;
     }
     logger.log('info', `PanelController: Tab clicked - ${tabName}.`);
     updateState({ activeRightPanelTab: tabName });

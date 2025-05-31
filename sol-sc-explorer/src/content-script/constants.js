@@ -56,21 +56,9 @@ export const CONSTANTS = {
     }
 };
 
-// Box layout styles for DOM hierarchy view
+// Box layout styles for DOM hierarchy view - REMOVING THESE
 export const additionalStyles = `
-    /* Box layout for DOM hierarchy view */
-    .hierarchy-box { /* ... */ }
-    /* ... (rest of additionalStyles as before) ... */
-    .hierarchy-box { border: 1px solid #444; border-radius: 4px; margin: 5px 0; padding: 8px; background-color: #2A2A2A; position: relative; min-height: 24px; transition: background-color 0.2s; }
-    .hierarchy-box:hover { border: 1px solid #FF8C00; background-color: transparent !important; }
-    .hierarchy-box-content { padding-left: 8px; margin-top: 5px; }
-    .hierarchy-box-selected { border: 2px solid #FF8C00 !important; }
-    .hierarchy-box-label { display: block; font-size: 12px; color: #F8F8F2; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .hierarchy-box-label-selected { color: #FF8C00; }
-    .hierarchy-box-label .filename { color: #66D9EF; }
-    .hierarchy-box-label .line { color: #A6E22E; }
-    .hierarchy-box-label .element-text { color: #FD971F; }
-    .hierarchy-box-label .path-info { color: #75715E; font-size: 11px; }
+    /* No additional styles needed for now. */
 `;
 
 

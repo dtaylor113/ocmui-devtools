@@ -68,64 +68,9 @@ const CONSTANTS = {
     }
 };
 
-// Box layout styles for DOM hierarchy view
+// Box layout styles for DOM hierarchy view - REMOVING
 const additionalStyles = `
-    /* Box layout for DOM hierarchy view */
-    .hierarchy-box {
-        border: 1px solid #444;
-        border-radius: 4px;
-        margin: 5px 0;
-        padding: 8px;
-        background-color: #2A2A2A;
-        position: relative;
-        min-height: 24px;
-        transition: background-color 0.2s;
-    }
-    
-    .hierarchy-box:hover {
-        border: 1px solid #FF8C00; /* Orange border */
-        background-color: transparent !important; /* Force transparency */
-    }
-    
-    .hierarchy-box-content {
-        padding-left: 8px;
-        margin-top: 5px;
-    }
-    
-    .hierarchy-box-selected {
-        border: 2px solid #FF8C00 !important; /* Thicker orange border */
-    }
-    
-    .hierarchy-box-label {
-        display: block;
-        font-size: 12px;
-        color: #F8F8F2;
-        cursor: pointer;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    .hierarchy-box-label-selected {
-        color: #FF8C00;
-    }
-    
-    .hierarchy-box-label .filename {
-        color: #66D9EF;
-    }
-    
-    .hierarchy-box-label .line {
-        color: #A6E22E;
-    }
-    
-    .hierarchy-box-label .element-text {
-        color: #FD971F;
-    }
-    
-    .hierarchy-box-label .path-info {
-        color: #75715E;
-        font-size: 11px;
-    }
+    /* DOM Hierarchy styles removed */
 `;
 
 // CSS styles with added tree view panel and resize functionality
@@ -352,7 +297,6 @@ const styles = `
         padding: 10px;
         box-sizing: border-box;
     }
-    ${additionalStyles}
 `;
 
 // ===================================================================
