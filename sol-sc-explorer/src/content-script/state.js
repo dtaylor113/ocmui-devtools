@@ -15,6 +15,7 @@ export let state = {
     lastX: 0,
     eventListenersAttached: false,
     rightPanelWidth: CONSTANTS.SIZES.DEFAULT_RIGHT_PANEL_WIDTH,
+    panelHeight: '50%', // Added: Default panel height, can be '50%' or a pixel value like '300px'
     fileTree: {},               // Holds data for the File Tree tab (can be file list or empty)
     activeRightPanelTab: 'fileTree', // Default active tab: 'fileTree' or 'aiChat'
     // isRefreshingHierarchy: false, // Was a potential flag, not needed now

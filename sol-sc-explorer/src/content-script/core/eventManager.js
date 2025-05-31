@@ -24,11 +24,14 @@ function handlePanelMouseMove(e) {
         const newHeight = Math.max(elements.panel.offsetHeight - deltaY, CONSTANTS.SIZES.MIN_PANEL_HEIGHT);
         const viewportHeight = window.innerHeight;
         const panelHeight = Math.min(newHeight, viewportHeight * CONSTANTS.SIZES.MAX_PANEL_HEIGHT_RATIO);
-        elements.panel.style.height = `${panelHeight}px`;
-        elements.rightPanelContainer.style.height = `${panelHeight}px`;
-        elements.resizeHandle.style.bottom = `${panelHeight}px`;
-        elements.horizontalResizeHandle.style.height = `${panelHeight}px`;
-        updateState({ lastY: e.clientY });
+        
+        const panelHeightStr = `${panelHeight}px`;
+        elements.panel.style.height = panelHeightStr;
+        elements.rightPanelContainer.style.height = panelHeightStr;
+        elements.resizeHandle.style.bottom = panelHeightStr;
+        elements.horizontalResizeHandle.style.height = panelHeightStr;
+        
+        updateState({ lastY: e.clientY, panelHeight: panelHeightStr });
     }
     if (state.isHorizontalResizing && elements.panel && elements.rightPanelContainer && elements.horizontalResizeHandle) {
         const deltaX = e.clientX - state.lastX;

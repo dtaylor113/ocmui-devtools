@@ -149,6 +149,14 @@ export function showAllPanels() {
     if (elements.rightPanelContainer) elements.rightPanelContainer.style.height = panelHeightStyle;
     if (elements.resizeHandle) elements.resizeHandle.style.bottom = panelHeightStyle;
     if (elements.horizontalResizeHandle) elements.horizontalResizeHandle.style.height = panelHeightStyle;
+
+    // Log computed styles after application
+    if (elements.panel && elements.rightPanelContainer) {
+        const panelComputed = window.getComputedStyle(elements.panel);
+        const rightPanelComputed = window.getComputedStyle(elements.rightPanelContainer);
+        logger.log('debug', `SHOW_PANELS Panel - display: ${panelComputed.display}, position: ${panelComputed.position}, left: ${panelComputed.left}, right: ${panelComputed.right}, width: ${panelComputed.width}, height: ${panelComputed.height}, z-index: ${panelComputed.zIndex}`);
+        logger.log('debug', `SHOW_PANELS RightPanel - display: ${rightPanelComputed.display}, position: ${rightPanelComputed.position}, left: ${rightPanelComputed.left}, right: ${rightPanelComputed.right}, width: ${rightPanelComputed.width}, height: ${rightPanelComputed.height}, z-index: ${rightPanelComputed.zIndex}`);
+    }
 }
 
 export function hideAllPanels() {

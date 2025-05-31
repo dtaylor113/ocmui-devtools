@@ -8,6 +8,7 @@ import { injectCoreStyles } from '../ui/stylesManager.js';
 import { initializeMainPanels, showAllPanels, hideAllPanels } from '../ui/panelController.js';
 import { attachCoreEventListeners, detachCoreEventListeners } from './eventManager.js';
 import { scanForSourceFilesOnPage, debouncedScanForSourceFiles } from './sourceDiscovery.js';
+import * as PageHighlighterModule from '../ui/pageHighlighter.js';
 
 let lastUrl = '';
 let navigationObserver = null;
@@ -98,34 +99,49 @@ export function initializeExtension() {
 }
 
 export function toggleExtensionPlugin(isEnabled) {
-    logger.log('info', `Core Initializer: Toggling extension features to: ${isEnabled}.`);
+    logger.log('info', `Core Initializer: Toggling extension features to: ${isEnabled}. Current initialized state: ${state.isInitialized}`);
 
-    if (!state.isInitialized && isEnabled) {
-        logger.log('warn', 'Core Initializer: toggleExtensionPlugin called to ENABLE before full initialization was complete.');
-        if (!elements.panel || !elements.rightPanelContainer) {
-            initializeMainPanels();
+    const alreadyInTargetState = state.extensionEnabled === isEnabled;
+
+    // If attempting to enable and not initialized, OR if state is being forced
+    if (isEnabled && !state.isInitialized) {
+        logger.log('info', 'Core Initializer: Enabling an uninitialized extension. Running initializeExtension first.');
+        initializeExtension(); // This will set state.isInitialized = true, inject styles, create panels.
+    } else if (isEnabled && state.isInitialized) {
+        // If enabling an already initialized extension (e.g., it was hidden)
+        // Ensure panel DOM elements exist, as they might be removed by a previous cleanup without full re-init.
+        if (!elements.panel || !elements.rightPanelContainer || !document.body.contains(elements.panel)) {
+            logger.log('info', 'Core Initializer: Panel DOM elements missing for an initialized extension. Re-creating via initializeMainPanels.');
+            initializeMainPanels(); // This recreates DOM elements. Styles should persist from initial injectCoreStyles.
         }
     }
 
-    const previousEnabledState = state.extensionEnabled;
+    // Update the extensionEnabled state *after* potential initialization
     updateState({ extensionEnabled: Boolean(isEnabled) });
 
-    if (state.isInitialized && previousEnabledState === state.extensionEnabled) {
+    if (alreadyInTargetState && state.isInitialized) {
+        // If it was already in the target state (e.g. true -> true) AND initialized,
+        // ensure visibility if enabled, then skip further redundant processing.
+        // This handles cases where toggle is called multiple times with the same value.
         if (state.extensionEnabled) {
-            if (!elements.panel || !elements.rightPanelContainer || !document.body.contains(elements.panel)) {
-                initializeMainPanels();
-            }
+            logger.log('debug', 'Core Initializer: Extension already enabled and initialized. Ensuring panels are visible.');
             showAllPanels();
-            attachCoreEventListeners();
+            attachCoreEventListeners(); // Ensure listeners are attached
         }
         return;
     }
 
     if (state.extensionEnabled) {
-        if (!elements.panel || !elements.rightPanelContainer || !document.body.contains(elements.panel)) {
-            initializeMainPanels();
-        }
-        showAllPanels();
+        // At this point, if we are enabling, panels and core styles should be correctly in place.
+        logger.log('info', 'Core Initializer: Setting up UI for enabled extension.');
+
+        const currentPanelHeight = state.panelHeight || '50%';
+        if (elements.panel) elements.panel.style.height = currentPanelHeight;
+        if (elements.rightPanelContainer) elements.rightPanelContainer.style.height = currentPanelHeight;
+        if (elements.resizeHandle) elements.resizeHandle.style.bottom = currentPanelHeight;
+        if (elements.horizontalResizeHandle) elements.horizontalResizeHandle.style.height = currentPanelHeight;
+
+        showAllPanels(); // Applies visibility and dimensions.
         attachCoreEventListeners();
 
         logger.log('info', 'Core Initializer: Extension enabled. Performing initial source file scans.');
@@ -133,7 +149,9 @@ export function toggleExtensionPlugin(isEnabled) {
         setTimeout(scanForSourceFilesOnPage, 1000);
         setTimeout(scanForSourceFilesOnPage, 2500);
     } else {
-        cleanupExtension();
+        // Only call cleanup if we are actually transitioning to a disabled state
+        logger.log('info', 'Core Initializer: Disabling extension. Calling cleanupExtension.');
+        cleanupExtension(); // This will set state.isInitialized = false
     }
 }
 
@@ -159,7 +177,7 @@ export function cleanupExtension() {
         updateState({
             isInitialized: false, isLocked: false, lockedElement: null, lockedFile: null,
             elementHighlighting: false, eventListenersAttached: false, fileTree: {},
-            activeRightPanelTab: 'fileTree',
+            activeRightPanelTab: 'fileTree'
         });
         logger.log('info', 'Core Initializer: Extension cleanup complete.');
     } catch (error) {
