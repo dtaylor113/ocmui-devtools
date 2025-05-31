@@ -18,6 +18,12 @@ export let state = {
     fileTree: {},               // Holds data for the File Tree tab (can be file list or empty)
     activeRightPanelTab: 'fileTree', // Default active tab: 'fileTree' or 'aiChat'
     // isRefreshingHierarchy: false, // Was a potential flag, not needed now
+
+    // Search state
+    searchTerm: '',
+    searchResults: [], // Stores { lineElement: node, startOffset: int, endOffset: int, textNode: node } or similar
+    currentSearchIndex: -1,
+    lastClickedSourceLine: null, // Added for new search behavior
 };
 
 export let elements = {
@@ -27,7 +33,15 @@ export let elements = {
     // domHierarchyTabButton: null, // Removed
     resizeHandle: null,             // Vertical resize
     horizontalResizeHandle: null,   // Horizontal resize
-    styleElement: null
+    styleElement: null,
+
+    // Find bar elements
+    findInput: null,
+    findNextButton: null,
+    findPrevButton: null,
+    findCounter: null,
+    findClearButton: null,
+    sourceCodeContentContainer: null // Will store reference to 'codeContainer' from panelController
 };
 
 // boxToElementMap was for DOM Hierarchy, can be removed.

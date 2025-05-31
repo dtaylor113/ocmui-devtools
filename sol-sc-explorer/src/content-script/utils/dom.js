@@ -43,8 +43,8 @@ export const domUtils = {
     // Show or hide an element
     setElementVisibility: function(element, isVisible) {
         if (element) {
-            // For fileTreePanel, ensure it's display: flex when visible
-            if (element.id === CONSTANTS.DOM_IDS.FILE_TREE_PANEL && isVisible) {
+            // For fileTreePanel and sourceCodePanel, ensure it's display: flex when visible
+            if ((element.id === CONSTANTS.DOM_IDS.FILE_TREE_PANEL || element.id === CONSTANTS.DOM_IDS.SOURCE_CODE_PANEL) && isVisible) {
                  element.style.display = 'flex';
             } else {
                  element.style.display = isVisible ? 'block' : 'none';

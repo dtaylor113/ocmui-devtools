@@ -28,7 +28,9 @@ export const CONSTANTS = {
         TREE_LOCK_ICON: 'tree-lock-icon',
         HIGHLIGHTED_SOURCE_LINE: 'highlighted-source-line', // Used in panelController for class, and here for CSS
         HOVER_HIGHLIGHTED_SOURCE_LINE: 'hover-highlighted-source-line',
-        FILE_HIGHLIGHTED_SOURCE_LINE: 'file-highlighted-source-line'
+        FILE_HIGHLIGHTED_SOURCE_LINE: 'file-highlighted-source-line',
+        SEARCH_MATCH_HIGHLIGHT: 'search-match-highlight',
+        SEARCH_MATCH_ACTIVE: 'search-match-active'
     },
     // URLs
     URLS: {
@@ -167,11 +169,13 @@ export function getBaseStyles(CONSTS_ARG) { // Renamed argument for clarity
         display: flex; align-items: center;
     }
     .source-code-header {
-        padding: 0 10px; border-bottom: 1px solid #444; position: absolute;
-        top: 0; left: 0; right: 0; background-color: #272822; z-index: 1;
+        padding: 0 10px; border-bottom: 1px solid #444;
+        background-color: #272822; 
         height: ${CONSTS_ARG.SIZES.HEADER_HEIGHT}px; /* Uses SIZES */
         display: flex; align-items: center;
         font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        box-sizing: border-box; /* Add for consistency */
+        flex-shrink: 0; /* Prevent shrinking in flex layout */
     }
     .source-code-header strong { font-size: 16px; }
     .file-tree-content {
@@ -180,10 +184,23 @@ export function getBaseStyles(CONSTS_ARG) { // Renamed argument for clarity
         box-sizing: border-box;
     }
     .source-code-content {
-        position: absolute; top: ${CONSTS_ARG.SIZES.HEADER_HEIGHT}px; /* Uses SIZES */
-        left: 0; right: 0; bottom: 0;
+        flex-grow: 1; /* Make it take remaining vertical space */
+        min-height: 0; /* Important for overflow in flex items */
         overflow-y: auto; overflow-x: auto; padding: 10px; box-sizing: border-box;
     }
+
+    .${CONSTS_ARG.CLASSES.SEARCH_MATCH_HIGHLIGHT} {
+        background-color: yellow; /* Standard highlight */
+        color: black;
+        border-radius: 2px;
+    }
+
+    .${CONSTS_ARG.CLASSES.SEARCH_MATCH_ACTIVE} {
+        background-color: #FF8C00; /* Orange for active selection (fixed quotes) */
+        color: white; /* Ensure good contrast with orange */
+        border-radius: 2px;
+    }
+
     /* additionalStyles should be appended after this string by the caller */
 `;
 }
