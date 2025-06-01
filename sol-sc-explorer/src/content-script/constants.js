@@ -59,6 +59,76 @@ export const CONSTANTS = {
 // Box layout styles for DOM hierarchy view - REMOVING THESE
 export const additionalStyles = `
     /* No additional styles needed for now. */
+
+    /* AI Analysis Tab specific styles */
+    .ai-analysis-results-area {
+        /* Ensure no top border if that was the cause of the line */
+        /* border-top: none !important; */ /* Add if the top line persists after hiding hr */
+        line-height: 1.4; 
+        padding-top: 5px; 
+    }
+
+    .ai-analysis-results-area > *:first-child {
+        margin-top: 0 !important; 
+    }
+
+    .ai-analysis-results-area p { 
+        margin-top: 1px !important; 
+        margin-bottom: 2px !important; 
+    }
+    
+    /* --- Aggressive List Reset START --- */
+    .ai-analysis-results-area ol,
+    .ai-analysis-results-area ul {
+        padding-left: 20px !important; /* Keep some indentation for readability */
+        margin-top: 1px !important;    
+        margin-bottom: 1px !important; 
+        list-style-position: outside !important; /* Ensures list markers don't interfere with padding */
+    }
+    
+    .ai-analysis-results-area li {
+        margin: 0 !important;    /* Zero out all margins */
+        padding: 0 !important;   /* Zero out all paddings */
+        /* Add a tiny bit of bottom padding ONLY if needed for readability after zeroing everything */
+        /* padding-bottom: 2px !important; */ 
+    }
+
+    .ai-analysis-results-area li::before, /* Target list markers if they are pseudo-elements */
+    .ai-analysis-results-area li::after {  /* Target any other pseudo-elements on li */
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Paragraphs *inside* list items should remain very tight */
+    .ai-analysis-results-area li p {
+        margin: 0 !important; /* Zero out margins for p inside li */
+        padding: 1px 0 !important; /* Allow tiny vertical padding for readability within the p */
+    }
+    /* --- Aggressive List Reset END --- */
+
+    .ai-analysis-results-area h1,
+    .ai-analysis-results-area h2,
+    .ai-analysis-results-area h3,
+    .ai-analysis-results-area h4,
+    .ai-analysis-results-area h5,
+    .ai-analysis-results-area h6 {
+        margin-top: 3px !important;    
+        margin-bottom: 1px !important; 
+        line-height: 1.2 !important; 
+    }
+
+    .ai-analysis-results-area hr {
+        display: none !important; 
+    }
+
+    .ai-analysis-results-area code {
+      background-color: #4a4a4a !important; 
+      color: #f0f0f0 !important; 
+      padding: 1px 4px !important; 
+      border-radius: 3px !important;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
+      font-size: inherit !important; 
+    }
 `;
 
 

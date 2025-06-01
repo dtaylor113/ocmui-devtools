@@ -5,6 +5,8 @@ import { domUtils } from '../utils/dom.js';
 import { logger } from '../utils/logger.js';
 import { escapeHtml } from '../utils/helpers.js';
 import { renderFileTree } from '../features/fileTree/fileTreeRenderer.js';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 // Search functionality globals (within this module)
 let originalCodeContentHTML = ''; // To restore content when clearing search
@@ -78,6 +80,10 @@ export async function renderRightPanelContent() {
             renderAIChatTabContent(elements.rightPanelContentArea);
             updateAIChatContextUI(); // Update context when tab is clicked
             break;
+        case 'aiAnalysis': // Added case for AI Analysis tab
+            renderAIAnalysisTabContent(elements.rightPanelContentArea);
+            updateAIAnalysisContextUI();
+            break;
         default:
             elements.rightPanelContentArea.textContent = `Unknown tab selected: ${state.activeRightPanelTab}`;
             logger.log('warn', `PanelController: Attempted to render unknown tab: ${state.activeRightPanelTab}. Defaulting to fileTree.`);
@@ -123,7 +129,8 @@ export function initializeMainPanels() {
         });
         const tabs = [
             { name: 'fileTree', label: 'File Tree' },
-            { name: 'aiChat', label: 'AI Chat' }
+            { name: 'aiChat', label: 'AI Chat' },
+            { name: 'aiAnalysis', label: 'AI Analysis' } // Added AI Analysis tab
         ];
         tabs.forEach(tabInfo => {
             const tabButton = domUtils.createElement('button', {
@@ -1521,3 +1528,191 @@ function handleAIChatSettingsClick() {
     // the "Successfully connected" message appears fresh for this "new" session setup.
     aiChatSessionInitialized = false;
 }
+
+// --- AI Analysis Tab Functions ---
+let aiAnalysisTabElements = {}; // To store elements specific to the AI Analysis tab
+
+function renderAIAnalysisTabContent(container) {
+    if (!container) {
+        logger.log('error', 'AI Analysis: Container not provided for rendering.');
+        return;
+    }
+    container.innerHTML = ''; // Clear previous content
+    container.style.padding = '15px';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '10px';
+
+    // Display for current source file
+    aiAnalysisTabElements.fileNameDisplay = domUtils.createElement('div', {
+        textContent: 'Current file: None',
+        styles: {
+            color: '#ccc',
+            fontSize: '1em',
+            marginBottom: '10px',
+            padding: '8px',
+            border: '1px solid #444',
+            backgroundColor: '#252526',
+            borderRadius: '4px'
+        }
+    });
+    container.appendChild(aiAnalysisTabElements.fileNameDisplay);
+
+    // "Go!" button
+    aiAnalysisTabElements.goButton = domUtils.createElement('button', {
+        textContent: 'Go!',
+        styles: {
+            padding: '10px 15px',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            alignSelf: 'flex-start'
+        }
+    });
+    aiAnalysisTabElements.goButton.addEventListener('click', handleAIAnalysisRequest);
+    aiAnalysisTabElements.goButton.addEventListener('mouseenter', () => aiAnalysisTabElements.goButton.style.backgroundColor = '#0056b3');
+    aiAnalysisTabElements.goButton.addEventListener('mouseleave', () => aiAnalysisTabElements.goButton.style.backgroundColor = '#007bff');
+    container.appendChild(aiAnalysisTabElements.goButton);
+
+    // Area for analysis results
+    aiAnalysisTabElements.resultsArea = domUtils.createElement('div', {
+        classes: ['ai-analysis-results-area'], // Added class for styling code tags
+        styles: {
+            flexGrow: '1',
+            overflowY: 'auto',
+            padding: '10px', // Existing padding
+            paddingLeft: '25px', // Increased left padding for list numbers
+            border: '1px solid #444',
+            marginTop: '10px',
+            backgroundColor: '#1e1e1e',
+            color: '#ccc',
+            minHeight: '100px',
+            whiteSpace: 'pre-wrap' // To preserve formatting from LLM
+        }
+    });
+    container.appendChild(aiAnalysisTabElements.resultsArea);
+
+    logger.log('info', 'AI Analysis tab content rendered.');
+    updateAIAnalysisContextUI(); // Initial update of file name
+}
+
+function updateAIAnalysisContextUI() {
+    if (!aiAnalysisTabElements.fileNameDisplay) {
+        return;
+    }
+
+    if (state.currentSourceCodePathForAIChat) { // Re-use the same state property
+        const fileName = state.currentSourceCodePathForAIChat.split('/').pop();
+        aiAnalysisTabElements.fileNameDisplay.textContent = `Current file: ${fileName}`;
+    } else {
+        aiAnalysisTabElements.fileNameDisplay.textContent = 'Current file: None';
+    }
+    if (aiAnalysisTabElements.resultsArea) {
+        aiAnalysisTabElements.resultsArea.innerHTML = ''; // Clear previous results
+    }
+}
+
+async function handleAIAnalysisRequest() {
+    logger.log('info', 'AI Analysis: "Go!" button clicked.');
+    if (!state.currentSourceCodePathForAIChat || !state.currentSourceCodeContentForAIChat) {
+        if (aiAnalysisTabElements.resultsArea) {
+            aiAnalysisTabElements.resultsArea.textContent = 'Error: No source code loaded to analyze.';
+        }
+        logger.log('warn', 'AI Analysis: No source code content available.');
+        return;
+    }
+
+    if (!verifiedApiKey) {
+        if (aiAnalysisTabElements.resultsArea) {
+            aiAnalysisTabElements.resultsArea.textContent = 'Error: API key not verified. Please verify in AI Chat tab.';
+        }
+        logger.log('error', 'AI Analysis: Attempted to analyze without a verified API key.');
+        return;
+    }
+
+    const fileName = state.currentSourceCodePathForAIChat.split('/').pop();
+    const sourceCode = state.currentSourceCodeContentForAIChat;
+
+    const prompt = `Analyze the following JavaScript/TypeScript code from the file "${fileName}":
+
+\`\`\`
+${sourceCode}
+\`\`\`
+
+Provide the following:
+1. A 4-sentence summary of the feature/function of this source code.
+2. A list of props passed into the main component/function, if any.
+3. Any conditions in the code that dynamically hide, show, or disable UI controls/elements.
+4. Key user interaction event handlers (e.g., click, submit) and their general purpose.
+5. Any interaction with a global state management store (e.g., Vuex, Redux), mentioning actions dispatched or state accessed.
+
+Format the output clearly, using markdown for code elements (like prop names or function names).`;
+
+    if (aiAnalysisTabElements.resultsArea) {
+        aiAnalysisTabElements.resultsArea.textContent = 'Analyzing...';
+    }
+
+    try {
+        const modelApiUrlToUse = localStorage.getItem('aiChatModelApiUrl') || DEFAULT_MODEL_API;
+        const requestBody = {
+            model: MODEL_ID_CONST,
+            prompt: prompt,
+            max_tokens: 1500,
+            temperature: 0.3
+        };
+
+        const response = await fetch(`${modelApiUrlToUse}/v1/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${verifiedApiKey}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        // const responseData = await response.json(); // Moved this down
+
+        if (aiAnalysisTabElements.resultsArea) { // Check again in case tab was closed
+            if (response.ok) {
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const responseData = await response.json();
+                    if (responseData.choices && responseData.choices.length > 0 && responseData.choices[0].text) {
+                        const rawText = responseData.choices[0].text.trim();
+                        if (aiAnalysisTabElements.resultsArea) { // Ensure element still exists
+                            const dirtyHtml = marked.parse(rawText);
+                            const cleanHtml = DOMPurify.sanitize(dirtyHtml);
+                            aiAnalysisTabElements.resultsArea.innerHTML = cleanHtml;
+                        }
+                        logger.log('info', 'AI Analysis: LLM Response received and parsed as Markdown.');
+                    } else {
+                        aiAnalysisTabElements.resultsArea.textContent = 'Error: Received an empty or unexpected JSON response from LLM.';
+                        logger.log('warn', `AI Analysis: LLM response format unexpected: ${JSON.stringify(responseData)}`);
+                    }
+                } else {
+                    const textResponse = await response.text();
+                    aiAnalysisTabElements.resultsArea.textContent = `Error: Received non-JSON response from LLM: ${textResponse.substring(0, 500)}`;
+                    logger.log('warn', `AI Analysis: LLM sent non-JSON response: ${textResponse}`);
+                }
+            } else {
+                let errorMessage = `HTTP ${response.status} - ${response.statusText}`;
+                const textResponse = await response.text(); // Get text for more detailed error
+                errorMessage += ` - Server response: ${textResponse.substring(0, 200)}`;
+                aiAnalysisTabElements.resultsArea.textContent = `Error: ${errorMessage}`;
+                logger.log('error', `AI Analysis: LLM API Error - ${errorMessage} (Full Response: ${textResponse})`);
+            }
+        }
+    } catch (error) {
+        logger.log('error', `AI Analysis: Exception - ${error.message}`, error);
+        if (aiAnalysisTabElements.resultsArea) {
+            let errorMessage = error.message;
+            if (error.cause) {
+               errorMessage += ` (Cause: ${String(error.cause).substring(0,100)})`;
+            }
+            aiAnalysisTabElements.resultsArea.textContent = `Error: ${errorMessage}`;
+        }
+    }
+}
+// --- End AI Analysis Tab Functions ---
