@@ -25,6 +25,10 @@ export let state = {
     searchResults: [], // Stores { lineElement: node, startOffset: int, endOffset: int, textNode: node } or similar
     currentSearchIndex: -1,
     lastClickedSourceLine: null, // Added for new search behavior
+
+    // AI Chat Context
+    currentSourceCodePathForAIChat: null,
+    currentSourceCodeContentForAIChat: null,
 };
 
 export let elements = {

@@ -9,6 +9,7 @@ import { initializeMainPanels, showAllPanels, hideAllPanels } from '../ui/panelC
 import { attachCoreEventListeners, detachCoreEventListeners } from './eventManager.js';
 import { scanForSourceFilesOnPage, debouncedScanForSourceFiles } from './sourceDiscovery.js';
 import * as PageHighlighterModule from '../ui/pageHighlighter.js';
+import * as PanelController from '../ui/panelController.js';
 
 let lastUrl = '';
 let navigationObserver = null;
@@ -17,8 +18,30 @@ let popstateHandler = null;
 function handleSpaNavigation(detectionType = "unknown") {
     requestAnimationFrame(() => {
         if (location.href !== lastUrl) {
-            logger.log('info', `Core Initializer: SPA Nav Detected. URL changed to "${location.href}".`);
+            logger.log('info', `Core Initializer: SPA Nav Detected. URL changed from "${lastUrl}" to "${location.href}". Type: ${detectionType}`);
             lastUrl = location.href;
+            
+            // Reset active tab to File Tree on SPA navigation
+            logger.log('debug', 'Core Initializer: Resetting active tab to fileTree due to SPA navigation.');
+            updateState({ 
+                activeRightPanelTab: 'fileTree',
+                currentSourceCodePathForAIChat: null, // Also clear AI context
+                currentSourceCodeContentForAIChat: null
+            });
+            // Re-render the right panel to reflect the tab change immediately
+            // Need to ensure renderRightPanelContent is accessible here or we trigger it indirectly
+            // For now, let's assume initializeMainPanels or a similar top-level UI refresh will handle it
+            // if it's part of a broader re-initialization triggered by navigation for SPAs.
+            // More direct would be to import and call it, or have a global event/callback.
+            // Considering initializeExtension might be re-called or parts of it by some SPAs.
+            // Let's try just setting state first, as initializeMainPanels should pick it up if UI is re-rendered.
+            // If UI doesn't auto-refresh tab selection, we might need to explicitly call PanelController.handleRightPanelTabClick('fileTree') or PanelController.renderRightPanelContent().
+            // Forcing a re-render of tab content might be good.
+            if (elements.rightPanelContentArea) { // If UI is already up
+                const { renderRightPanelContent, handleRightPanelTabClick } = PanelController; // Assuming PanelController is imported or accessible
+                handleRightPanelTabClick('fileTree'); // This updates tab style and calls renderRightPanelContent
+            }
+
             if (state.extensionEnabled) {
                 debouncedScanForSourceFiles();
             }

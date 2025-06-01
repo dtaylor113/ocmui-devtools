@@ -22,7 +22,11 @@ export async function renderFileTree() {
         classes: ['file-tree-header'],
         styles: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 10px', borderBottom: '1px solid #444', height: `${CONSTANTS.SIZES.HEADER_HEIGHT}px`, backgroundColor: '#272822' }
     });
-    const titleDiv = domUtils.createElement('div', { classes: [CONSTANTS.CLASSES.FILE_TREE_TITLE], textContent: 'Web Page Source Files' });
+    const titleDiv = domUtils.createElement('div', {
+        classes: [CONSTANTS.CLASSES.FILE_TREE_TITLE],
+        textContent: 'Web Page Source Files',
+        styles: { fontWeight: 'normal' }
+    });
     fileTreeSpecificHeader.appendChild(titleDiv);
     const refreshButton = domUtils.createElement('button', {
         classes: [CONSTANTS.CLASSES.FILE_TREE_REFRESH], textContent: 'Refresh Files',
