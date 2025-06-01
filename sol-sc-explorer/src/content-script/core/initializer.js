@@ -38,8 +38,22 @@ function handleSpaNavigation(detectionType = "unknown") {
             // If UI doesn't auto-refresh tab selection, we might need to explicitly call PanelController.handleRightPanelTabClick('fileTree') or PanelController.renderRightPanelContent().
             // Forcing a re-render of tab content might be good.
             if (elements.rightPanelContentArea) { // If UI is already up
-                const { renderRightPanelContent, handleRightPanelTabClick } = PanelController; // Assuming PanelController is imported or accessible
-                handleRightPanelTabClick('fileTree'); // This updates tab style and calls renderRightPanelContent
+                logger.log('debug', 'Core Initializer: rightPanelContentArea exists, queueing tab switch to fileTree.');
+                const { handleRightPanelTabClick } = PanelController; 
+                if (typeof handleRightPanelTabClick === 'function') {
+                    setTimeout(() => { 
+                        logger.log('debug', 'Core Initializer: setTimeout executing handleRightPanelTabClick("fileTree").');
+                        // Temporarily make state different to bypass early return in handleRightPanelTabClick
+                        // const originalTab = state.activeRightPanelTab; // Keep for reference if needed
+                        updateState({ activeRightPanelTab: '__forcing_rerender__' }); // Dummy value to ensure the main logic runs
+                        handleRightPanelTabClick('fileTree'); 
+                        // updateState({ activeRightPanelTab: 'fileTree' }); // This should now be handled by handleRightPanelTabClick itself.
+                    }, 0);
+                } else {
+                    logger.error('Core Initializer: PanelController.handleRightPanelTabClick is not a function!');
+                }
+            } else {
+                logger.log('warn', 'Core Initializer: rightPanelContentArea does not exist, tab switch to fileTree might rely on full UI re-render.');
             }
 
             if (state.extensionEnabled) {

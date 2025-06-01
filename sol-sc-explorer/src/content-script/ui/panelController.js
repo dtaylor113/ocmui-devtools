@@ -37,8 +37,9 @@ const MODEL_ID_CONST = "/data/Mistral-7B-Instruct-v0.3"; // Stays constant for n
 
 // Make this function exportable so it can be called from initializer.js for SPA navigations
 export async function handleRightPanelTabClick(tabName) {
+    logger.log('debug', `PanelController: handleRightPanelTabClick CALLED with tabName: ${tabName}. Current state.activeRightPanelTab: ${state.activeRightPanelTab}`);
     // Simplified: if already active, do nothing.
-    if (state.activeRightPanelTab === tabName && tabName !== 'aiChat') { // Always rerender aiChat for context updates for now
+    if (state.activeRightPanelTab === tabName && tabName !== 'aiChat' && tabName !== 'aiAnalysis') { // Ensure AI tabs can be re-clicked to refresh context
         return;
     }
     logger.log('info', `PanelController: Tab clicked - ${tabName}.`);
@@ -62,6 +63,7 @@ export async function handleRightPanelTabClick(tabName) {
 }
 
 export async function renderRightPanelContent() {
+    logger.log('debug', `PanelController: renderRightPanelContent CALLED. Active tab in state: ${state.activeRightPanelTab}`);
     if (!elements.rightPanelContentArea) {
         logger.log('error', 'PanelController: Right panel content area not found. Cannot render tab content.');
         return;
