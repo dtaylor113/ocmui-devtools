@@ -911,11 +911,29 @@ function renderAIChatTabContent(container) {
 
     // If a key is stored and was previously verified, show chat interface
     if (persistedApiKey && persistedIsVerified) {
-        verifiedApiKey = persistedApiKey; // Make it active for the session
+        verifiedApiKey = persistedApiKey; 
         logger.log('info', 'AI Chat: Persisted API key and verification found. Setting up chat interface.');
         
-        container.innerHTML = ''; // Always clear before setting up chat or form
-        setupChatInterface(container); // This will create/re-create aiChatInteractionContainer and its children
+        // Load chat history from localStorage into state ONCE if not already populated
+        // This check ensures we only do it on first load of a session or if state was cleared
+        if (state.aiChatHistory.length === 0) { 
+            try {
+                const storedHistory = localStorage.getItem('solSrcExplorer_aiChatHistory');
+                if (storedHistory) {
+                    const parsedHistory = JSON.parse(storedHistory);
+                    if (Array.isArray(parsedHistory)) {
+                        updateState({ aiChatHistory: parsedHistory });
+                        logger.log('info', 'AI Chat: Loaded chat history from localStorage.');
+                    }
+                }
+            } catch (e) {
+                logger.error('AI Chat: Error loading chat history from localStorage:', e);
+                updateState({ aiChatHistory: [] }); // Reset to empty on error
+            }
+        }
+
+        container.innerHTML = ''; 
+        setupChatInterface(container); 
 
         // Ensure it's visible (setupChatInterface also does this, but being explicit is fine)
         if (aiChatInteractionContainer) {
@@ -1074,96 +1092,94 @@ function renderAIChatTabContent(container) {
 }
 
 function setupChatInterface(container) { 
-    logger.log('debug', `PanelController: setupChatInterface called. Container valid: ${!!container}`);
+    logger.log('debug', `PanelController: setupChatInterface CALLED. Container valid: ${!!container}`);
     
-    // Always (re)create the chat interface elements if this function is called,
-    // because the container might have been cleared by another tab.
-    // This ensures all DOM element variables are fresh and correctly parented.
-
-        aiChatInteractionContainer = domUtils.createElement('div', {
-        styles: { display: 'flex', flexDirection: 'column', height: 'calc(100% - 40px)', marginTop: '2px' }
+    // Always (re)create the chat interface elements because the main container might have been cleared.
+    aiChatInteractionContainer = domUtils.createElement('div', {
+        styles: { 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: 'calc(100% - 40px)', // Assuming some space for potential header/success messages
+            marginTop: '2px',
+            // border: '1px dashed limegreen' // Keep for debugging if needed, then remove
+        }
     });
 
-        const chatHistoryHeader = domUtils.createElement('div', {
+    // 1. Chat History Header (with Settings Button)
+    const chatHistoryHeader = domUtils.createElement('div', {
         styles: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '2px 5px', borderBottom: '1px solid #444', backgroundColor: '#252526', minHeight: '28px', boxSizing: 'border-box' }
     });
-    aiChatSettingsButton = domUtils.createElement('button', { /* ... gear button styles & listeners ... */
+    aiChatSettingsButton = domUtils.createElement('button', {
         textContent: '⚙️', attributes: { title: 'Show API Key and Endpoint Settings' },
         styles: { background: 'none', border: 'none', color: '#ccc', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '1.2em', lineHeight: '1', margin: '0' }
-        });
-        aiChatSettingsButton.addEventListener('click', handleAIChatSettingsClick);
+    });
+    aiChatSettingsButton.addEventListener('click', handleAIChatSettingsClick);
     aiChatSettingsButton.addEventListener('mouseenter', () => { aiChatSettingsButton.style.color = '#fff'; });
     aiChatSettingsButton.addEventListener('mouseleave', () => { aiChatSettingsButton.style.color = '#ccc'; });
     chatHistoryHeader.appendChild(aiChatSettingsButton);
-        aiChatInteractionContainer.appendChild(chatHistoryHeader);
+    aiChatInteractionContainer.appendChild(chatHistoryHeader);
 
-        aiChatHistoryContainer = domUtils.createElement('div', {
-            classes: ['ai-chat-history'],
+    // 2. Chat History Area
+    aiChatHistoryContainer = domUtils.createElement('div', {
+        classes: ['ai-chat-history'],
         styles: { flexGrow: '1', overflowY: 'auto', padding: '10px', border: '1px solid #444', marginBottom: '10px', backgroundColor: '#1e1e1e', color: '#ccc', minHeight: '100px' }
     });
     aiChatInteractionContainer.appendChild(aiChatHistoryContainer);
 
-        const promptAreaContainer = domUtils.createElement('div', {
+    // Re-render stored history now that aiChatHistoryContainer exists
+    if (Array.isArray(state.aiChatHistory)) {
+        state.aiChatHistory.forEach(msgEntry => _renderStoredMessageToDOM(msgEntry)); // Use the helper
+    }
+    if (aiChatHistoryContainer) { // Scroll after populating
+        aiChatHistoryContainer.scrollTop = aiChatHistoryContainer.scrollHeight;
+    }
+
+    // 3. Prompt Input Area (Container for label, textarea, and buttons)
+    const promptAreaContainer = domUtils.createElement('div', {
         styles: { display: 'flex', flexDirection: 'column', flexShrink: '0' }
     });
-        const promptLabelLine = domUtils.createElement('div', {
-        styles: { display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' }
-    });
+    
+    const promptLabelLine = domUtils.createElement('div', { styles: { display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' } });
     const promptLabel = domUtils.createElement('label', { textContent: 'Ask me anything....', styles: { color: '#ccc', fontSize: '1.0em', fontWeight: 'bold' } });
     aiChatIncludeFileCheckbox = domUtils.createElement('input', { attributes: { type: 'checkbox', id: 'aiChatIncludeFileCheckbox' }, styles: { width: '16px', height: '16px', margin: '0', cursor: 'pointer' } });
-    aiChatContextFileDisplay = domUtils.createElement('span', { styles: { color: '#aaa', fontSize: '0.95em', fontStyle: 'italic' } });
-        promptLabelLine.appendChild(promptLabel);
-        promptLabelLine.appendChild(aiChatIncludeFileCheckbox);
-        promptLabelLine.appendChild(aiChatContextFileDisplay);
+    aiChatContextFileDisplay = domUtils.createElement('span', { textContent: '', styles: { color: '#aaa', fontSize: '0.95em', fontStyle: 'italic' } });
+    promptLabelLine.appendChild(promptLabel);
+    promptLabelLine.appendChild(aiChatIncludeFileCheckbox);
+    promptLabelLine.appendChild(aiChatContextFileDisplay);
     promptAreaContainer.appendChild(promptLabelLine);
 
-        const promptInputControlsRow = domUtils.createElement('div', {
-        styles: { display: 'flex', alignItems: 'flex-start', gap: '5px' } // Textarea row
-    });
-        aiChatPromptTextarea = domUtils.createElement('textarea', {
-            attributes: { rows: '3', placeholder: 'Type your message...' },
-        styles: { flexGrow: '1', padding: '8px', boxSizing: 'border-box', backgroundColor: '#272822', border: '1px solid #555', color: '#F8F8F2', resize: 'none' }
-    });
+    const promptInputControlsRow = domUtils.createElement('div', { styles: { display: 'flex', alignItems: 'flex-start', gap: '5px' } });
+    aiChatPromptTextarea = domUtils.createElement('textarea', { attributes: { rows: '3', placeholder: 'Type your message...' }, styles: { flexGrow: '1', padding: '8px', boxSizing: 'border-box', backgroundColor: '#272822', border: '1px solid #555', color: '#F8F8F2', resize: 'none' } });
     aiChatPromptTextarea.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendPrompt(); } });
     promptInputControlsRow.appendChild(aiChatPromptTextarea);
-    promptAreaContainer.appendChild(promptInputControlsRow); // Add textarea row to main prompt area
-
-        const actionButtonsContainer = domUtils.createElement('div', {
-            styles: {
-                display: 'flex',
-                flexDirection: 'row',
-            justifyContent: 'flex-start', // Left align buttons within this container
-                alignItems: 'center',
-                gap: '10px',
-            marginTop: '5px' // Space above the button row
-        }
-    });
-    aiChatClearButton = domUtils.createElement('button', { /* ... existing styles & attributes ... */ 
-        textContent: '🗑️', attributes: { title: 'Clicking this clears the chat history' }, 
-        styles: { padding: '0px', width: '36px', height: 'auto', minHeight: '28px', lineHeight: '28px', textAlign: 'center', fontSize: '16px', backgroundColor: '#555', color: '#ccc', border: '1px solid #666', borderRadius: '4px', cursor: 'pointer', flexShrink: '0' }
-    });
-    aiChatSendButton = domUtils.createElement('button', { /* ... existing styles & attributes ... */ 
-        textContent: '↑', attributes: { title: 'Send message' }, 
-        styles: { padding: '0px', width: '36px', height: 'auto', minHeight: '28px', lineHeight: '28px', textAlign: 'center', fontSize: '18px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: '0' }
-    });
-        aiChatClearButton.addEventListener('click', handleClearChat);
+    promptAreaContainer.appendChild(promptInputControlsRow);
+    
+    const actionButtonsContainer = domUtils.createElement('div', { styles: { display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: '10px', marginTop: '5px' } });
+    aiChatClearButton = domUtils.createElement('button', { textContent: '🗑️', attributes: { title: 'Clicking this clears the chat history' }, styles: { padding: '0px', width: '36px', height: 'auto', minHeight: '28px', lineHeight: '28px', textAlign: 'center', fontSize: '16px', backgroundColor: '#555', color: '#ccc', border: '1px solid #666', borderRadius: '4px', cursor: 'pointer', flexShrink: '0' } });
+    aiChatSendButton = domUtils.createElement('button', { textContent: '↑', attributes: { title: 'Send message' }, styles: { padding: '0px', width: '36px', height: 'auto', minHeight: '28px', lineHeight: '28px', textAlign: 'center', fontSize: '18px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: '0' } });
+    aiChatClearButton.addEventListener('click', handleClearChat);
     aiChatClearButton.addEventListener('mouseenter', () => { aiChatClearButton.style.backgroundColor = '#666'; aiChatClearButton.style.color = '#fff'; });
     aiChatClearButton.addEventListener('mouseleave', () => { aiChatClearButton.style.backgroundColor = '#555'; aiChatClearButton.style.color = '#ccc'; });
     aiChatSendButton.addEventListener('click', handleSendPrompt);
-        aiChatSendButton.addEventListener('mouseenter', () => aiChatSendButton.style.backgroundColor = '#0056b3');
-        aiChatSendButton.addEventListener('mouseleave', () => aiChatSendButton.style.backgroundColor = '#007bff');
+    aiChatSendButton.addEventListener('mouseenter', () => aiChatSendButton.style.backgroundColor = '#0056b3');
+    aiChatSendButton.addEventListener('mouseleave', () => aiChatSendButton.style.backgroundColor = '#007bff');
     actionButtonsContainer.appendChild(aiChatClearButton);
     actionButtonsContainer.appendChild(aiChatSendButton);
-    promptAreaContainer.appendChild(actionButtonsContainer); // Add button row to main prompt area, below textarea row
-
-        aiChatInteractionContainer.appendChild(promptAreaContainer);
+    promptAreaContainer.appendChild(actionButtonsContainer); 
+    aiChatInteractionContainer.appendChild(promptAreaContainer);
     // All children now appended to aiChatInteractionContainer
 
     logger.log('debug', `PanelController: Appending fully constructed aiChatInteractionContainer. Children count: ${aiChatInteractionContainer.children.length}`);
+    if (container && typeof container.appendChild === 'function') {
         container.appendChild(aiChatInteractionContainer);
+        logger.log('debug', 'PanelController: aiChatInteractionContainer APPENDED to container.');
+    } else {
+        logger.error('PanelController: setupChatInterface - INVALID CONTAINER, cannot append.');
+        return; 
+    }
     
     aiChatInteractionContainer.style.display = 'flex';
-    logger.log('debug', `PanelController: aiChatInteractionContainer display set to flex. In current container? ${container.contains(aiChatInteractionContainer)}. Children count: ${aiChatInteractionContainer.children.length}`);
+    logger.log('debug', `PanelController: aiChatInteractionContainer display set. In container? ${container.contains(aiChatInteractionContainer)}. Children count: ${aiChatInteractionContainer.children.length}`);
 }
 
 function handleSendPrompt() { // No successMessageElement needed
@@ -1241,6 +1257,21 @@ function appendMessageToChatHistory(message, senderType) {
         messageDiv.style.border = '1px solid #3a5a3a';
         messageDiv.style.borderRadius = '4px';
 
+    }
+
+    // Add to state and save to localStorage
+    const newHistoryEntry = { 
+        senderType: senderType, 
+        message: message, // Store raw message; Markdown parsing happens on render
+        timestamp: Date.now()
+    };
+    const updatedHistory = [...state.aiChatHistory, newHistoryEntry];
+    updateState({ aiChatHistory: updatedHistory });
+    try {
+        localStorage.setItem('solSrcExplorer_aiChatHistory', JSON.stringify(updatedHistory));
+    } catch (e) {
+        logger.error('AI Chat: Error saving chat history to localStorage:', e);
+        // Potentially handle quota exceeded or other errors, e.g., by trimming older history
     }
 
     aiChatHistoryContainer.appendChild(messageDiv);
@@ -1331,10 +1362,13 @@ function updateAIChatContextUI() {
 function handleClearChat() {
     if (aiChatHistoryContainer) {
         aiChatHistoryContainer.innerHTML = ''; // Clear the visual chat history
-        logger.log('info', 'AI Chat: Chat history cleared.');
-        // aiChatSessionInitialized remains true; clearing chat doesn't mean the session is no longer valid/initialized.
-        // If we want the success message to reappear after clear, then set aiChatSessionInitialized = false here.
-        // For now, a clear chat means a blank slate.
+        updateState({ aiChatHistory: [] }); // Clear history from state
+        try {
+            localStorage.removeItem('solSrcExplorer_aiChatHistory'); // Clear from localStorage
+            logger.log('info', 'AI Chat: Chat history cleared from DOM, state, and localStorage.');
+        } catch (e) {
+            logger.error('AI Chat: Error clearing chat history from localStorage:', e);
+        }
     }
 }
 
@@ -1671,3 +1705,49 @@ Format the output clearly, using markdown for code elements (like prop names or 
     }
 }
 // --- End AI Analysis Tab Functions ---
+
+// ... (Helper function, can be placed near appendMessageToChatHistory) ...
+function _renderStoredMessageToDOM(messageEntry) {
+    if (!aiChatHistoryContainer || !messageEntry) return;
+
+    const { senderType, message } = messageEntry;
+    const messageDiv = domUtils.createElement('div', {
+        styles: { /* ... base messageDiv styles ... */
+            padding: '8px', marginBottom: '8px', borderRadius: '4px', 
+            wordWrap: 'break-word', whiteSpace: 'pre-wrap'
+        }
+    });
+
+    if (senderType === 'user') {
+        messageDiv.textContent = message;
+        messageDiv.style.backgroundColor = '#004080'; 
+        messageDiv.style.textAlign = 'right';
+        messageDiv.style.color = '#e0e0e0';
+    } else if (senderType === 'llm') {
+        const dirtyHtml = marked.parse(message.trim()); 
+        const cleanHtml = DOMPurify.sanitize(dirtyHtml);
+        messageDiv.innerHTML = cleanHtml; 
+        messageDiv.style.backgroundColor = '#333'; 
+        messageDiv.style.color = '#f0f0f0';
+        messageDiv.classList.add('llm-message-content'); 
+    } else if (senderType === 'llm-status') {
+        messageDiv.textContent = message; 
+        messageDiv.style.fontStyle = 'italic';
+        messageDiv.style.color = '#aaa';
+        messageDiv.style.backgroundColor = 'transparent';
+        // Potentially add an ID if it needs to be uniquely found, though for stored history it might not be necessary
+    } else if (senderType === 'error') {
+        messageDiv.textContent = `Error: ${message}`;
+        messageDiv.style.backgroundColor = '#5c2323'; 
+        messageDiv.style.color = '#ffcccc';
+    } else if (senderType === 'system-success') {
+        messageDiv.textContent = message;
+        messageDiv.style.color = '#8fce00'; 
+        messageDiv.style.padding = '10px'; 
+        messageDiv.style.textAlign = 'center';
+        messageDiv.style.backgroundColor = '#2a3a2a'; 
+        messageDiv.style.border = '1px solid #3a5a3a';
+        messageDiv.style.borderRadius = '4px';
+    }
+    aiChatHistoryContainer.appendChild(messageDiv);
+}

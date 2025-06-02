@@ -29,6 +29,7 @@ export let state = {
     // AI Chat Context
     currentSourceCodePathForAIChat: null,
     currentSourceCodeContentForAIChat: null,
+    aiChatHistory: [], 
 };
 
 export let elements = {
