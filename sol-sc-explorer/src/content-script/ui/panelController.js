@@ -844,39 +844,27 @@ async function verifyLLMAccess(apiKey, modelApiUrl, statusElement, apiKeyLabelEl
                 // statusElement.textContent = `Successfully connected to ${MODEL_API_CONST}`; // No longer setting success here
                 // statusElement.style.color = '#8fce00'; // Green for success
                 logger.log('info', 'AI Chat API Verification: Success');
-                verifiedApiKey = apiKey; // Store the key
+                verifiedApiKey = apiKey; // Store the key for the current session
                 localStorage.setItem('aiChatUserApiKey', apiKey); // Persist API Key
                 localStorage.setItem('aiChatModelApiUrl', modelApiUrl); // Persist Model API URL
+                localStorage.setItem('aiChatApiKeyVerified', 'true'); // Persist verification status
 
-                // Hide initial verification UI elements for API Key
+                // Hide input form elements
                 if (aiChatApiKeyInput) aiChatApiKeyInput.style.display = 'none';
                 if (apiKeyLabelElement) apiKeyLabelElement.style.display = 'none'; 
-                // Hide MODEL_API input and label as well
                 if (aiChatModelApiInput) aiChatModelApiInput.style.display = 'none';
                 if (aiChatModelApiLabel) aiChatModelApiLabel.style.display = 'none';
-
-                // Verify button and VPN note are hidden by controlling their parent or individually
                 if (aiChatVerifyButton) aiChatVerifyButton.style.display = 'none';
                 if (aiChatVpnNote) aiChatVpnNote.style.display = 'none';
+                const cancelButton = aiChatMainContainer?.querySelector('.ai-chat-cancel-settings-button');
+                if (cancelButton) cancelButton.style.display = 'none'; // Hide cancel if it was visible
+                if (statusElement) statusElement.style.display = 'none';
 
-                // Setup the chat interface
+                // Trigger re-render to show chat interface and the success message
+                aiChatSessionInitialized = false; // Ensure success message is shown by renderAIChatTabContent
                 if (aiChatMainContainer) { 
-                    aiChatSessionInitialized = false; // Reset for a fresh session message
-                    setupChatInterface(aiChatMainContainer); 
-                    // The success message is now added by the logic in renderAIChatTabContent after setup,
-                    // based on aiChatSessionInitialized being false.
-                    // appendMessageToChatHistory(`Successfully connected to ${modelApiUrl}`, 'system-success'); 
-                    // Call renderAIChatTabContent to trigger the display logic including the session init message
-                    // This seems a bit circular. Let verifyLLMAccess handle its own success message display then set initialized.
-                    
-                    // Simpler: set initialized and add message here directly for this new verification.
-                    const currentModelApi = localStorage.getItem('aiChatModelApiUrl') || DEFAULT_MODEL_API; // use the just verified one
-                    appendMessageToChatHistory(`Successfully connected to ${modelApiUrl}`, 'system-success');
-                    aiChatSessionInitialized = true;
-                    updateAIChatContextUI(); 
-                    if (statusElement) statusElement.style.display = 'none'; // Ensure initial status is hidden
+                    renderAIChatTabContent(aiChatMainContainer);
                 }
-
             } else {
                 statusElement.textContent = 'Verification Succeeded, but response format unexpected.';
                 statusElement.style.color = '#FF8C00'; // Orange for warning
@@ -915,54 +903,40 @@ function renderAIChatTabContent(container) {
         logger.log('error', 'AI Chat: Container not provided for rendering.');
         return;
     }
-    aiChatMainContainer = container; // Store reference to the main container
-    // container.innerHTML = ''; // DO NOT Clear previous content immediately
-    // container.style.padding = '15px'; // These will be set if rendering inputs
-    // container.style.display = 'flex';
-    // container.style.flexDirection = 'column';
-    // container.style.gap = '10px';
+    aiChatMainContainer = container; 
 
-    // Check if already verified in this session
-    if (verifiedApiKey) {
-        logger.log('info', 'AI Chat: Already verified, ensuring chat interface is visible.');
+    const persistedApiKey = localStorage.getItem('aiChatUserApiKey');
+    const persistedModelApiUrl = localStorage.getItem('aiChatModelApiUrl') || DEFAULT_MODEL_API;
+    const persistedIsVerified = localStorage.getItem('aiChatApiKeyVerified') === 'true';
+
+    // If a key is stored and was previously verified, show chat interface
+    if (persistedApiKey && persistedIsVerified) {
+        verifiedApiKey = persistedApiKey; // Make it active for the session
+        logger.log('info', 'AI Chat: Persisted API key and verification found. Setting up chat interface.');
         
-        if (aiChatInteractionContainer && !container.contains(aiChatInteractionContainer)) {
-            logger.log('debug', 'AI Chat: Interaction container exists but not in DOM, re-appending.');
-            container.innerHTML = ''; 
-            container.appendChild(aiChatInteractionContainer);
-        } else if (!aiChatInteractionContainer) {
-            logger.log('debug', 'AI Chat: Interaction container does NOT exist, setting up fresh.');
-            container.innerHTML = ''; 
-            setupChatInterface(container); 
-            // Initial success message is now tied to aiChatSessionInitialized logic below or in verifyLLMAccess
-        }
+        container.innerHTML = ''; // Always clear before setting up chat or form
+        setupChatInterface(container); // This will create/re-create aiChatInteractionContainer and its children
+
+        // Ensure it's visible (setupChatInterface also does this, but being explicit is fine)
         if (aiChatInteractionContainer) {
             aiChatInteractionContainer.style.display = 'flex'; 
-            if (!aiChatSessionInitialized) { // Only add success message if session hasn't been initialized yet
-                logger.log('debug', 'AI Chat: Session not initialized, adding welcome message.');
-                const currentModelApi = localStorage.getItem('aiChatModelApiUrl') || DEFAULT_MODEL_API;
-                appendMessageToChatHistory(`Successfully connected to ${currentModelApi}`, 'system-success');
-                aiChatSessionInitialized = true; // Mark session as initialized
-            } else if (aiChatHistoryContainer && aiChatHistoryContainer.children.length === 0) {
-                // If session IS initialized but history is blank (e.g. after clear), do nothing here.
-                // The clear button handles this or leaves it blank.
-                logger.log('debug', 'AI Chat: Session initialized and history is empty (likely cleared), not re-adding success message.');
-            }
-        } else {
-            logger.log('error', 'AI Chat: Verified, but no interaction container found. Re-rendering inputs as fallback.');
-            verifiedApiKey = null; 
-            aiChatSessionInitialized = false; // Reset session state too
         }
         
-        if (verifiedApiKey) { // Re-check because of fallback
-            updateAIChatContextUI(); 
-            return; // Skip rendering input fields
+        if (!aiChatSessionInitialized) {
+            const currentModelUrl = localStorage.getItem('aiChatModelApiUrl') || DEFAULT_MODEL_API;
+            appendMessageToChatHistory(`Successfully connected to ${currentModelUrl}`, 'system-success');
+            aiChatSessionInitialized = true;
         }
+            updateAIChatContextUI(); 
+        return; // Done, showing chat interface
     }
 
-    // --- If not verified (or verification was reset), render input fields ---
-    logger.log('info', 'AI Chat: Not verified (or reset), rendering API key input fields.');
-    container.innerHTML = ''; // Clear previous content fully before rendering inputs
+    // --- If not verified or no key, render input fields ---
+    verifiedApiKey = null; // Ensure session key is null
+    // localStorage.removeItem('aiChatApiKeyVerified'); // No, don't remove here, verifyLLMAccess or settings click handles this.
+    // If we reach here, it means it wasn't persisted as verified, or no key.
+    logger.log('info', 'AI Chat: No persisted verification or key. Rendering API key input fields.');
+    container.innerHTML = ''; 
     container.style.padding = '15px';
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
@@ -1099,232 +1073,97 @@ function renderAIChatTabContent(container) {
     logger.log('info', 'AI Chat tab content rendered.');
 }
 
-function setupChatInterface(container) { // No successMessageElement needed
-    // This container will hold the chat history and the prompt input area
-    if (!aiChatInteractionContainer) { // Create only if it doesn't exist
+function setupChatInterface(container) { 
+    logger.log('debug', `PanelController: setupChatInterface called. Container valid: ${!!container}`);
+    
+    // Always (re)create the chat interface elements if this function is called,
+    // because the container might have been cleared by another tab.
+    // This ensures all DOM element variables are fresh and correctly parented.
+
         aiChatInteractionContainer = domUtils.createElement('div', {
-            styles: {
-                display: 'flex',
-                flexDirection: 'column',
-                height: 'calc(100% - 40px)', // Adjust if successMessageElement has variable height
-                marginTop: '2px' // Space below the success message
-            }
-        });
+        styles: { display: 'flex', flexDirection: 'column', height: 'calc(100% - 40px)', marginTop: '2px' }
+    });
 
-        // Chat History Header (with Clear Button) - MOVED HERE
         const chatHistoryHeader = domUtils.createElement('div', {
-            styles: {
-                display: 'flex',
-                justifyContent: 'flex-end', // Align clear button to the right
-                alignItems: 'center',
-                padding: '2px 5px', // Reduced padding for a tighter header if only gear is present
-                borderBottom: '1px solid #444', // Separator from history
-                backgroundColor: '#252526', // Slightly different from history for distinction
-                minHeight: '28px', // Ensure a minimum height for the header bar
-                boxSizing: 'border-box'
-            }
-        });
-
-        aiChatSettingsButton = domUtils.createElement('button', {
-            textContent: '⚙️', // Gear icon for settings
-            attributes: { title: 'Show API Key and Endpoint Settings' },
-            styles: {
-                background: 'none',
-                border: 'none', // Can be styled more like an icon button
-                color: '#ccc',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '1.2em', // Make gear a bit larger
-                lineHeight: '1', // Adjust line height for better vertical alignment if needed
-                margin: '0' // Ensure no extra margins on the button itself
-            }
+        styles: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '2px 5px', borderBottom: '1px solid #444', backgroundColor: '#252526', minHeight: '28px', boxSizing: 'border-box' }
+    });
+    aiChatSettingsButton = domUtils.createElement('button', { /* ... gear button styles & listeners ... */
+        textContent: '⚙️', attributes: { title: 'Show API Key and Endpoint Settings' },
+        styles: { background: 'none', border: 'none', color: '#ccc', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '1.2em', lineHeight: '1', margin: '0' }
         });
         aiChatSettingsButton.addEventListener('click', handleAIChatSettingsClick);
-        aiChatSettingsButton.addEventListener('mouseenter', () => { 
-            aiChatSettingsButton.style.color = '#fff'; 
-        });
-        aiChatSettingsButton.addEventListener('mouseleave', () => { 
-            aiChatSettingsButton.style.color = '#ccc'; 
-        });
-        chatHistoryHeader.appendChild(aiChatSettingsButton); // Add settings button to header
-
-        // Prepend header to interaction container first
+    aiChatSettingsButton.addEventListener('mouseenter', () => { aiChatSettingsButton.style.color = '#fff'; });
+    aiChatSettingsButton.addEventListener('mouseleave', () => { aiChatSettingsButton.style.color = '#ccc'; });
+    chatHistoryHeader.appendChild(aiChatSettingsButton);
         aiChatInteractionContainer.appendChild(chatHistoryHeader);
 
-        // Chat History Area
         aiChatHistoryContainer = domUtils.createElement('div', {
             classes: ['ai-chat-history'],
-            styles: {
-                flexGrow: '1',
-                overflowY: 'auto',
-                padding: '10px',
-                border: '1px solid #444',
-                marginBottom: '10px',
-                backgroundColor: '#1e1e1e',
-                color: '#ccc',
-                minHeight: '100px' // Ensure it has some height
-            }
-        });
+        styles: { flexGrow: '1', overflowY: 'auto', padding: '10px', border: '1px solid #444', marginBottom: '10px', backgroundColor: '#1e1e1e', color: '#ccc', minHeight: '100px' }
+    });
+    aiChatInteractionContainer.appendChild(aiChatHistoryContainer);
 
-        // Prompt Input Area (container for label, textarea, and button)
         const promptAreaContainer = domUtils.createElement('div', {
-            styles: {
-                display: 'flex',
-                flexDirection: 'column',
-                flexShrink: '0' // Prevent shrinking
-            }
-        });
-        
+        styles: { display: 'flex', flexDirection: 'column', flexShrink: '0' }
+    });
         const promptLabelLine = domUtils.createElement('div', {
-            styles: {
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                marginBottom: '5px'
-            }
-        });
-        
-        const promptLabel = domUtils.createElement('label', {
-            textContent: 'Ask me anything....',
-            styles: { 
-                color: '#ccc',
-                fontSize: '1.0em', // Increased size
-                fontWeight: 'bold'   // Make it bold
-            }
-        });
-
-        aiChatIncludeFileCheckbox = domUtils.createElement('input', {
-            attributes: { type: 'checkbox', id: 'aiChatIncludeFileCheckbox' },
-            styles: {
-                width: '16px', // Standard checkbox size
-                height: '16px',
-                margin: '0', // Remove default margins
-                cursor: 'pointer'
-            }
-        });
-
-        aiChatContextFileDisplay = domUtils.createElement('span', {
-            textContent: '', // Initially empty
-            styles: {
-                color: '#aaa',
-                fontSize: '0.95em', // Slightly increased size, adjust as needed
-                fontStyle: 'italic'
-            }
-        });
-
+        styles: { display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' }
+    });
+    const promptLabel = domUtils.createElement('label', { textContent: 'Ask me anything....', styles: { color: '#ccc', fontSize: '1.0em', fontWeight: 'bold' } });
+    aiChatIncludeFileCheckbox = domUtils.createElement('input', { attributes: { type: 'checkbox', id: 'aiChatIncludeFileCheckbox' }, styles: { width: '16px', height: '16px', margin: '0', cursor: 'pointer' } });
+    aiChatContextFileDisplay = domUtils.createElement('span', { styles: { color: '#aaa', fontSize: '0.95em', fontStyle: 'italic' } });
         promptLabelLine.appendChild(promptLabel);
         promptLabelLine.appendChild(aiChatIncludeFileCheckbox);
         promptLabelLine.appendChild(aiChatContextFileDisplay);
+    promptAreaContainer.appendChild(promptLabelLine);
 
         const promptInputControlsRow = domUtils.createElement('div', {
-            styles: {
-                display: 'flex',
-                alignItems: 'flex-end', // Align items to the bottom (good for textarea and buttons)
-                gap: '5px'
-            }
-        });
-
+        styles: { display: 'flex', alignItems: 'flex-start', gap: '5px' } // Textarea row
+    });
         aiChatPromptTextarea = domUtils.createElement('textarea', {
             attributes: { rows: '3', placeholder: 'Type your message...' },
-            styles: {
-                flexGrow: '1',
-                padding: '8px',
-                boxSizing: 'border-box',
-                backgroundColor: '#272822',
-                border: '1px solid #555',
-                color: '#F8F8F2',
-                resize: 'none' // Can be 'vertical' if preferred
-            }
-        });
-        aiChatPromptTextarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendPrompt();
-            }
-        });
+        styles: { flexGrow: '1', padding: '8px', boxSizing: 'border-box', backgroundColor: '#272822', border: '1px solid #555', color: '#F8F8F2', resize: 'none' }
+    });
+    aiChatPromptTextarea.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendPrompt(); } });
+    promptInputControlsRow.appendChild(aiChatPromptTextarea);
+    promptAreaContainer.appendChild(promptInputControlsRow); // Add textarea row to main prompt area
 
         const actionButtonsContainer = domUtils.createElement('div', {
             styles: {
                 display: 'flex',
                 flexDirection: 'row',
-                justifyContent: 'flex-start',
+            justifyContent: 'flex-start', // Left align buttons within this container
                 alignItems: 'center',
                 gap: '10px',
-                marginTop: '5px'
-            }
-        });
-
-        aiChatClearButton = domUtils.createElement('button', { 
-            textContent: '🗑️',
-            attributes: { title: 'Clicking this clears the chat history' }
-        });
-        // Explicitly setting styles property by property
-        aiChatClearButton.style.padding = '0px';
-        aiChatClearButton.style.width = '36px';
-        aiChatClearButton.style.height = 'auto';
-        aiChatClearButton.style.minHeight = '28px';
-        aiChatClearButton.style.lineHeight = '28px';
-        aiChatClearButton.style.textAlign = 'center';
-        aiChatClearButton.style.fontSize = '16px';
-        aiChatClearButton.style.backgroundColor = '#555';
-        aiChatClearButton.style.color = '#ccc';
-        aiChatClearButton.style.border = '1px solid #666';
-        aiChatClearButton.style.borderRadius = '4px';
-        aiChatClearButton.style.cursor = 'pointer';
-        aiChatClearButton.style.flexShrink = '0';
-
-        aiChatSendButton = domUtils.createElement('button', { 
-            textContent: '↑',
-            attributes: { title: 'Send message' }
-        });
-        // Explicitly setting styles property by property
-        aiChatSendButton.style.padding = '0px';
-        aiChatSendButton.style.width = '36px';
-        aiChatSendButton.style.height = 'auto';
-        aiChatSendButton.style.minHeight = '28px';
-        aiChatSendButton.style.lineHeight = '28px';
-        aiChatSendButton.style.textAlign = 'center';
-        aiChatSendButton.style.fontSize = '18px';
-        aiChatSendButton.style.backgroundColor = '#007bff';
-        aiChatSendButton.style.color = 'white';
-        aiChatSendButton.style.border = 'none';
-        aiChatSendButton.style.borderRadius = '4px';
-        aiChatSendButton.style.cursor = 'pointer';
-        aiChatSendButton.style.flexShrink = '0';
-
+            marginTop: '5px' // Space above the button row
+        }
+    });
+    aiChatClearButton = domUtils.createElement('button', { /* ... existing styles & attributes ... */ 
+        textContent: '🗑️', attributes: { title: 'Clicking this clears the chat history' }, 
+        styles: { padding: '0px', width: '36px', height: 'auto', minHeight: '28px', lineHeight: '28px', textAlign: 'center', fontSize: '16px', backgroundColor: '#555', color: '#ccc', border: '1px solid #666', borderRadius: '4px', cursor: 'pointer', flexShrink: '0' }
+    });
+    aiChatSendButton = domUtils.createElement('button', { /* ... existing styles & attributes ... */ 
+        textContent: '↑', attributes: { title: 'Send message' }, 
+        styles: { padding: '0px', width: '36px', height: 'auto', minHeight: '28px', lineHeight: '28px', textAlign: 'center', fontSize: '18px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: '0' }
+    });
         aiChatClearButton.addEventListener('click', handleClearChat);
-        aiChatClearButton.addEventListener('mouseenter', () => { 
-            aiChatClearButton.style.backgroundColor = '#666'; 
-            aiChatClearButton.style.color = '#fff'; 
-        });
-        aiChatClearButton.addEventListener('mouseleave', () => { 
-            aiChatClearButton.style.backgroundColor = '#555'; 
-            aiChatClearButton.style.color = '#ccc'; 
-        });
-
-        aiChatSendButton.addEventListener('click', () => handleSendPrompt());
+    aiChatClearButton.addEventListener('mouseenter', () => { aiChatClearButton.style.backgroundColor = '#666'; aiChatClearButton.style.color = '#fff'; });
+    aiChatClearButton.addEventListener('mouseleave', () => { aiChatClearButton.style.backgroundColor = '#555'; aiChatClearButton.style.color = '#ccc'; });
+    aiChatSendButton.addEventListener('click', handleSendPrompt);
         aiChatSendButton.addEventListener('mouseenter', () => aiChatSendButton.style.backgroundColor = '#0056b3');
         aiChatSendButton.addEventListener('mouseleave', () => aiChatSendButton.style.backgroundColor = '#007bff');
+    actionButtonsContainer.appendChild(aiChatClearButton);
+    actionButtonsContainer.appendChild(aiChatSendButton);
+    promptAreaContainer.appendChild(actionButtonsContainer); // Add button row to main prompt area, below textarea row
 
-        promptInputControlsRow.appendChild(aiChatPromptTextarea); // Textarea first
-        actionButtonsContainer.appendChild(aiChatClearButton);    // Clear button in vertical container
-        actionButtonsContainer.appendChild(aiChatSendButton);     // Send button in vertical container
-        promptInputControlsRow.appendChild(actionButtonsContainer);  // Append button container below textarea row
-
-        promptAreaContainer.appendChild(promptLabelLine); 
-        promptAreaContainer.appendChild(promptInputControlsRow); // Row with just textarea
-        
-        actionButtonsContainer.appendChild(aiChatClearButton);    // Clear button in vertical container
-        actionButtonsContainer.appendChild(aiChatSendButton);     // Send button in vertical container
-        promptAreaContainer.appendChild(actionButtonsContainer);  // Append button container below textarea row
-
-        aiChatInteractionContainer.appendChild(aiChatHistoryContainer);
         aiChatInteractionContainer.appendChild(promptAreaContainer);
+    // All children now appended to aiChatInteractionContainer
+
+    logger.log('debug', `PanelController: Appending fully constructed aiChatInteractionContainer. Children count: ${aiChatInteractionContainer.children.length}`);
         container.appendChild(aiChatInteractionContainer);
-    }
-     // Ensure interaction container is visible if it was previously hidden (e.g. re-verification)
+    
     aiChatInteractionContainer.style.display = 'flex';
+    logger.log('debug', `PanelController: aiChatInteractionContainer display set to flex. In current container? ${container.contains(aiChatInteractionContainer)}. Children count: ${aiChatInteractionContainer.children.length}`);
 }
 
 function handleSendPrompt() { // No successMessageElement needed
@@ -1456,7 +1295,7 @@ async function sendPromptToLLM(apiKey, prompt) {
                 errorMessage += ` - Server response: ${textResponse.substring(0, 200)}`;
             }
             appendMessageToChatHistory(errorMessage, 'error');
-            logger.log('error', `AI Chat: LLM API Error - ${errorMessage} (Full Response: ${JSON.stringify(responseData)})`);
+            logger.log('error', `AI Chat: LLM API Error - ${errorMessage} (Full Response: ${textResponse})`);
         }
     } catch (error) {
         const thinkingMessage = aiChatHistoryContainer?.querySelector('#llm-thinking-message');
@@ -1479,6 +1318,7 @@ function updateAIChatContextUI() {
         aiChatContextFileDisplay.textContent = `about ${fileName}`;
         aiChatIncludeFileCheckbox.style.display = 'inline-block';
         aiChatContextFileDisplay.style.display = 'inline';
+        aiChatIncludeFileCheckbox.checked = true; // Default to checked
     } else {
         aiChatContextFileDisplay.textContent = '';
         aiChatIncludeFileCheckbox.style.display = 'none';
@@ -1501,34 +1341,62 @@ function handleClearChat() {
 function handleAIChatSettingsClick() {
     logger.log('info', 'AI Chat: Settings button clicked.');
 
-    // Hide chat interaction area
-    if (aiChatInteractionContainer) {
-        aiChatInteractionContainer.style.display = 'none';
+    // Store the current persisted verification status so we can restore it if "Cancel" is hit.
+    const wasActuallyVerified = localStorage.getItem('aiChatApiKeyVerified') === 'true';
+
+    // Temporarily mark as not verified for the session to force form display
+    verifiedApiKey = null; 
+    // Crucially, also remove the persisted flag, so renderAIChatTabContent shows the form.
+    localStorage.removeItem('aiChatApiKeyVerified'); 
+    aiChatSessionInitialized = false; // Allow success message if they re-verify from this form
+    
+    // Re-render the tab content; it will now show the input form.
+    if (aiChatMainContainer) {
+        renderAIChatTabContent(aiChatMainContainer);
     }
 
-    // Show initial setup UI elements again
-    if (aiChatApiKeyLabel) aiChatApiKeyLabel.style.display = 'block';
-    if (aiChatApiKeyInput) {
-        aiChatApiKeyInput.style.display = 'block';
-        aiChatApiKeyInput.value = ''; // Keep it visually blank
+    // After renderAIChatTabContent has built the form, restore the original persisted verification status.
+    // This ensures that if the user clicks "Cancel", the next call to renderAIChatTabContent
+    // (triggered by handleAIChatCancelSettings) knows if it should revert to the chat view.
+    if (wasActuallyVerified) {
+        localStorage.setItem('aiChatApiKeyVerified', 'true');
     }
-    if (aiChatModelApiLabel) aiChatModelApiLabel.style.display = 'block';
-    if (aiChatModelApiInput) {
-        aiChatModelApiInput.style.display = 'block';
-        const storedModelApiUrl = localStorage.getItem('aiChatModelApiUrl') || DEFAULT_MODEL_API;
-        aiChatModelApiInput.value = storedModelApiUrl; // Show current/default API URL
-    } 
-    if (aiChatVerifyButton) aiChatVerifyButton.style.display = 'block';
-    if (aiChatVpnNote) aiChatVpnNote.style.display = 'block';
-    if (aiChatStatusMessage) {
-        aiChatStatusMessage.textContent = 'Enter your API key and click Verify.'; // Reset status message
-        aiChatStatusMessage.style.color = '#aaa';
-        aiChatStatusMessage.style.display = 'block';
+
+    // Add the Cancel button (defer to ensure Verify button is present from renderAIChatTabContent)
+    setTimeout(() => {
+        if (aiChatMainContainer && aiChatVerifyButton && !aiChatMainContainer.querySelector('.ai-chat-cancel-settings-button')) {
+            const cancelButton = domUtils.createElement('button', {
+                textContent: 'Cancel',
+                classes: ['ai-chat-cancel-settings-button'],
+                styles: { 
+                    padding: '10px 15px', backgroundColor: '#6c757d', color: 'white', 
+                    border: 'none', borderRadius: '4px', cursor: 'pointer',
+                    marginLeft: '10px', alignSelf: 'flex-start' 
+                }
+            });
+            cancelButton.addEventListener('click', handleAIChatCancelSettings);
+            cancelButton.addEventListener('mouseenter', () => cancelButton.style.backgroundColor = '#5a6268');
+            cancelButton.addEventListener('mouseleave', () => cancelButton.style.backgroundColor = '#6c757d');
+            if (aiChatVerifyButton.parentNode) {
+                 aiChatVerifyButton.parentNode.insertBefore(cancelButton, aiChatVerifyButton.nextSibling);
+            } else if (aiChatStatusMessage && aiChatStatusMessage.parentNode) {
+                 // Fallback if verify button isn't where we expect (e.g. if form structure changes)
+                 aiChatStatusMessage.parentNode.appendChild(cancelButton);
+            }
+        } else {
+            const existingCancelButton = aiChatMainContainer?.querySelector('.ai-chat-cancel-settings-button');
+            if (existingCancelButton) existingCancelButton.style.display = 'inline-block';
+        }
+    }, 0);
+}
+
+function handleAIChatCancelSettings() {
+    logger.log('info', 'AI Chat: Cancel settings clicked.');
+    // Re-render. renderAIChatTabContent will now check the (potentially restored) 
+    // localStorage 'aiChatApiKeyVerified' status and show chat or form.
+    if (aiChatMainContainer) {
+        renderAIChatTabContent(aiChatMainContainer);
     }
-    // `verifiedApiKey` is NOT cleared here. User might just be changing Model API URL.
-    // However, we should reset aiChatSessionInitialized so that if they re-verify,
-    // the "Successfully connected" message appears fresh for this "new" session setup.
-    aiChatSessionInitialized = false;
 }
 
 // --- AI Analysis Tab Functions ---
@@ -1539,81 +1407,141 @@ function renderAIAnalysisTabContent(container) {
         logger.log('error', 'AI Analysis: Container not provided for rendering.');
         return;
     }
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = ''; // Start fresh for this tab's specific content
     container.style.padding = '15px';
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.gap = '10px';
 
-    // Display for current source file
-    aiAnalysisTabElements.fileNameDisplay = domUtils.createElement('div', {
-        textContent: 'Current file: None',
+    // Create a flex row for the prompt text and Go button
+    const analysisPromptRow = domUtils.createElement('div', {
         styles: {
-            color: '#ccc',
-            fontSize: '1em',
-            marginBottom: '10px',
-            padding: '8px',
-            border: '1px solid #444',
-            backgroundColor: '#252526',
-            borderRadius: '4px'
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center' // Removed marginBottom: '15px'
+            // marginBottom: '15px' // Space below this row - REMOVED
         }
     });
-    container.appendChild(aiAnalysisTabElements.fileNameDisplay);
+    container.appendChild(analysisPromptRow);
 
-    // "Go!" button
+    // Descriptive text area (will use innerHTML for styled filename)
+    aiAnalysisTabElements.fileNameDisplay = domUtils.createElement('div', {
+        styles: {
+            color: '#ccc',
+            fontSize: '0.95em', 
+            lineHeight: '1.4',
+            paddingRight: '10px' // Space between text and button
+            // Removed direct margin/padding that might conflict with flex row
+        }
+    });
+    analysisPromptRow.appendChild(aiAnalysisTabElements.fileNameDisplay);
+
+    // Go Button - styles might need slight adjustment for flex alignment
     aiAnalysisTabElements.goButton = domUtils.createElement('button', {
         textContent: 'Go!',
-        styles: {
-            padding: '10px 15px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
+        styles: { 
+            padding: '8px 15px', // Adjusted padding slightly
+            backgroundColor: '#007bff', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '4px', 
             cursor: 'pointer',
-            alignSelf: 'flex-start'
+            flexShrink: '0' // Prevent button from shrinking
         }
     });
     aiAnalysisTabElements.goButton.addEventListener('click', handleAIAnalysisRequest);
     aiAnalysisTabElements.goButton.addEventListener('mouseenter', () => aiAnalysisTabElements.goButton.style.backgroundColor = '#0056b3');
     aiAnalysisTabElements.goButton.addEventListener('mouseleave', () => aiAnalysisTabElements.goButton.style.backgroundColor = '#007bff');
-    container.appendChild(aiAnalysisTabElements.goButton);
+    analysisPromptRow.appendChild(aiAnalysisTabElements.goButton);
 
-    // Area for analysis results
+    // Results Area - appended directly to main container as before
     aiAnalysisTabElements.resultsArea = domUtils.createElement('div', {
-        classes: ['ai-analysis-results-area'], // Added class for styling code tags
+        classes: ['ai-analysis-results-area'], 
         styles: {
-            flexGrow: '1',
-            overflowY: 'auto',
-            padding: '10px', // Existing padding
-            paddingLeft: '25px', // Increased left padding for list numbers
-            border: '1px solid #444',
-            marginTop: '10px',
-            backgroundColor: '#1e1e1e',
-            color: '#ccc',
-            minHeight: '100px',
-            whiteSpace: 'pre-wrap' // To preserve formatting from LLM
+            flexGrow: '1', // Takes up available vertical space in its parent container
+            overflowY: 'auto', 
+            padding: '10px', 
+            paddingLeft: '25px', 
+            border: '1px solid #444', 
+            marginTop: '10px', 
+            backgroundColor: '#1e1e1e', 
+            color: '#ccc', 
+            minHeight: '100px', 
+            whiteSpace: 'pre-wrap',
+            // Add flex properties to align content to the top
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start' // Aligns children (text blocks) to the top
         }
     });
     container.appendChild(aiAnalysisTabElements.resultsArea);
 
+    // Initial call to set the text (which now includes HTML)
+    updateAIAnalysisContextUI(); 
+    logger.log('info', 'AI Analysis tab content rendered with new prompt layout.');
+
+    const currentContextFile = state.currentSourceCodePathForAIChat;
+    let displayedResponse = false;
+
+    if (currentContextFile) {
+        const cacheKey = `solSrcExplorer_aiAnalysis_${currentContextFile}`;
+        try {
+            const cachedResponse = localStorage.getItem(cacheKey);
+            if (cachedResponse) {
+                aiAnalysisTabElements.resultsArea.innerHTML = cachedResponse;
+                // Sync in-memory state with what we just loaded from cache
+                updateState({
+                    currentAIAnalysisResponse: cachedResponse,
+                    currentFileForAIAnalysisResponse: currentContextFile
+                });
+                logger.log('info', `AI Analysis: Displayed cached response for ${currentContextFile}`);
+                displayedResponse = true;
+            }
+        } catch (e) {
+            logger.error(`AI Analysis: Error reading from localStorage for key ${cacheKey}:`, e);
+        }
+    }
+
+    if (!displayedResponse) {
+        // If no cached response was displayed (either no contextFile, or nothing in cache for it)
+        aiAnalysisTabElements.resultsArea.innerHTML = ''; 
+        logger.log('info', `AI Analysis: No cached response to display for context: ${currentContextFile}. Clearing results area.`);
+        // Clear stale in-memory state if the context is now different from what might have been there
+        if (state.currentFileForAIAnalysisResponse && currentContextFile !== state.currentFileForAIAnalysisResponse) {
+            updateState({
+                currentAIAnalysisResponse: null,
+                currentFileForAIAnalysisResponse: null
+            });
+            logger.log('debug', 'AI Analysis: Cleared stale in-memory analysis state due to context mismatch with cache miss.');
+        } else if (!currentContextFile && state.currentFileForAIAnalysisResponse) {
+            // If there's no current file context, clear any old in-memory analysis state
+            updateState({
+                currentAIAnalysisResponse: null,
+                currentFileForAIAnalysisResponse: null
+            });
+            logger.log('debug', 'AI Analysis: Cleared in-memory analysis state due to no active file context.');
+        }
+    }
+    
+    updateAIAnalysisContextUI(); // Updates the "Current file: ..." label
     logger.log('info', 'AI Analysis tab content rendered.');
-    updateAIAnalysisContextUI(); // Initial update of file name
 }
 
 function updateAIAnalysisContextUI() {
-    if (!aiAnalysisTabElements.fileNameDisplay) {
+    if (!aiAnalysisTabElements || !aiAnalysisTabElements.fileNameDisplay) { 
         return;
     }
 
-    if (state.currentSourceCodePathForAIChat) { // Re-use the same state property
-        const fileName = state.currentSourceCodePathForAIChat.split('/').pop();
-        aiAnalysisTabElements.fileNameDisplay.textContent = `Current file: ${fileName}`;
-    } else {
-        aiAnalysisTabElements.fileNameDisplay.textContent = 'Current file: None';
+    const contextFile = state.currentSourceCodePathForAIChat;
+    let htmlText = "Do you want me to analyze and summarize for UI-centric details including its overall function, conditional UI rendering, and global state usage?"; // Default text
+
+    if (contextFile) {
+        const fileName = escapeHtml(contextFile.split('/').pop());
+        htmlText = `Do you want me to analyze and summarize <span class="ai-analysis-filename">${fileName}</span> for UI-centric details including its overall function, conditional UI rendering, and global state usage?`;
     }
-    if (aiAnalysisTabElements.resultsArea) {
-        aiAnalysisTabElements.resultsArea.innerHTML = ''; // Clear previous results
-    }
+    
+    aiAnalysisTabElements.fileNameDisplay.innerHTML = htmlText;
+    logger.log('debug', `PanelController: updateAIAnalysisContextUI - Updated description text.`);
 }
 
 async function handleAIAnalysisRequest() {
@@ -1683,14 +1611,37 @@ Format the output clearly, using markdown for code elements (like prop names or 
                     const responseData = await response.json();
                     if (responseData.choices && responseData.choices.length > 0 && responseData.choices[0].text) {
                         const rawText = responseData.choices[0].text.trim();
-                        if (aiAnalysisTabElements.resultsArea) { // Ensure element still exists
-                            const dirtyHtml = marked.parse(rawText);
-                            const cleanHtml = DOMPurify.sanitize(dirtyHtml);
+                        const dirtyHtml = marked.parse(rawText);
+                        const cleanHtml = DOMPurify.sanitize(dirtyHtml); // cleanHtml IS DEFINED HERE
+
+                        if (aiAnalysisTabElements.resultsArea) { // Check if UI element for display exists
                             aiAnalysisTabElements.resultsArea.innerHTML = cleanHtml;
                         }
-                        logger.log('info', 'AI Analysis: LLM Response received and parsed as Markdown.');
-                    } else {
-                        aiAnalysisTabElements.resultsArea.textContent = 'Error: Received an empty or unexpected JSON response from LLM.';
+                        
+                        // Update in-memory state (uses cleanHtml)
+                        const analysisStateUpdate = {
+                            currentAIAnalysisResponse: cleanHtml, 
+                            currentFileForAIAnalysisResponse: state.currentSourceCodePathForAIChat 
+                        };
+                        updateState(analysisStateUpdate);
+                        logger.log('debug', 'AI Analysis: Storing analysis state (in-memory):', JSON.stringify(analysisStateUpdate).substring(0, 200) + "...");
+
+                        // Save to localStorage (uses cleanHtml)
+                        if (state.currentSourceCodePathForAIChat) {
+                            const cacheKey = `solSrcExplorer_aiAnalysis_${state.currentSourceCodePathForAIChat}`;
+                            try {
+                                localStorage.setItem(cacheKey, cleanHtml);
+                                logger.log('info', `AI Analysis: Saved response to localStorage for ${state.currentSourceCodePathForAIChat} under key ${cacheKey}`);
+                            } catch (e) {
+                                logger.error(`AI Analysis: Error saving to localStorage for key ${cacheKey}:`, e);
+                            }
+                        }
+                        logger.log('info', 'AI Analysis: LLM Response received and displayed/stored.');
+
+                    } else { // Handle response.ok but empty/invalid choices
+                        if (aiAnalysisTabElements.resultsArea) {
+                            aiAnalysisTabElements.resultsArea.textContent = 'Error: Received an empty or unexpected JSON response from LLM.';
+                        }
                         logger.log('warn', `AI Analysis: LLM response format unexpected: ${JSON.stringify(responseData)}`);
                     }
                 } else {
@@ -1698,12 +1649,14 @@ Format the output clearly, using markdown for code elements (like prop names or 
                     aiAnalysisTabElements.resultsArea.textContent = `Error: Received non-JSON response from LLM: ${textResponse.substring(0, 500)}`;
                     logger.log('warn', `AI Analysis: LLM sent non-JSON response: ${textResponse}`);
                 }
-            } else {
+            } else { // Handle non-OK HTTP responses (e.g., 4xx, 5xx)
                 let errorMessage = `HTTP ${response.status} - ${response.statusText}`;
-                const textResponse = await response.text(); // Get text for more detailed error
+                const textResponse = await response.text(); 
                 errorMessage += ` - Server response: ${textResponse.substring(0, 200)}`;
-                aiAnalysisTabElements.resultsArea.textContent = `Error: ${errorMessage}`;
-                logger.log('error', `AI Analysis: LLM API Error - ${errorMessage} (Full Response: ${textResponse})`);
+                if (aiAnalysisTabElements.resultsArea) {
+                    aiAnalysisTabElements.resultsArea.textContent = `Error: ${errorMessage}`;
+                }
+                logger.log('error', `AI Analysis: LLM API Error - ${errorMessage} (Full Response: ${textResponse.substring(0, 500)})`);
             }
         }
     } catch (error) {

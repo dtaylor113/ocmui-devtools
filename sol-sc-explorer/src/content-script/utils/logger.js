@@ -1,6 +1,6 @@
 // /repos/ocmui-devtools/sol-sc-explorer/src/content-script/utils/logger.js
 
-export const showDebugLogs = false; // Set to true for development, false for production/check-in
+export const showDebugLogs = true; // Set to true for development, false for production/check-in
 
 // Centralized logging utility
 export const logger = {
