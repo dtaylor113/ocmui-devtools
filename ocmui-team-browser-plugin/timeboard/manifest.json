@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "OCMUI Team Timeboard",
+  "description": "Teammates\u2019 current local time + reference time viewer. DST-aware via IANA time zones.",
+  "version": "1.5.0",
+  "action": {
+    "default_title": "Team Timeboard",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "32": "icon32.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

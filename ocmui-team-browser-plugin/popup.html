@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+    OCMUI Team Tools - Chrome Extension Popup
+    
+    Structure Overview:
+    - Fixed-size popup (840x580px) optimized for Chrome extension constraints
+    - Three-section layout: Header, Main Content (dynamic), Footer Navigation
+    - Settings modal for secure API token management
+    - CSP-compliant inline styles (Chrome Extension V3 requirement)
+    - Two-column JIRA ticket display with expandable sections
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCMUI Team Tools</title>
+    <style>
+        /* ==================== BASE STYLES ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 780px;
+            height: 700px;
+            background-color: black;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none; /* Prevent accidental text selection that might cause focus loss */
+            position: relative;
+        }
+        
+        /* ==================== LAYOUT STRUCTURE ==================== */
+        .header {
+            text-align: center;
+            padding: 10px 12px 0 12px;
+            flex-shrink: 0;
+            position: relative;
+        }
+        
+        .header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e74c3c;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .header p {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .settings-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 16px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+        
+        .settings-icon:hover {
+            color: white;
+            background-color: #333;
+        }
+        
+        .alert-indicator {
+            display: none;
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 18px;
+            color: #ef4444;
+        }
+        
+        .settings-icon.needs-setup .alert-indicator {
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        
+        .separator {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #333, transparent);
+            margin: 10px 25px 0 25px;
+        }
+        
+        /* ==================== JIRA INPUT SECTION ==================== */
+        .jira-section {
+            padding: 4px 8px 3px 8px;
+            flex-shrink: 0;
+        }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .input-group label {
+            width: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+        }
+        
+        .jira-input-container {
+            position: relative;
+            flex: 1;
+        }
+        
+        #jiraInput {
+            width: 100%;
+            max-width: 160px;
+            padding: 8px 10px;
+            font-size: 14px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background-color: #222;
+            color: white;
+            outline: none;
+        }
+        
+        #jiraInput:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        
+        #jiraDropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-width: 160px;
+            background-color: #222;
+            border: 1px solid #444;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+        
+        .dropdown-item {
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #333;
+        }
+        
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 4px 8px;
+            background-color: #111;
+            border-radius: 6px;
+            margin: 2px 8px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0; /* Allow flex item to shrink */
+            margin-bottom: 60px; /* Space for fixed footer */
+        }
+        
+        .footer-buttons {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #1a1a1a;
+            border-top: 1px solid #333;
+            padding: 8px 12px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            z-index: 100;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .tool-button {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #333;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            min-width: 120px;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .tool-button:hover {
+            background-color: #444;
+            border-color: #555;
+            transform: translateY(-1px);
+        }
+        
+        .tool-button:active {
+            transform: translateY(0);
+        }
+        
+        .tool-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            font-size: 14px;
+            object-fit: contain;
+        }
+        
+        .clock-icon {
+            color: #fbbf24;
+            font-size: 14px;
+        }
+        
+        /* Settings Modal Styles */
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+        }
+        
+        .settings-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            width: 400px;
+            padding: 24px;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .settings-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+            color: #e74c3c;
+        }
+        
+        .settings-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        
+        .settings-close:hover {
+            color: white;
+            background-color: #333;
+        }
+        
+        .token-group {
+            margin-bottom: 20px;
+        }
+        
+        .token-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #ccc;
+            margin-bottom: 8px;
+        }
+        
+        .token-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .token-input {
+            flex: 1;
+            background: #0b1220;
+            border: 1px solid #444;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+        
+        .token-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        
+        .token-input::placeholder {
+            color: #666;
+        }
+        
+        .test-btn {
+            background: #333;
+            border: 1px solid #555;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 60px;
+        }
+        
+        .test-btn:hover {
+            background: #444;
+        }
+        
+        .test-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .test-btn.testing {
+            background: #2563eb;
+        }
+        
+        .test-btn.success {
+            background: #059669;
+        }
+        
+        .test-btn.error {
+            background: #dc2626;
+        }
+        
+        .settings-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #333;
+        }
+        
+        .settings-save {
+            background: #2563eb;
+            border: 1px solid #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-save:hover {
+            background: #1d4ed8;
+        }
+        
+        .settings-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .settings-cancel {
+            background: #333;
+            border: 1px solid #555;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-cancel:hover {
+            background: #444;
+        }
+        
+        .error-message {
+            margin-top: 8px;
+            padding: 8px;
+            background: #2d1b1b;
+            border: 1px solid #dc2626;
+            border-radius: 4px;
+            color: #fca5a5;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .success-message {
+            margin-top: 8px;
+            padding: 8px;
+            background: #1b2d1b;
+            border: 1px solid #10b981;
+            border-radius: 4px;
+            color: #6ee7b7;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .token-help {
+            margin-bottom: 4px;
+        }
+        
+        .token-help a {
+            text-decoration: none;
+        }
+        
+        .token-help a:hover {
+            text-decoration: underline;
+        }
+        
+        /* ==================== JIRA TICKET DISPLAY ==================== */
+        .jira-ticket-details {
+            text-align: left;
+            width: 100%;
+            max-width: 100%;
+            user-select: text; /* Allow text selection in JIRA content */
+            box-sizing: border-box;
+            background: transparent;
+            border-radius: 6px;
+            padding: 6px;
+            border: 2px solid #3b82f6;
+            overflow-y: auto; /* Allow JIRA content to scroll if needed */
+        }
+        
+        .ticket-header {
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .ticket-header h3 {
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.3;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            flex: 1;
+            color: white;
+        }
+        
+        .copy-url-btn {
+            background: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .copy-url-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .copy-url-btn:active {
+            transform: translateY(1px);
+        }
+        
+        .ticket-status {
+            background: #333;
+            color: white;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .status-to-do,
+        .status-open,
+        .status-new {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .status-in-progress,
+        .status-selected-for-development {
+            background: #4f46e5;
+            color: white;
+        }
+        
+        .status-code-review,
+        .status-review {
+            background: #7c3aed;
+            color: white;
+        }
+        
+        .status-done,
+        .status-closed,
+        .status-resolved {
+            background: #059669;
+            color: white;
+        }
+        
+        .ticket-fields-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 4px;
+            width: 100%;
+        }
+        
+        .ticket-fields-left {
+            flex: 1;
+            min-width: 0; /* Allow flex items to shrink */
+        }
+        
+        .ticket-fields-right {
+            flex: 1;
+            min-width: 0; /* Allow flex items to shrink */
+        }
+        
+        .field-group {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 3px;
+            font-size: 12px;
+        }
+        
+        
+        .field-group strong {
+            width: 70px;
+            flex-shrink: 0;
+            color: #9ca3af;
+            font-size: 11px;
+        }
+        
+        .field-group span {
+            color: #e5e7eb;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            font-size: 12px;
+        }
+        
+        .priority {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .priority-blocker {
+            color: #dc2626;
+        }
+        
+        .priority-critical {
+            color: #f97316;
+        }
+        
+        .priority-major {
+            color: #f59e0b;
+        }
+        
+        .priority-normal {
+            color: #10b981;
+        }
+        
+        .priority-minor {
+            color: #3b82f6;
+        }
+        
+        .priority-undefined {
+            color: #6b7280;
+        }
+        
+        .issue-type {
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .issue-type.feature,
+        .issue-type.story {
+            background: #059669;
+            color: white;
+        }
+        
+        .issue-type.epic {
+            background: #7c3aed;
+            color: white;
+        }
+        
+        .issue-type.bug,
+        .issue-type.defect {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .issue-type.task,
+        .issue-type.sub-task,
+        .issue-type.subtask {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .issue-type.improvement {
+            background: #059669;
+            color: white;
+        }
+        
+        .issue-type.new-feature {
+            background: #059669;
+            color: white;
+        }
+        
+        /* Default styling for unknown issue types */
+        .issue-type:not(.feature):not(.story):not(.epic):not(.bug):not(.defect):not(.task):not(.sub-task):not(.subtask):not(.improvement):not(.new-feature) {
+            background: #374151;
+            color: white;
+        }
+        
+        .assignee {
+            font-weight: 500;
+        }
+        
+        .reporter {
+            color: #93c5fd;
+        }
+        
+        .created-date {
+            color: #d1d5db;
+            font-family: monospace;
+        }
+        
+        .blocked-reason {
+            color: #f87171;
+            font-style: italic;
+            font-weight: 500;
+        }
+        
+        .status-blocked,
+        .status-on-hold,
+        .status-impediment,
+        .status-waiting {
+            background: #dc2626 !important;
+            color: white;
+            position: relative;
+        }
+        
+        .status-blocked::before,
+        .status-on-hold::before,
+        .status-impediment::before,
+        .status-waiting::before {
+            content: '🚫 ';
+            margin-right: 2px;
+        }
+        
+        /* Description expandable section */
+        .description-section,
+        .comment-section {
+            margin-top: 6px;
+            border-top: 1px solid #444;
+            padding-top: 6px;
+        }
+        
+        .description-toggle,
+        .comment-toggle {
+            background: none;
+            border: none;
+            color: #93c5fd;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 3px 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s ease;
+        }
+        
+        .description-toggle:hover,
+        .comment-toggle:hover {
+            color: #60a5fa;
+        }
+        
+        .description-toggle .arrow,
+        .comment-toggle .arrow {
+            transition: transform 0.2s ease;
+            font-size: 12px;
+        }
+        
+        .description-toggle.expanded .arrow,
+        .comment-toggle.expanded .arrow {
+            transform: rotate(90deg);
+        }
+        
+        .description-content,
+        .comment-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            padding-top: 0;
+        }
+        
+        .description-content.expanded,
+        .comment-content.expanded {
+            max-height: 100px;
+            padding-top: 5px;
+        }
+        
+        .description-text,
+        .comment-text {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #d1d5db;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #3b82f6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 80px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        
+        .comment-header {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 4px;
+        }
+        
+        .comment-author {
+            color: #60a5fa;
+            font-weight: 500;
+        }
+        
+        .comment-date {
+            color: #6b7280;
+            font-family: monospace;
+        }
+        
+        .labels-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        
+        .label-tag {
+            background: #374151;
+            color: #d1d5db;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 500;
+            border: 1px solid #4b5563;
+        }
+        
+        
+        .pr-links {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .pr-links li {
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        
+        .pr-links a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+        
+        .pr-links a:hover {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
+        
+        
+        /* Loading State Styles */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: #888;
+            height: 100%;
+        }
+        
+        .loading-spinner {
+            font-size: 24px;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="settings-icon" id="settingsBtn" title="Settings">
+            <span class="gear">⚙️</span>
+            <span class="alert-indicator" id="alertIndicator">❗</span>
+        </button>
+        <h2>OCMUI Team Tools</h2>
+        <p>Quick access to JIRA and GitHub</p>
+    </div>
+    
+    <div class="separator"></div>
+    
+    <div class="jira-section">
+        <div class="input-group">
+            <label for="jiraInput">JIRA:</label>
+            <div class="jira-input-container">
+                <input type="text" id="jiraInput" placeholder="OCMUI-1234" maxlength="12">
+                <div id="jiraDropdown"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content" id="mainContent">
+        <!-- JIRA reporting content will go here -->
+        <span id="readyMessage">Ready for JIRA reporting features...</span>
+    </div>
+    
+    <div class="footer-buttons">
+        <a href="#" id="githubButton" class="tool-button">
+            <img src="githubIcon.png" alt="GitHub" class="tool-icon">
+            Pull Requests
+        </a>
+        
+        <a href="#" id="jiraBoardButton" class="tool-button">
+            <img src="jiraLogo.png" alt="JIRA" class="tool-icon">
+            JIRA Board
+        </a>
+        
+            <a href="#" id="timeboardButton" class="tool-button">
+                <span class="tool-icon clock-icon">🕐</span>
+                Team Timezones
+            </a>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="settings-modal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2 class="settings-title">API Settings</h2>
+                <button class="settings-close" id="settingsClose">&times;</button>
+            </div>
+            
+            <div class="token-group">
+                <label class="token-label" for="githubToken">GitHub Token:</label>
+            <div class="token-help">
+                <a href="https://github.com/settings/tokens" target="_blank" style="color: #3b82f6; font-size: 11px;">Create GitHub Token →</a>
+                <div style="color: #6b7280; font-size: 10px; margin-top: 4px;">
+                    💡 Select these scopes: <code>public_repo</code>, <code>repo:status</code>, <code>read:user</code>
+                </div>
+            </div>
+                <div class="token-input-group">
+                    <input type="password" id="githubToken" class="token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                    <button class="test-btn" id="testGithub">Test</button>
+                </div>
+                <div id="githubError" class="error-message" style="display: none;"></div>
+            </div>
+            
+            <div class="token-group">
+                <label class="token-label" for="jiraToken">JIRA Token:</label>
+                <div class="token-help">
+                    <a href="https://issues.redhat.com/secure/ViewProfile.jspa" target="_blank" style="color: #3b82f6; font-size: 11px;">Create JIRA Token →</a>
+                </div>
+                <div class="token-input-group">
+                    <input type="password" id="jiraToken" class="token-input" placeholder="Your JIRA API token">
+                    <button class="test-btn" id="testJira">Test</button>
+                </div>
+                <div id="jiraError" class="error-message" style="display: none;"></div>
+            </div>
+            
+            <div class="settings-actions">
+                <button class="settings-cancel" id="settingsCancel">Cancel</button>
+                <button class="settings-save" id="settingsSave">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
