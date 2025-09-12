@@ -97,6 +97,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Comment popup modal handlers
+    const commentPopupModal = document.getElementById('commentPopupModal');
+    const commentPopupClose = document.getElementById('commentPopupClose');
+    
+    if (commentPopupClose) {
+        commentPopupClose.addEventListener('click', closeCommentPopup);
+    }
+    
+    if (commentPopupModal) {
+        commentPopupModal.addEventListener('click', function(e) {
+            if (e.target === commentPopupModal) {
+                closeCommentPopup();
+            }
+        });
+    }
+    
     // ==================== CHROME STORAGE FUNCTIONS ====================
     
     function loadJiraHistory() {
@@ -382,10 +398,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const ticketHtml = `
             <div class="jira-ticket-details">
                 <div class="ticket-header">
-                    <h3><strong>${jiraId}: ${summary}</strong></h3>
-                    <button id="copyJiraUrlBtn" class="copy-url-btn" data-jira-id="${jiraId}" title="Copy JIRA URL to clipboard">
-                        Copy jira url
-                    </button>
+                    <a href="https://issues.redhat.com/browse/${jiraId}" target="_blank" class="jira-title-link">
+                        <img src="jiraLogo.png" alt="JIRA" class="jira-icon">
+                        <strong>${jiraId}: ${summary}</strong>
+                    </a>
                 </div>
                 
                 <div class="ticket-fields-container">
@@ -456,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 <div class="description-section">
                     <button class="description-toggle" id="descriptionToggle">
-                        <span class="arrow">▶</span>
+                        <span class="arrow">▶️</span>
                         <span>Description</span>
                     </button>
                     <div class="description-content" id="descriptionContent">
@@ -467,7 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${latestComment ? `
                     <div class="comment-section">
                         <button class="comment-toggle" id="commentToggle">
-                            <span class="arrow">▶</span>
+                            <span class="arrow">▶️</span>
                             <span>Latest Comment</span>
                         </button>
                         <div class="comment-content" id="commentContent">
@@ -479,6 +495,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 ` : ''}
+                
+                <div class="github-pr-section">
+                    <button class="github-pr-toggle expanded" id="githubPRToggle">
+                        <span class="arrow">🔽</span>
+                        <img src="githubIcon.png" alt="GitHub" class="github-icon">
+                        <span>Related GitHub PRs</span>
+                    </button>
+                    <div class="github-pr-collapsible-content expanded" id="githubPRCollapsibleContent">
+                        <div class="github-pr-container" id="githubPRContainer">
+                            <div class="github-loading-state">
+                                <div class="github-loading-spinner">⏳</div>
+                                <span>Searching GitHub PRs...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
             </div>
         `;
@@ -497,14 +529,26 @@ document.addEventListener('DOMContentLoaded', function() {
             commentToggle.addEventListener('click', toggleComment);
         }
         
-        // Add event listener for copy JIRA URL button (CSP-compliant)
-        const copyJiraUrlBtn = document.getElementById('copyJiraUrlBtn');
-        if (copyJiraUrlBtn) {
-            copyJiraUrlBtn.addEventListener('click', function(event) {
-                event.preventDefault();
-                const jiraId = copyJiraUrlBtn.getAttribute('data-jira-id');
-                copyJiraUrlToClipboard(jiraId);
-            });
+        // JIRA title is now a clickable link - no additional event listeners needed
+        
+        // Add event listener for GitHub PR toggle (CSP-compliant)
+        const githubPRToggle = document.getElementById('githubPRToggle');
+        if (githubPRToggle) {
+            githubPRToggle.addEventListener('click', toggleGithubPRSection);
+        }
+        
+        // Fetch and display associated GitHub PRs
+        if (apiTokens.github && apiTokens.github.trim().length > 0) {
+            fetchAndDisplayGithubPRs(jiraId); // Fetch all PRs
+        } else {
+            const githubPRContainer = document.getElementById('githubPRContainer');
+            if (githubPRContainer) {
+                githubPRContainer.innerHTML = `
+                    <div class="github-no-results">
+                        No GitHub token configured
+                    </div>
+                `;
+            }
         }
     }
     
@@ -520,39 +564,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     
-    // Copy JIRA URL to clipboard
-    function copyJiraUrlToClipboard(jiraId) {
-        const jiraUrl = `https://issues.redhat.com/browse/${jiraId}`;
-        
-        navigator.clipboard.writeText(jiraUrl).then(function() {
-            // Success feedback - briefly change button text
-            const copyBtn = document.getElementById('copyJiraUrlBtn');
-            if (copyBtn) {
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '✅ Copied!';
-                copyBtn.style.backgroundColor = '#059669';
-                
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalText;
-                    copyBtn.style.backgroundColor = '';
-                }, 1500);
-            }
-        }).catch(function(err) {
-            console.error('Failed to copy JIRA URL: ', err);
-            // Fallback for older browsers
-            const copyBtn = document.getElementById('copyJiraUrlBtn');
-            if (copyBtn) {
-                copyBtn.innerHTML = '❌ Failed';
-                copyBtn.style.backgroundColor = '#dc2626';
-                
-                setTimeout(() => {
-                    copyBtn.innerHTML = 'Copy jira url';
-                    copyBtn.style.backgroundColor = '';
-                }, 1500);
-            }
-        });
-    }
-    
     
     // Toggle description section
     function toggleDescription() {
@@ -563,11 +574,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (content.classList.contains('expanded')) {
             content.classList.remove('expanded');
             toggle.classList.remove('expanded');
-            arrow.textContent = '▶';
+            arrow.textContent = '▶️';
         } else {
             content.classList.add('expanded');
             toggle.classList.add('expanded');
-            arrow.textContent = '▼';
+            arrow.textContent = '🔽';
         }
     }
     
@@ -580,11 +591,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (content.classList.contains('expanded')) {
             content.classList.remove('expanded');
             toggle.classList.remove('expanded');
-            arrow.textContent = '▶';
+            arrow.textContent = '▶️';
         } else {
             content.classList.add('expanded');
             toggle.classList.add('expanded');
-            arrow.textContent = '▼';
+            arrow.textContent = '🔽';
         }
     }
     
@@ -889,6 +900,637 @@ document.addEventListener('DOMContentLoaded', function() {
         closeSettings();
         updateSettingsIconStatus();
     }
+    
+    // ==================== GITHUB PR INTEGRATION ====================
+    
+    /**
+     * Fetches GitHub PRs associated with the given JIRA ID
+     * Searches first in PR titles, then in PR descriptions if not found
+     */
+    async function fetchAndDisplayGithubPRs(jiraId) {
+        const githubPRContainer = document.getElementById('githubPRContainer');
+        
+        if (!githubPRContainer) {
+            console.error('GitHub PR container not found');
+            return;
+        }
+        
+        // Show loading state
+        githubPRContainer.innerHTML = `
+            <div class="github-loading-state">
+                <div class="github-loading-spinner">⏳</div>
+                <span>Searching GitHub PRs...</span>
+            </div>
+        `;
+        
+        try {
+            const prs = await searchGithubPRs(jiraId);
+            const prsWithReviews = await fetchPRReviewsInfo(prs);
+            displayGithubPRs(prsWithReviews, jiraId);
+        } catch (error) {
+            console.error('Error fetching GitHub PRs:', error);
+            githubPRContainer.innerHTML = `
+                <div class="github-no-results">
+                    Error fetching GitHub PRs: ${error.message}
+                </div>
+            `;
+        }
+    }
+    
+    /**
+     * Searches GitHub PRs for the given JIRA ID
+     * First searches in PR titles, then in PR descriptions
+     * Fetches both open and closed PRs
+     */
+    async function searchGithubPRs(jiraId) {
+        const repo = 'RedHatInsights/uhc-portal';
+        const headers = {
+            'Authorization': `token ${apiTokens.github}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'OCMUI-Team-Tools'
+        };
+        
+        let foundPRs = [];
+        
+        // Search 1: Look for JIRA ID in PR titles using GitHub Search API (all states)
+        try {
+            // Use quotes to search for exact phrase
+            const titleSearchUrl = `https://api.github.com/search/issues?q="${encodeURIComponent(jiraId)}"+type:pr+repo:${repo}`;
+            const titleResponse = await fetch(titleSearchUrl, { headers });
+            
+            if (titleResponse.ok) {
+                const titleData = await titleResponse.json();
+                foundPRs = titleData.items || [];
+                
+                console.log(`Found ${foundPRs.length} PRs with "${jiraId}" in title`);
+                
+                // Filter results to ensure they actually contain the JIRA ID (case insensitive)
+                foundPRs = foundPRs.filter(pr => 
+                    pr.title.toUpperCase().includes(jiraId.toUpperCase()) ||
+                    (pr.body && pr.body.toUpperCase().includes(jiraId.toUpperCase()))
+                );
+                
+                console.log(`After filtering: ${foundPRs.length} PRs actually contain "${jiraId}"`);
+            }
+        } catch (error) {
+            console.error('Error searching PR titles:', error);
+        }
+        
+        // If no results found in titles, search in PR body/description
+        if (foundPRs.length === 0) {
+            try {
+                const bodySearchUrl = `https://api.github.com/search/issues?q="${encodeURIComponent(jiraId)}"+in:body+type:pr+repo:${repo}`;
+                const bodyResponse = await fetch(bodySearchUrl, { headers });
+                
+                if (bodyResponse.ok) {
+                    const bodyData = await bodyResponse.json();
+                    let bodyResults = bodyData.items || [];
+                    
+                    console.log(`Found ${bodyResults.length} PRs with "${jiraId}" in body search`);
+                    
+                    // Filter results to ensure they actually contain the JIRA ID (case insensitive)
+                    bodyResults = bodyResults.filter(pr => 
+                        pr.title.toUpperCase().includes(jiraId.toUpperCase()) ||
+                        (pr.body && pr.body.toUpperCase().includes(jiraId.toUpperCase()))
+                    );
+                    
+                    foundPRs = bodyResults;
+                    console.log(`After filtering body results: ${foundPRs.length} PRs actually contain "${jiraId}"`);
+                }
+            } catch (error) {
+                console.error('Error searching PR descriptions:', error);
+            }
+        }
+        
+        // Sort PRs by creation date (newest first)
+        foundPRs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        return foundPRs;
+    }
+    
+    /**
+     * Fetches reviewer information for each PR with deep analysis
+     * Handles review timeline, dismissals, re-requests, gets most recent status,
+     * and fetches review comments for interactive display
+     */
+    async function fetchPRReviewsInfo(prs) {
+        const headers = {
+            'Authorization': `token ${apiTokens.github}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'OCMUI-Team-Tools'
+        };
+        
+        const prsWithReviews = await Promise.all(prs.map(async (pr) => {
+            try {
+                // Fetch PR details to get current review requests and mergeable status
+                const prDetailsUrl = `https://api.github.com/repos/RedHatInsights/uhc-portal/pulls/${pr.number}`;
+                const prDetailsResponse = await fetch(prDetailsUrl, { headers });
+                
+                // Fetch PR reviews (chronological order)
+                const reviewsUrl = `https://api.github.com/repos/RedHatInsights/uhc-portal/pulls/${pr.number}/reviews`;
+                const reviewsResponse = await fetch(reviewsUrl, { headers });
+                
+                // Fetch PR timeline for review requests/dismissals
+                const timelineUrl = `https://api.github.com/repos/RedHatInsights/uhc-portal/issues/${pr.number}/timeline`;
+                const timelineResponse = await fetch(timelineUrl, { 
+                    headers: {
+                        ...headers,
+                        'Accept': 'application/vnd.github.v3.star-fox-preview+json'
+                    }
+                });
+                
+                // Fetch check runs for status badges
+                const checksUrl = `https://api.github.com/repos/RedHatInsights/uhc-portal/commits/${pr.head?.sha || 'HEAD'}/check-runs`;
+                const checksResponse = await fetch(checksUrl, { headers });
+                
+                let reviewers = [];
+                let checkStatus = null;
+                let needsRebase = false;
+                
+                if (prDetailsResponse.ok && reviewsResponse.ok && timelineResponse.ok) {
+                    const prDetails = await prDetailsResponse.json();
+                    const reviews = await reviewsResponse.json();
+                    const timeline = await timelineResponse.json();
+                    
+                    // Determine rebase status
+                    needsRebase = prDetails.mergeable === false || 
+                                  (prDetails.mergeable_state && prDetails.mergeable_state === 'dirty');
+                    
+                    // Process check runs
+                    if (checksResponse.ok) {
+                        const checkRuns = await checksResponse.json();
+                        if (checkRuns.check_runs && checkRuns.check_runs.length > 0) {
+                            const allChecks = checkRuns.check_runs;
+                            const passedChecks = allChecks.filter(check => check.conclusion === 'success').length;
+                            const failedChecks = allChecks.filter(check => check.conclusion === 'failure').length;
+                            const pendingChecks = allChecks.filter(check => !check.conclusion || check.status === 'in_progress' || check.status === 'queued').length;
+                            
+                            if (pendingChecks > 0) {
+                                checkStatus = { status: 'pending', total: allChecks.length, pending: pendingChecks };
+                            } else if (failedChecks > 0) {
+                                checkStatus = { status: 'failure', total: allChecks.length, failed: failedChecks };
+                            } else {
+                                checkStatus = { status: 'success', total: allChecks.length, passed: passedChecks };
+                            }
+                        }
+                    }
+                    
+                    console.log(`Analyzing PR #${pr.number} - ${reviews.length} reviews, ${timeline.length} timeline events`);
+                    
+                    // Build comprehensive reviewer status map
+                    const reviewerStatusMap = new Map();
+                    
+                    // Step 1: Process timeline events chronologically to track review requests/dismissals
+                    timeline
+                        .filter(event => ['review_requested', 'review_request_removed', 'review_dismissed'].includes(event.event))
+                        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                        .forEach(event => {
+                            if (event.event === 'review_requested') {
+                                if (event.requested_reviewer) {
+                                    reviewerStatusMap.set(event.requested_reviewer.login, {
+                                        username: event.requested_reviewer.login,
+                                        status: 'review_requested',
+                                        state: 'REQUESTED',
+                                        lastUpdated: new Date(event.created_at),
+                                        isTeam: false
+                                    });
+                                }
+                                if (event.requested_team) {
+                                    reviewerStatusMap.set(`@${event.requested_team.name}`, {
+                                        username: event.requested_team.name,
+                                        status: 'review_requested',
+                                        state: 'REQUESTED',
+                                        lastUpdated: new Date(event.created_at),
+                                        isTeam: true
+                                    });
+                                }
+                            } else if (event.event === 'review_request_removed') {
+                                if (event.requested_reviewer) {
+                                    reviewerStatusMap.delete(event.requested_reviewer.login);
+                                }
+                                if (event.requested_team) {
+                                    reviewerStatusMap.delete(`@${event.requested_team.name}`);
+                                }
+                            } else if (event.event === 'review_dismissed' && event.review && event.review.user) {
+                                reviewerStatusMap.set(event.review.user.login, {
+                                    username: event.review.user.login,
+                                    status: 'dismissed',
+                                    state: 'DISMISSED',
+                                    lastUpdated: new Date(event.created_at),
+                                    isTeam: false
+                                });
+                            }
+                        });
+                    
+                    // Step 2: Process actual reviews chronologically (newest last to overwrite older reviews)
+                    reviews
+                        .sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at))
+                        .forEach(review => {
+                            if (!review.user) return;
+                            
+                            let status = 'commented';
+                            if (review.state === 'APPROVED') {
+                                status = 'approved';
+                            } else if (review.state === 'CHANGES_REQUESTED') {
+                                status = 'changes_requested';
+                            } else if (review.state === 'DISMISSED') {
+                                status = 'dismissed';
+                            } else if (review.state === 'COMMENTED') {
+                                status = 'commented';
+                            }
+                            
+                            const reviewDate = new Date(review.submitted_at);
+                            const existingReviewer = reviewerStatusMap.get(review.user.login);
+                            
+                            // Only update if this review is newer than existing status
+                            if (!existingReviewer || reviewDate > existingReviewer.lastUpdated) {
+                                reviewerStatusMap.set(review.user.login, {
+                                    username: review.user.login,
+                                    status: status,
+                                    state: review.state,
+                                    lastUpdated: reviewDate,
+                                    isTeam: false
+                                });
+                            }
+                        });
+                    
+                    // Step 3: Add current review requests (these override timeline if they exist)
+                    const currentRequested = prDetails.requested_reviewers || [];
+                    const currentTeamRequested = prDetails.requested_teams || [];
+                    
+                    currentRequested.forEach(reviewer => {
+                        // If someone has a current review request, it means they were re-requested
+                        // after their previous review, so mark as requested
+                        reviewerStatusMap.set(reviewer.login, {
+                            username: reviewer.login,
+                            status: 'review_requested',
+                            state: 'REQUESTED',
+                            lastUpdated: new Date(), // Most recent
+                            isTeam: false
+                        });
+                    });
+                    
+                    currentTeamRequested.forEach(team => {
+                        reviewerStatusMap.set(`@${team.name}`, {
+                            username: team.name,
+                            status: 'review_requested',
+                            state: 'REQUESTED',
+                            lastUpdated: new Date(), // Most recent
+                            isTeam: true
+                        });
+                    });
+                    
+                    // Step 4: Fetch detailed comments for reviewers who commented or requested changes
+                    const reviewersWithComments = await Promise.all(
+                        Array.from(reviewerStatusMap.values()).map(async (reviewer) => {
+                            if (reviewer.status === 'commented' || reviewer.status === 'changes_requested') {
+                                try {
+                                    // Find the review ID for this reviewer
+                                    const userReviews = reviews.filter(r => r.user && r.user.login === reviewer.username);
+                                    const comments = [];
+                                    
+                                    for (const review of userReviews) {
+                                        if (review.body && review.body.trim()) {
+                                            comments.push({
+                                                body: review.body,
+                                                submitted_at: review.submitted_at,
+                                                state: review.state
+                                            });
+                                        }
+                                        
+                                        // Fetch individual review comments if available
+                                        if (review.id) {
+                                            const commentsUrl = `https://api.github.com/repos/RedHatInsights/uhc-portal/pulls/${pr.number}/reviews/${review.id}/comments`;
+                                            const commentsResponse = await fetch(commentsUrl, { headers });
+                                            
+                                            if (commentsResponse.ok) {
+                                                const reviewComments = await commentsResponse.json();
+                                                reviewComments.forEach(comment => {
+                                                    if (comment.body) {
+                                                        comments.push({
+                                                            body: comment.body,
+                                                            created_at: comment.created_at,
+                                                            path: comment.path,
+                                                            line: comment.line
+                                                        });
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    }
+                                    
+                                    return { ...reviewer, comments };
+                                } catch (error) {
+                                    console.error(`Error fetching comments for ${reviewer.username}:`, error);
+                                    return reviewer;
+                                }
+                            }
+                            return reviewer;
+                        })
+                    );
+                    
+                    reviewers = reviewersWithComments;
+                    console.log(`PR #${pr.number} final reviewers:`, reviewers.map(r => `${r.username}:${r.status}`));
+                }
+                
+                return { ...pr, reviewers, checkStatus, needsRebase };
+            } catch (error) {
+                console.error(`Error fetching reviews for PR #${pr.number}:`, error);
+                return { ...pr, reviewers: [], checkStatus: null, needsRebase: false };
+            }
+        }));
+        
+        return prsWithReviews;
+    }
+    
+    /**
+     * Displays the GitHub PRs in the UI
+     */
+    function displayGithubPRs(prs, jiraId) {
+        const githubPRContainer = document.getElementById('githubPRContainer');
+        
+        if (!prs || prs.length === 0) {
+            githubPRContainer.innerHTML = `
+                <div class="github-no-results">
+                    No PRs found for ${jiraId}
+                </div>
+            `;
+            return;
+        }
+        
+        const prItems = prs.map((pr, index) => {
+            const prStatus = pr.state === 'closed' ? 
+                (pr.pull_request?.merged_at ? 'merged' : 'closed') : 'open';
+            
+            const statusClass = `pr-status-${prStatus}`;
+            const statusText = prStatus.charAt(0).toUpperCase() + prStatus.slice(1);
+            
+            const createdDate = new Date(pr.created_at).toLocaleDateString();
+            const author = pr.user?.login || 'Unknown';
+            
+            // Truncate long descriptions
+            let description = pr.body || 'No description provided';
+            if (description.length > 200) {
+                description = description.substring(0, 200) + '...';
+            }
+            
+            // Build reviewers display
+            let reviewersHtml = '';
+            if (pr.reviewers && pr.reviewers.length > 0) {
+                const reviewerItems = pr.reviewers.map((reviewer, reviewerIndex) => {
+                    const statusClass = `reviewer-${reviewer.status.replace('_', '-')}`;
+                    const statusIcon = getReviewerStatusIcon(reviewer.status);
+                    const displayName = reviewer.isTeam ? `@${reviewer.username}` : reviewer.username;
+                    const hasComments = reviewer.comments && reviewer.comments.length > 0;
+                    const clickableClass = hasComments ? 'clickable' : '';
+                    const dataAttribs = hasComments ? `data-username="${reviewer.username}" data-pr-index="${index}" data-reviewer-index="${reviewerIndex}"` : '';
+                    
+                    return `
+                        <span class="reviewer-item ${statusClass} ${clickableClass}" title="${reviewer.state}" ${dataAttribs}>
+                            ${statusIcon} ${displayName}
+                        </span>
+                    `;
+                }).join('');
+                
+                reviewersHtml = `
+                    <div class="github-pr-reviewers">
+                        <span>Reviewers:</span>
+                        <div class="reviewer-list">
+                            ${reviewerItems}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Build additional status badges (rebase only - checks will be inline with PR status)
+            let additionalBadgesHtml = '';
+            const additionalBadges = [];
+            
+            if (pr.needsRebase) {
+                additionalBadges.push(`<span class="pr-badge pr-badge-needs-rebase">🔀 Needs rebase</span>`);
+            }
+            
+            if (additionalBadges.length > 0) {
+                additionalBadgesHtml = `
+                    <div class="github-pr-badges">
+                        ${additionalBadges.join('')}
+                    </div>
+                `;
+            }
+            
+            // Build checks badge for inline display with PR status
+            let checksBadge = '';
+            if (pr.checkStatus) {
+                if (pr.checkStatus.status === 'success') {
+                    checksBadge = `<span class="pr-badge pr-badge-checks-pass">✅ Checks</span>`;
+                } else if (pr.checkStatus.status === 'failure') {
+                    checksBadge = `<span class="pr-badge pr-badge-checks-fail">❌ Checks</span>`;
+                } else if (pr.checkStatus.status === 'pending') {
+                    checksBadge = `<span class="pr-badge pr-badge-checks-pending">⏳ Checks</span>`;
+                }
+            }
+            
+            return `
+                <div class="github-pr-item">
+                    <div class="github-pr-header-row">
+                        <a href="${pr.html_url}" target="_blank" class="github-pr-title-link">
+                            #${pr.number} ${pr.title}
+                        </a>
+                        <div class="github-pr-status-row">
+                            <div class="github-pr-status ${statusClass}">
+                                ${statusText}
+                            </div>
+                            ${checksBadge}
+                        </div>
+                    </div>
+                    
+                    <div class="github-pr-meta">
+                        <span class="github-pr-author">${author}</span>
+                        <span>•</span>
+                        <span class="github-pr-date">${createdDate}</span>
+                    </div>
+                    
+                    ${reviewersHtml}
+                    ${additionalBadgesHtml}
+                    
+                    <button class="github-pr-description-toggle" id="prDescToggle${index}">
+                        <span class="arrow">▶️</span>
+                        <span>Description</span>
+                    </button>
+                    <div class="github-pr-description-content" id="prDescContent${index}">
+                        <div class="github-pr-description-text">${description}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        githubPRContainer.innerHTML = `
+            <div class="github-pr-list">
+                ${prItems}
+            </div>
+        `;
+        
+        // Store PR data globally for comment popup access
+        window.currentPRs = prs;
+        
+        // Add event listeners for description toggles
+        prs.forEach((pr, index) => {
+            const toggle = document.getElementById(`prDescToggle${index}`);
+            if (toggle) {
+                toggle.addEventListener('click', function() {
+                    togglePRDescription(index);
+                });
+            }
+        });
+        
+        // Add event listeners for clickable reviewer items (CSP-compliant)
+        const clickableReviewers = document.querySelectorAll('.reviewer-item.clickable');
+        clickableReviewers.forEach(reviewerItem => {
+            reviewerItem.addEventListener('click', function() {
+                const username = this.getAttribute('data-username');
+                const prIndex = parseInt(this.getAttribute('data-pr-index'));
+                const reviewerIndex = parseInt(this.getAttribute('data-reviewer-index'));
+                
+                if (username && !isNaN(prIndex) && !isNaN(reviewerIndex)) {
+                    showReviewerComments(username, prIndex, reviewerIndex);
+                }
+            });
+        });
+    }
+    
+    /**
+     * Returns the appropriate icon for reviewer status
+     */
+    function getReviewerStatusIcon(status) {
+        switch (status) {
+            case 'approved':
+                return '✅';
+            case 'changes_requested':
+                return '❌';
+            case 'review_requested':
+                return '⏳';
+            case 'commented':
+                return '💬';
+            case 'dismissed':
+                return '🚫';
+            default:
+                return '⏳';
+        }
+    }
+    
+    /**
+     * Toggles the description section for a GitHub PR
+     */
+    function togglePRDescription(index) {
+        const toggle = document.getElementById(`prDescToggle${index}`);
+        const content = document.getElementById(`prDescContent${index}`);
+        const arrow = toggle?.querySelector('.arrow');
+        
+        if (!toggle || !content || !arrow) return;
+        
+        if (content.classList.contains('expanded')) {
+            content.classList.remove('expanded');
+            toggle.classList.remove('expanded');
+            arrow.textContent = '▶️';
+        } else {
+            content.classList.add('expanded');
+            toggle.classList.add('expanded');
+            arrow.textContent = '🔽';
+        }
+    }
+    
+    /**
+     * Toggles the entire GitHub PR section
+     */
+    function toggleGithubPRSection() {
+        const toggle = document.getElementById('githubPRToggle');
+        const content = document.getElementById('githubPRCollapsibleContent');
+        const arrow = toggle?.querySelector('.arrow');
+        
+        if (!toggle || !content || !arrow) return;
+        
+        if (content.classList.contains('expanded')) {
+            content.classList.remove('expanded');
+            toggle.classList.remove('expanded');
+            arrow.textContent = '▶️';
+        } else {
+            content.classList.add('expanded');
+            toggle.classList.add('expanded');
+            arrow.textContent = '🔽';
+        }
+    }
+    
+    // ==================== COMMENT POPUP FUNCTIONS ====================
+    
+    /**
+     * Shows reviewer comments in a popup modal
+     * Called when clicking on clickable reviewer badges
+     */
+    function showReviewerComments(username, prIndex, reviewerIndex) {
+        if (!window.currentPRs || !window.currentPRs[prIndex]) {
+            console.error('PR data not available');
+            return;
+        }
+        
+        const pr = window.currentPRs[prIndex];
+        const reviewer = pr.reviewers[reviewerIndex];
+        
+        if (!reviewer.comments || reviewer.comments.length === 0) {
+            console.error('No comments available for this reviewer');
+            return;
+        }
+        
+        const commentPopupModal = document.getElementById('commentPopupModal');
+        const commentPopupTitle = document.getElementById('commentPopupTitle');
+        const commentPopupBody = document.getElementById('commentPopupBody');
+        const commentPopupContent = document.getElementById('commentPopupContent');
+        
+        if (!commentPopupModal || !commentPopupTitle || !commentPopupBody || !commentPopupContent) {
+            console.error('Comment popup elements not found');
+            return;
+        }
+        
+        // Set title
+        commentPopupTitle.textContent = `${username}'s Review Comments`;
+        
+        // Build comments HTML
+        const commentsHtml = reviewer.comments.map(comment => {
+            const date = comment.submitted_at || comment.created_at;
+            const formattedDate = date ? new Date(date).toLocaleDateString() : 'Unknown date';
+            const locationInfo = comment.path ? `${comment.path}${comment.line ? `:${comment.line}` : ''}` : '';
+            
+            return `
+                <div class="comment-item">
+                    <div class="comment-item-header">
+                        ${formattedDate}${locationInfo ? ` • ${locationInfo}` : ''}${comment.state ? ` • ${comment.state}` : ''}
+                    </div>
+                    <div class="comment-item-text">${comment.body}</div>
+                </div>
+            `;
+        }).join('');
+        
+        commentPopupBody.innerHTML = commentsHtml;
+        
+        // Position the modal near the clicked element (simple center for now)
+        commentPopupContent.style.top = '50%';
+        commentPopupContent.style.left = '50%';
+        commentPopupContent.style.transform = 'translate(-50%, -50%)';
+        
+        // Show modal
+        commentPopupModal.style.display = 'block';
+    }
+    
+    /**
+     * Closes the comment popup modal
+     */
+    function closeCommentPopup() {
+        const commentPopupModal = document.getElementById('commentPopupModal');
+        if (commentPopupModal) {
+            commentPopupModal.style.display = 'none';
+        }
+    }
+    
+    // Functions are now called via proper event listeners (CSP-compliant)
     
     // ==================== DROPDOWN MANAGEMENT ====================
     
