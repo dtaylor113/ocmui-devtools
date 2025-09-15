@@ -31,6 +31,19 @@
 .btn-secondary { background: #333; border: 1px solid #555; color: white; }
 .btn-secondary:hover { background: #444; }
 
+/* Test Button States */
+.test-btn.test-success {
+    background: #10b981 !important;
+    color: white !important;
+    border-color: #10b981 !important;
+}
+
+.test-btn.test-failure {
+    background: #ef4444 !important;
+    color: white !important;
+    border-color: #ef4444 !important;
+}
+
 /* JIRA Tab Styles */
 .jira-input-section { margin-bottom: 20px; }
 
@@ -895,11 +908,11 @@
 .column-title {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     margin-bottom: 16px;
     font-size: 16px;
     font-weight: 600;
-    gap: 8px;
+    gap: 16px;
 }
 
 .title-left {
