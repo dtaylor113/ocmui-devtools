@@ -9,6 +9,7 @@
 import { appState, getDefaultJiraPrefix } from '../core/appState.js';
 import { parseJiraMarkdown, getBadgeClass } from '../utils/formatting.js';
 import { showLoadingState } from '../utils/ui.js';
+import { generateJiraCardHTML } from '../utils/jiraCard.js';
 
 /**
  * Initialize the JIRA tab interface
@@ -529,79 +530,36 @@ function displayJiraTicket(ticket) {
     const jiraDisplay = document.getElementById('jiraTicketDisplay');
     if (!jiraDisplay) return;
     
-    // Generate badge classes for styling
-    const typeClass = getBadgeClass('type', ticket.type);
-    const priorityClass = getBadgeClass('priority', ticket.priority);
-    const statusClass = getBadgeClass('status', ticket.status);
-    
-    // Format comments for display
-    const commentsHtml = formatCommentsHtml(ticket.comments);
-    
-    // Build the ticket display HTML
-    const ticketHtml = `
-        <div class="jira-ticket">
-            <div class="jira-header">
-                <h3>
-                    <a href="https://issues.redhat.com/browse/${ticket.key}" target="_blank" 
-                       style="color: white; text-decoration: underline;">
-                        <img src="assets/jiraLogo.png" style="width: 16px; height: 16px; margin-right: 8px;">
-                        ${ticket.key}: ${ticket.summary}
-                    </a>
-                </h3>
-            </div>
-            <div class="jira-details-grid">
-                <div class="detail-left">
-                    <p><strong>Type:</strong><span class="badge badge-type ${typeClass}">${ticket.type}</span></p>
-                    <p><strong>Priority:</strong><span class="badge badge-priority badge-priority-${priorityClass}">${ticket.priority}</span></p>
-                    <p><strong>Status:</strong><span class="badge badge-status ${statusClass}">${ticket.status}</span></p>
-                </div>
-                <div class="detail-right">
-                    <p><strong>Assignee:</strong><span>${ticket.assignee || 'Unassigned'}</span></p>
-                    <p><strong>Reporter:</strong><span>${ticket.reporter}</span></p>
-                    <p><strong>Created:</strong><span>${new Date(ticket.created).toLocaleDateString()}</span></p>
-                </div>
-            </div>
-            <div class="jira-section">
-                <label><strong>Description:</strong></label>
-                <div class="jira-content">${parseJiraMarkdown(ticket.description)}</div>
-            </div>
-            ${commentsHtml}
-        </div>
-    `;
+    // Generate JIRA card using shared component (collapsible, initially expanded, no section wrapper)
+    const ticketHtml = generateJiraCardHTML(ticket, {
+        collapsible: true,
+        wrapInSection: false,
+        initiallyExpanded: true,
+        toggleFunction: 'toggleJiraMoreInfo'
+    });
     
     jiraDisplay.innerHTML = ticketHtml;
+    
+    // Make toggle function available globally for onclick handlers
+    window.toggleJiraMoreInfo = function(ticketKey) {
+        const content = document.getElementById(`more-info-${ticketKey}`);
+        const toggle = document.querySelector(`[onclick*="${ticketKey}"]`);
+        
+        if (content && toggle) {
+            const icon = toggle.querySelector('.toggle-icon');
+            const isExpanded = content.classList.contains('expanded');
+            
+            if (isExpanded) {
+                content.classList.remove('expanded');
+                if (icon) icon.textContent = '▶';
+            } else {
+                content.classList.add('expanded');
+                if (icon) icon.textContent = '▼';
+            }
+        }
+    };
 }
 
-/**
- * Format JIRA comments for HTML display
- * @param {Array} comments - Array of comment objects
- * @returns {string} HTML string for comments display
- */
-function formatCommentsHtml(comments) {
-    if (!comments || comments.length === 0) {
-        return '<div class="jira-section"><label><strong>Comments:</strong></label><div class="jira-content"><div class="no-comments">No comments yet</div></div></div>';
-    }
-    
-    const commentsHtml = comments.map(comment => {
-        const date = new Date(comment.created).toLocaleDateString();
-        const author = comment.author || 'Unknown';
-        const body = parseJiraMarkdown(comment.body || '');
-        
-        return `
-            <div class="comment">
-                <div class="comment-header">${author} - ${date}</div>
-                <div class="comment-body">${body}</div>
-            </div>
-        `;
-    }).join('');
-    
-    return `
-        <div class="jira-section">
-            <label><strong>Comments:</strong></label>
-            <div class="jira-content">${commentsHtml}</div>
-        </div>
-    `;
-}
 
 // Import the GitHub PR fetching function (will be defined in github.js)
 let fetchAndDisplayGitHubPRs;

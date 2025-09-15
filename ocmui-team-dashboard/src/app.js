@@ -15,6 +15,7 @@ import { initializeSettingsModal, updateReadyState } from './core/settings.js';
 // Feature components
 import { initializeJiraTab, setGitHubPRFetcher } from './components/jira.js';
 import { fetchAndDisplayGitHubPRs } from './components/github.js';
+import { initializeReviewsTab } from './components/reviews.js';
 
 // UI utilities
 import { initializeTabNavigation, initializeSplitPanes } from './utils/ui.js';
@@ -36,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialize feature modules
         initializeJiraTab();
+        initializeReviewsTab();
         
         // Set up module cross-dependencies
         setupModuleDependencies();

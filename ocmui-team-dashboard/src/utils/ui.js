@@ -10,74 +10,148 @@ import Split from 'split.js';
 
 /**
  * Initialize split panes for resizable columns
- * Sets up the JIRA/GitHub column splitter with persistent sizing
+ * Sets up split panes for both JIRA and Reviews tabs
  */
 export function initializeSplitPanes() {
     // Small delay to ensure DOM elements are fully rendered
     setTimeout(() => {
-        const jiraColumn = document.getElementById('jira-column');
-        const githubColumn = document.getElementById('github-column');
-        
-        console.log('🔧 Initializing split panes:', {
-            jiraColumn: !!jiraColumn,
-            githubColumn: !!githubColumn
-        });
-        
-        if (!jiraColumn || !githubColumn) {
-            console.error('❌ Split pane elements not found in DOM');
-            return;
+        initializeJiraSplitPanes();
+        initializeReviewsSplitPanes();
+    }, 100);
+}
+
+/**
+ * Initialize split panes for JIRA tab
+ */
+function initializeJiraSplitPanes() {
+    const jiraColumn = document.getElementById('jira-column');
+    const githubColumn = document.getElementById('github-column');
+    
+    console.log('🔧 Initializing JIRA split panes:', {
+        jiraColumn: !!jiraColumn,
+        githubColumn: !!githubColumn
+    });
+    
+    if (!jiraColumn || !githubColumn) {
+        console.error('❌ JIRA split pane elements not found in DOM');
+        return;
+    }
+    
+    // Load saved split sizes or use defaults (60% JIRA, 40% GitHub)
+    let initialSizes = [60, 40];
+    try {
+        const savedSizes = localStorage.getItem('ocmui_jira_split_sizes');
+        if (savedSizes) {
+            const parsedSizes = JSON.parse(savedSizes);
+            if (Array.isArray(parsedSizes) && parsedSizes.length === 2) {
+                initialSizes = parsedSizes;
+                console.log('🔧 Restored JIRA split sizes:', initialSizes);
+            }
         }
-        
-        // Load saved split sizes or use defaults (60% JIRA, 40% GitHub)
-        let initialSizes = [60, 40];
-        try {
-            const savedSizes = localStorage.getItem('ocmui_split_sizes');
-            if (savedSizes) {
-                const parsedSizes = JSON.parse(savedSizes);
-                if (Array.isArray(parsedSizes) && parsedSizes.length === 2) {
-                    initialSizes = parsedSizes;
-                    console.log('🔧 Restored saved split sizes:', initialSizes);
+    } catch (error) {
+        console.warn('🔧 Could not restore JIRA split sizes, using defaults:', error);
+    }
+    
+    try {
+        // Initialize Split.js with configuration
+        const splitInstance = Split(['#jira-column', '#github-column'], {
+            sizes: initialSizes,
+            minSize: 300,           // Minimum 300px for each pane
+            gutterSize: 8,          // 8px drag handle width
+            cursor: 'col-resize',   // Cursor style when hovering gutter
+            direction: 'horizontal',
+            snapOffset: 30,         // Snap to edges within 30px
+            dragInterval: 1,        // Update every 1px for smooth dragging
+            
+            // Event handlers
+            onDrag: function(sizes) {
+                console.log('🔧 Dragging JIRA split panes:', sizes);
+            },
+            
+            onDragEnd: function(sizes) {
+                // Save user's preferred sizes to localStorage
+                try {
+                    localStorage.setItem('ocmui_jira_split_sizes', JSON.stringify(sizes));
+                    console.log('🔧 JIRA split sizes saved:', sizes);
+                } catch (error) {
+                    console.warn('🔧 Could not save JIRA split sizes:', error);
                 }
             }
-        } catch (error) {
-            console.warn('🔧 Could not restore split sizes, using defaults:', error);
-        }
+        });
         
-        try {
-            // Initialize Split.js with configuration
-            const splitInstance = Split(['#jira-column', '#github-column'], {
-                sizes: initialSizes,
-                minSize: 300,           // Minimum 300px for each pane
-                gutterSize: 8,          // 8px drag handle width
-                cursor: 'col-resize',   // Cursor style when hovering gutter
-                direction: 'horizontal',
-                snapOffset: 30,         // Snap to edges within 30px
-                dragInterval: 1,        // Update every 1px for smooth dragging
-                
-                // Event handlers
-                onDrag: function(sizes) {
-                    // Optional: Add real-time feedback during drag
-                    console.log('🔧 Dragging split panes:', sizes);
-                },
-                
-                onDragEnd: function(sizes) {
-                    // Save user's preferred sizes to localStorage
-                    try {
-                        localStorage.setItem('ocmui_split_sizes', JSON.stringify(sizes));
-                        console.log('🔧 Split sizes saved:', sizes);
-                    } catch (error) {
-                        console.warn('🔧 Could not save split sizes:', error);
-                    }
-                }
-            });
-            
-            console.log('✅ Split.js initialized successfully');
-            return splitInstance;
-            
-        } catch (error) {
-            console.error('❌ Split.js initialization failed:', error);
+        console.log('✅ JIRA Split.js initialized successfully');
+        return splitInstance;
+        
+    } catch (error) {
+        console.error('❌ JIRA Split.js initialization failed:', error);
+    }
+}
+
+/**
+ * Initialize split panes for Reviews tab
+ */
+function initializeReviewsSplitPanes() {
+    const reviewsPrsColumn = document.getElementById('reviews-prs-column');
+    const reviewsJiraColumn = document.getElementById('reviews-jira-column');
+    
+    console.log('🔧 Initializing Reviews split panes:', {
+        reviewsPrsColumn: !!reviewsPrsColumn,
+        reviewsJiraColumn: !!reviewsJiraColumn
+    });
+    
+    if (!reviewsPrsColumn || !reviewsJiraColumn) {
+        console.error('❌ Reviews split pane elements not found in DOM');
+        return;
+    }
+    
+    // Load saved split sizes or use defaults (50% PRs, 50% JIRAs)
+    let initialSizes = [50, 50];
+    try {
+        const savedSizes = localStorage.getItem('ocmui_reviews_split_sizes');
+        if (savedSizes) {
+            const parsedSizes = JSON.parse(savedSizes);
+            if (Array.isArray(parsedSizes) && parsedSizes.length === 2) {
+                initialSizes = parsedSizes;
+                console.log('🔧 Restored Reviews split sizes:', initialSizes);
+            }
         }
-    }, 100);
+    } catch (error) {
+        console.warn('🔧 Could not restore Reviews split sizes, using defaults:', error);
+    }
+    
+    try {
+        // Initialize Split.js with configuration
+        const splitInstance = Split(['#reviews-prs-column', '#reviews-jira-column'], {
+            sizes: initialSizes,
+            minSize: 300,           // Minimum 300px for each pane
+            gutterSize: 8,          // 8px drag handle width
+            cursor: 'col-resize',   // Cursor style when hovering gutter
+            direction: 'horizontal',
+            snapOffset: 30,         // Snap to edges within 30px
+            dragInterval: 1,        // Update every 1px for smooth dragging
+            
+            // Event handlers
+            onDrag: function(sizes) {
+                console.log('🔧 Dragging Reviews split panes:', sizes);
+            },
+            
+            onDragEnd: function(sizes) {
+                // Save user's preferred sizes to localStorage
+                try {
+                    localStorage.setItem('ocmui_reviews_split_sizes', JSON.stringify(sizes));
+                    console.log('🔧 Reviews split sizes saved:', sizes);
+                } catch (error) {
+                    console.warn('🔧 Could not save Reviews split sizes:', error);
+                }
+            }
+        });
+        
+        console.log('✅ Reviews Split.js initialized successfully');
+        return splitInstance;
+        
+    } catch (error) {
+        console.error('❌ Reviews Split.js initialization failed:', error);
+    }
 }
 
 /**
@@ -165,6 +239,16 @@ export function switchTab(tabName) {
         content.classList.remove('active');
     });
     document.getElementById(`${tabName}-tab`)?.classList.add('active');
+    
+    // Reset right panel when switching to My Code Reviews tab
+    if (tabName === 'reviews') {
+        const reviewsJiraContent = document.getElementById('reviews-jira-content');
+        if (reviewsJiraContent) {
+            showPlaceholderState('reviews-jira-content', 
+                'Associated JIRAs will be loaded here...', 
+                '📝');
+        }
+    }
     
     console.log('📑 Switched to tab:', tabName);
 }

@@ -17,22 +17,49 @@ export function parseJiraMarkdown(text) {
     
     let html = text;
     
+    // First, preserve code blocks to prevent them from being processed
+    const codeBlocks = [];
+    html = html.replace(/\{code(?:[^}]*)?\}([\s\S]*?)\{code\}/g, (match, code) => {
+        codeBlocks.push(code);
+        return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+    });
+    
+    // Preserve inline code
+    const inlineCodes = [];
+    html = html.replace(/\{\{([^}]+)\}\}/g, (match, code) => {
+        inlineCodes.push(code);
+        return `__INLINE_CODE_${inlineCodes.length - 1}__`;
+    });
+    
     // Convert JIRA-style headers (h1. h2. h3. etc.)
     html = html.replace(/^h([1-6])\.\s*(.+)$/gm, '<h$1>$2</h$1>');
     
-    // Convert JIRA color tags: {color:#hexcode}text{color}
+    // Convert JIRA color tags: {color:#hexcode}text{color} - more careful matching
     html = html.replace(/\{color:(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}|[a-zA-Z]+)\}([^{}]*?)\{color\}/g, 
         '<span style="color: $1">$2</span>');
     
-    // Convert text formatting
-    html = html.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');  // Bold: *text*
-    html = html.replace(/_([^_]+)_/g, '<em>$1</em>');            // Italic: _text_
-    html = html.replace(/\+([^+]+)\+/g, '<u>$1</u>');           // Underline: +text+
-    html = html.replace(/-([^-]+)-/g, '<del>$1</del>');         // Strikethrough: -text-
+    // Remove any remaining empty JIRA tags
+    html = html.replace(/\{[^}]*\}/g, '');
     
-    // Convert links: [text|url] or [url]
+    // Convert text formatting - be more careful with delimiters
+    html = html.replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>');  // Bold: *text*
+    html = html.replace(/_([^_\n]+)_/g, '<em>$1</em>');            // Italic: _text_
+    html = html.replace(/\+([^+\n]+)\+/g, '<u>$1</u>');           // Underline: +text+
+    
+    // More careful strikethrough - only if surrounded by spaces or at start/end
+    html = html.replace(/(?:^|[\s])-([^-\n]+)-(?=[\s]|$)/g, (match, text) => {
+        return match.replace(`-${text}-`, `<del>${text}</del>`);
+    });
+    
+    // Convert links: [text|url] or [url] - but not if they look like invalid brackets
     html = html.replace(/\[([^|\]]+)\|([^\]]+)\]/g, '<a href="$2" target="_blank">$1</a>');
-    html = html.replace(/\[([^\]]+)\]/g, '<a href="$1" target="_blank">$1</a>');
+    html = html.replace(/\[([^\]]+)\]/g, (match, content) => {
+        // Only convert if it looks like a URL or valid link
+        if (content.includes('http') || content.includes('.com') || content.includes('.org')) {
+            return `<a href="${content}" target="_blank">${content}</a>`;
+        }
+        return match; // Leave as is if not URL-like
+    });
     
     // Convert lists
     html = html.replace(/^(\*+)\s*(.+)$/gm, (match, bullets, text) => {
@@ -45,11 +72,15 @@ export function parseJiraMarkdown(text) {
         return `<ol><li style="margin-left: ${(level-1) * 20}px">${text}</li></ol>`;
     });
     
-    // Convert code blocks: {code}...{code}
-    html = html.replace(/\{code(?:[^}]*)?\}([\s\S]*?)\{code\}/g, '<pre><code>$1</code></pre>');
+    // Restore code blocks
+    codeBlocks.forEach((code, index) => {
+        html = html.replace(`__CODE_BLOCK_${index}__`, `<pre><code>${code}</code></pre>`);
+    });
     
-    // Convert inline code: {{text}}
-    html = html.replace(/\{\{([^}]+)\}\}/g, '<code>$1</code>');
+    // Restore inline code
+    inlineCodes.forEach((code, index) => {
+        html = html.replace(`__INLINE_CODE_${index}__`, `<code>${code}</code>`);
+    });
     
     // Convert line breaks
     html = html.replace(/\r?\n/g, '<br>');
@@ -57,6 +88,10 @@ export function parseJiraMarkdown(text) {
     // Clean up consecutive list items
     html = html.replace(/<\/ul>\s*<ul>/g, '');
     html = html.replace(/<\/ol>\s*<ol>/g, '');
+    
+    // Clean up any remaining empty brackets
+    html = html.replace(/\[\s*\]/g, '');
+    html = html.replace(/\{\s*\}/g, '');
     
     return html;
 }

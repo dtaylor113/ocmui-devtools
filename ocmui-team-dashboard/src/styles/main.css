@@ -1,3 +1,34 @@
+/* Custom Scrollbars - Narrower and More Subtle */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+    border: 1px solid #333;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+::-webkit-scrollbar-corner {
+    background: #1a1a1a;
+}
+
+/* Firefox scrollbar styling */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #444 #1a1a1a;
+}
+
 /* Settings Modal Styles */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; }
 .modal-backdrop { width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; }
@@ -317,6 +348,15 @@
     font-size: 16px;
     line-height: 1.4;
 }
+
+.jira-header h3 a {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+
+
 
 /* Two-column grid for details */
 .jira-details-grid {
@@ -947,4 +987,657 @@
 
 .github-title .title-left {
     justify-content: flex-start;
+}
+
+/* Reviews Tab Split Container Padding */
+#reviews-split-container .gutter {
+    margin: 0 8px !important;
+}
+
+#reviews-split-container .split-pane {
+    padding: 0 8px;
+}
+
+/* Reviews Tab Styles */
+.prs-list {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.prs-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.prs-header h3 {
+    color: #10b981;
+    font-size: 18px;
+    margin: 0;
+}
+
+.prs-items {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.pr-item {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pr-item:hover {
+    border-color: #555;
+    background: #222;
+}
+
+.pr-item.active {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.pr-header {
+    margin-bottom: 8px;
+}
+
+.pr-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.pr-link {
+    text-decoration: none;
+    color: inherit;
+    flex: 1;
+    transition: color 0.2s ease;
+}
+
+.pr-link:hover {
+    color: #10b981;
+}
+
+.pr-link h4 {
+    color: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.pr-title h4 {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    flex: 1;
+    line-height: 1.3;
+}
+
+.pr-external-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid #3b82f6;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #93c5fd;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.pr-external-link:hover {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: #60a5fa;
+    color: #dbeafe;
+    transform: translateY(-1px);
+}
+
+.pr-number {
+    background: #333;
+    color: #10b981;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.review-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-waiting {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+    border: 1px solid #4b5563;
+}
+
+.status-changes-requested {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+}
+
+.status-approved {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid #10b981;
+}
+
+.status-commented {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid #3b82f6;
+}
+
+.pr-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #888;
+    flex-wrap: wrap;
+}
+
+.pr-repo {
+    color: #f59e0b;
+    font-weight: 500;
+}
+
+.review-count {
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.pr-labels {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.pr-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.pr-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pr-badge-checks-pass {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid #10b981;
+}
+
+.pr-badge-checks-fail {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+}
+
+.pr-badge-checks-pending {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid #f59e0b;
+}
+
+.pr-badge-needs-rebase {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c4b5fd;
+    border: 1px solid #8b5cf6;
+}
+
+.label {
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #000;
+    background: #666;
+}
+
+.pr-reviewers {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.reviewers-label {
+    font-size: 12px;
+    color: #888;
+    font-weight: 500;
+}
+
+.reviewer-list {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.reviewer-item {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.reviewer-approved {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid #10b981;
+}
+
+.reviewer-changes-requested {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+}
+
+.reviewer-commented {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid #3b82f6;
+}
+
+.reviewer-pending {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+    border: 1px solid #4b5563;
+}
+
+.reviewer-dismissed {
+    background: rgba(107, 114, 128, 0.2);
+    color: #6b7280;
+    border: 1px solid #374151;
+}
+
+.reviewer-item.current-user {
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+    position: relative;
+}
+
+.reviewer-item.current-user::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 4px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.2));
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+}
+
+/* JIRA Collapsible Sections */
+.jira-collapsible {
+    margin-top: 16px;
+}
+
+.jira-collapse-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #93c5fd;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.jira-collapse-toggle:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: #60a5fa;
+}
+
+.toggle-icon {
+    font-size: 12px;
+    transition: transform 0.2s ease;
+    color: #3b82f6;
+}
+
+.toggle-text {
+    flex: 1;
+}
+
+.jira-collapse-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0 0 6px 6px;
+}
+
+.jira-collapse-content.expanded {
+    max-height: 2000px;
+    padding: 16px;
+    border: 1px solid #333;
+    border-top: none;
+}
+
+.jira-collapse-content .jira-section {
+    margin-bottom: 16px;
+}
+
+.jira-collapse-content .jira-section:last-child {
+    margin-bottom: 0;
+}
+
+/* Shared PR Card Component Styles */
+.github-prs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.github-pr-item {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.github-pr-item:hover {
+    border-color: #555;
+    background: #222;
+}
+
+.github-pr-item.active {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.github-pr-item.clickable-pr {
+    cursor: pointer;
+}
+
+.github-pr-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 12px;
+}
+
+.github-pr-title-link {
+    color: #fff;
+    text-decoration: underline;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.3;
+    flex: 1;
+}
+
+.github-pr-title-link:hover {
+    color: #10b981;
+}
+
+.github-pr-title-text {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.3;
+    flex: 1;
+}
+
+.github-pr-status-row {
+    display: flex;
+    align-items: center;
+}
+
+.github-pr-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.pr-status-open {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid #22c55e;
+}
+
+.pr-status-closed {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+}
+
+.pr-status-merged {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c4b5fd;
+    border: 1px solid #8b5cf6;
+}
+
+.github-pr-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.github-pr-author {
+    color: #f59e0b;
+    font-weight: 500;
+}
+
+.github-pr-date {
+    color: #888;
+}
+
+.github-pr-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.github-pr-reviewers {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #888;
+}
+
+/* Associated JIRAs Styles */
+.associated-jiras {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.jiras-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.jiras-header h3 {
+    color: #f59e0b;
+    font-size: 18px;
+    margin: 0 0 4px 0;
+}
+
+.pr-info {
+    color: #888;
+    font-size: 12px;
+    margin: 0;
+}
+
+.jiras-sections {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* JIRA ticket sections in Reviews tab */
+.jira-ticket-section {
+    margin-bottom: 20px;
+}
+
+.jira-ticket-section:last-child {
+    margin-bottom: 0;
+}
+
+.jira-ticket-section .jira-header {
+    margin-bottom: 0;
+}
+
+.jira-ticket-section .jira-header h3 {
+    margin-bottom: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+.jira-ticket-section .jira-header h3 a {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+/* Legacy JIRA sections (for old Load Details buttons - now unused) */
+.jira-section {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+/* Legacy JIRA header styles - keeping for backward compatibility */
+.legacy-jira-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #222;
+    border-bottom: 1px solid #333;
+}
+
+.jira-header h4 {
+    color: #f59e0b;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+.load-jira-btn {
+    background: #333;
+    border: 1px solid #555;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.load-jira-btn:hover {
+    background: #444;
+    border-color: #666;
+}
+
+.jira-content {
+    padding: 16px;
+}
+
+.jira-details {
+    color: #ccc;
+    line-height: 1.5;
+}
+
+.jira-details p {
+    margin: 0 0 8px 0;
+}
+
+/* Loading and Error States for Reviews */
+.reviews-prs-content .loading,
+.reviews-jira-content .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px;
+    color: #888;
+}
+
+.reviews-prs-content .placeholder,
+.reviews-jira-content .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #666;
+    text-align: center;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reviews-prs-content .error,
+.reviews-jira-content .error {
+    padding: 20px;
+    color: #ef4444;
+    text-align: center;
+}
+
+.reviews-prs-content .error-message,
+.reviews-jira-content .error-message {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.reviews-prs-content .error-details,
+.reviews-jira-content .error-details {
+    font-size: 12px;
+    color: #999;
+    font-family: monospace;
+    background: #1a1a1a;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 8px;
 }

@@ -91,7 +91,7 @@
     
     <nav class="nav-tabs">
         <button class="nav-tab active" data-tab="jira">JIRA</button>
-        <button class="nav-tab" data-tab="reviews">Awaiting My Code Review</button>
+        <button class="nav-tab" data-tab="reviews">My Code Reviews</button>
         <button class="nav-tab" data-tab="my-prs">My PRs</button>
     </nav>
     
@@ -120,10 +120,24 @@
         </div>
         
         <div class="tab-content" id="reviews-tab">
-            <div class="coming-soon">
-                <div>
-                    <h2>📝 Awaiting My Code Review</h2>
-                    <p>PRs where you are assigned as a reviewer will appear here</p>
+            <div class="split-container" id="reviews-split-container">
+                <div class="split-pane" id="reviews-prs-column">
+                    <h3 class="column-title github-title">
+                        <img src="assets/githubIcon.png" alt="GitHub" class="column-icon">
+                        PRs I'm Reviewing
+                    </h3>
+                    <div id="reviews-prs-content">
+                        <div class="coming-soon">Loading reviews awaiting your review...</div>
+                    </div>
+                </div>
+                <div class="split-pane" id="reviews-jira-column">
+                    <h3 class="column-title jira-title">
+                        <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
+                        Associated JIRAs
+                    </h3>
+                    <div id="reviews-jira-content">
+                        <div class="coming-soon">Associated JIRAs will be loaded here...</div>
+                    </div>
                 </div>
             </div>
         </div>
