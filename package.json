@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@atlaskit/adf-utils": "^19.23.0",
+    "@atlaskit/editor-confluence-transformer": "^12.2.1"
+  }
+}

@@ -27,18 +27,17 @@
 
 ## 🚀 Quick Start
 
-### 1. Install Extension
+### 1. Navigate to Extension Directory
 ```bash
-# Clone or download the extension
-git clone [your-repo-url]
-cd ocmui-team
-
-# Install in Chrome
-# 1. Open chrome://extensions/
-# 2. Enable "Developer mode"
-# 3. Click "Load unpacked"
-# 4. Select the ocmui-team folder
+cd ocmui-devtools/ocmui-team-browser-plugin
 ```
+
+### 2. Install Extension in Chrome
+1. Open `chrome://extensions/`
+2. Enable **"Developer mode"** (top-right toggle)
+3. Click **"Load unpacked"**
+4. Select the `ocmui-team-browser-plugin` folder
+5. The red fedora icon should appear in your toolbar!
 
 ### 2. Setup Your Tokens (5 minutes)
 1. **Click the red fedora icon** in Chrome toolbar
@@ -171,3 +170,8 @@ This project is for internal OCMUI team use. All rights reserved.
 **Built with ❤️ for the OCMUI Team**
 
 *Questions? Feedback? Find @dtaylor on Slack!*
+
+---
+
+**Tech Stack:** Chrome Extension V3, Vanilla JavaScript  
+**Part of:** [OCMUI DevTools](../README.md) monorepo
