@@ -126,13 +126,17 @@ export function generatePRCardHTML(pr, options = {}) {
                        pr.prDetails?.mergeable === false ||
                        pr.needsRebase;
     
+    // Check if PR is in draft mode
+    const isDraft = pr.draft === true || pr.prDetails?.draft === true;
+    const draftBadge = isDraft ? '<span class="pr-badge pr-badge-draft">[Draft]</span>' : '';
+    
     // Generate title section
     let titleSection;
     if (clickableTitle) {
-        titleSection = `<a href="${url}" target="_blank" class="github-pr-title-link">${title}</a>`;
+        titleSection = `<a href="${url}" target="_blank" class="github-pr-title-link">${draftBadge}#${prNumber} ${title}</a>`;
     } else {
         titleSection = `
-            <div class="github-pr-title-text">#${prNumber} ${title}</div>
+            <div class="github-pr-title-text">${draftBadge}#${prNumber} ${title}</div>
             ${showLinkIcon ? `
                 <a href="${url}" target="_blank" rel="noopener noreferrer" class="pr-external-link" title="Open PR in GitHub">
                     <span>🔗</span>
@@ -158,13 +162,15 @@ export function generatePRCardHTML(pr, options = {}) {
                 </div>
             </div>
             <div class="github-pr-meta">
-                <span>By <span class="github-pr-author">${author}</span></span>
-                <span>•</span>
-                <span class="github-pr-date">${createdDate}</span>
-            </div>
-            <div class="github-pr-badges">
-                ${checkStatus.html}
-                ${needsRebase ? '<span class="pr-badge pr-badge-needs-rebase">Needs Rebase</span>' : ''}
+                <div class="github-pr-meta-left">
+                    ${checkStatus.html}
+                    ${needsRebase ? '<span class="pr-badge pr-badge-needs-rebase">Needs Rebase</span>' : ''}
+                </div>
+                <div class="github-pr-meta-right">
+                    <span>By <span class="github-pr-author">${author}</span></span>
+                    <span>•</span>
+                    <span class="github-pr-date">Created: ${createdDate}</span>
+                </div>
             </div>
             ${reviewerInfo.html ? `
                 <div class="github-pr-reviewers">

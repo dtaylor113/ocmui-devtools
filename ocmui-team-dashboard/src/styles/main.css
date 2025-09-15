@@ -183,7 +183,7 @@
 
 /* JIRA History Section */
 .jira-history-section {
-    margin-bottom: 16px;
+    margin-bottom: 8px;
 }
 
 .jira-history-section label {
@@ -998,6 +998,154 @@
     padding: 0 8px;
 }
 
+/* My PRs Tab Split Container Padding */
+#my-prs-split-container .gutter {
+    margin: 0 8px !important;
+}
+
+#my-prs-split-container .split-pane {
+    padding: 0 8px;
+}
+
+/* My PRs Tab Controls */
+.my-prs-controls {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #333;
+}
+
+.pr-filter-controls {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+}
+
+.radio-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ccc;
+    transition: color 0.2s ease;
+}
+
+.radio-group:hover {
+    color: #fff;
+}
+
+.radio-group input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #555;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    appearance: none;
+    transition: all 0.2s ease;
+}
+
+.radio-group input[type="radio"]:checked {
+    border-color: #3b82f6;
+    background: #3b82f6;
+}
+
+.radio-group input[type="radio"]:checked::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.radio-group input[type="radio"]:checked + span {
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+.radio-group input[type="radio"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.radio-group input[type="radio"]:disabled + span {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Load More Button Styles */
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+    margin-top: 16px;
+    border-top: 1px solid #333;
+}
+
+.load-more-btn {
+    background: #1a1a1a;
+    border: 2px solid #3b82f6;
+    color: #3b82f6;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+}
+
+.load-more-btn:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #60a5fa;
+    color: #60a5fa;
+}
+
+.load-more-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.load-more-btn.error {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.load-more-btn.error:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #f87171;
+    color: #f87171;
+}
+
+.load-more-text {
+    white-space: nowrap;
+}
+
+.load-more-spinner {
+    display: none;
+    align-items: center;
+    gap: 8px;
+}
+
+.load-more-spinner .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #555;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
 /* Reviews Tab Styles */
 .prs-list {
     height: 100%;
@@ -1210,6 +1358,14 @@
     background: rgba(168, 85, 247, 0.2);
     color: #c4b5fd;
     border: 1px solid #8b5cf6;
+}
+
+.pr-badge-draft {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid #3b82f6;
+    font-weight: 600;
+    margin-right: 6px;
 }
 
 .label {
@@ -1449,11 +1605,27 @@
 
 .github-pr-meta {
     display: flex;
-    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
     font-size: 12px;
     color: #888;
     margin-bottom: 12px;
     flex-wrap: wrap;
+    gap: 8px;
+}
+
+.github-pr-meta-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.github-pr-meta-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
 }
 
 .github-pr-author {

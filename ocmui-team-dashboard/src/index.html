@@ -8,8 +8,22 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background-color: #0a0a0a; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; height: 100vh; overflow-x: hidden; }
         
-        .header { background-color: #1a1a1a; border-bottom: 1px solid #333; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .header-left h1 { font-size: 24px; font-weight: 600; color: #e74c3c; }
+        .header { 
+            background-color: #1a1a1a; 
+            border-bottom: 1px solid #333; 
+            padding: 12px 24px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100;
+            position: relative;
+        }
+        
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .app-logo { height: 28px; width: auto; }
+        .header-left h1 { font-size: 24px; font-weight: 600; color: #60a5fa; text-shadow: 0 0 8px rgba(96, 165, 250, 0.3); }
         .header-right { display: flex; align-items: center; gap: 16px; }
         .header-button { display: flex; align-items: center; gap: 8px; background: #333; border: 1px solid #444; border-radius: 6px; color: white; padding: 8px 12px; text-decoration: none; cursor: pointer; transition: all 0.2s ease; font-size: 14px; }
         .header-button:hover { background: #444; border-color: #555; transform: translateY(-1px); }
@@ -64,6 +78,7 @@
         
         .coming-soon { display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 18px; text-align: center; }
         
+
         @media (max-width: 768px) { 
             .two-column-layout { grid-template-columns: 1fr; gap: 16px; }
             .header { padding: 12px 16px; }
@@ -74,6 +89,7 @@
 <body>
     <div class="header">
         <div class="header-left">
+            <img src="assets/icon48.png" alt="Red Hat Fedora" class="app-logo">
             <h1>OCMUI Team Dashboard</h1>
         </div>
         <div class="header-right">
@@ -143,10 +159,36 @@
         </div>
         
         <div class="tab-content" id="my-prs-tab">
-            <div class="coming-soon">
-                <div>
-                    <h2>🔄 My PRs</h2>
-                    <p>Your authored PRs will appear here</p>
+            <div class="my-prs-controls">
+                <div class="pr-filter-controls">
+                    <label class="radio-group">
+                        <input type="radio" name="pr-status" value="open" checked>
+                        <span>Open PRs</span>
+                    </label>
+                    <label class="radio-group">
+                        <input type="radio" name="pr-status" value="closed">
+                        <span>Closed PRs</span>
+                    </label>
+                </div>
+            </div>
+            <div class="split-container" id="my-prs-split-container">
+                <div class="split-pane" id="my-prs-column">
+                    <h3 class="column-title github-title">
+                        <img src="assets/githubIcon.png" alt="GitHub" class="column-icon">
+                        My PRs
+                    </h3>
+                    <div id="my-prs-content">
+                        <div class="coming-soon">Loading your PRs...</div>
+                    </div>
+                </div>
+                <div class="split-pane" id="my-prs-jira-column">
+                    <h3 class="column-title jira-title">
+                        <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
+                        Associated JIRAs
+                    </h3>
+                    <div id="my-prs-jira-content">
+                        <div class="placeholder">Associated JIRAs will be loaded here...</div>
+                    </div>
                 </div>
             </div>
         </div>

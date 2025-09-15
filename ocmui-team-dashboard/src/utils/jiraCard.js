@@ -82,7 +82,6 @@ export function generateJiraCardHTML(ticket, options = {}) {
                 <h3>
                     <a href="https://issues.redhat.com/browse/${ticket.key}" target="_blank" 
                        style="color: white; text-decoration: underline;">
-                        <img src="assets/jiraLogo.png" style="width: 16px; height: 16px; margin-right: 8px;">
                         ${ticket.key}: ${ticket.summary || 'No summary available'}
                     </a>
                 </h3>

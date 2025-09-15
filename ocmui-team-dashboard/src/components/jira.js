@@ -213,7 +213,7 @@ export function updateJiraHistoryList() {
             const assignee = item.assignee !== 'Unassigned' ? item.assignee : '';
             const assigneeText = assignee ? ` (${assignee})` : '';
             const summary = item.summary && item.summary !== 'Loading...' ? 
-                (item.summary.length > 35 ? item.summary.substring(0, 32) + '...' : item.summary) : '';
+                (item.summary.length > 150 ? item.summary.substring(0, 147) + '...' : item.summary) : '';
             div.innerHTML = `<span class="history-jira-id">${item.id}</span>${assigneeText} <span class="history-summary">${summary}</span>`;
         }
         
@@ -239,7 +239,7 @@ function updateSelectedJiraDisplay(selectedJiraSpan) {
             selectedJiraSpan.textContent = selectedItem;
         } else {
             const summary = selectedItem.summary && selectedItem.summary !== 'Loading...' ? 
-                (selectedItem.summary.length > 25 ? selectedItem.summary.substring(0, 22) + '...' : selectedItem.summary) : '';
+                (selectedItem.summary.length > 100 ? selectedItem.summary.substring(0, 97) + '...' : selectedItem.summary) : '';
             selectedJiraSpan.textContent = `${selectedItem.id}${summary ? ' - ' + summary : ''}`;
         }
     }

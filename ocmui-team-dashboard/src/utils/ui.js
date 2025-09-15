@@ -155,6 +155,78 @@ function initializeReviewsSplitPanes() {
 }
 
 /**
+ * Initialize Split.js for My PRs tab
+ * Sets up the resizable split pane layout for My PRs
+ * @returns {object} Split.js instance or null if failed
+ */
+export function initializeMyPrsSplitPanes() {
+    console.log('🔧 Initializing My PRs Split.js...');
+    
+    try {
+        const container = document.getElementById('my-prs-split-container');
+        if (!container) {
+            console.warn('🔧 My PRs split container not found');
+            return null;
+        }
+        
+        // Get the split pane elements
+        const myPrsColumn = document.getElementById('my-prs-column');
+        const myPrsJiraColumn = document.getElementById('my-prs-jira-column');
+        
+        if (!myPrsColumn || !myPrsJiraColumn) {
+            console.warn('🔧 My PRs split pane elements not found');
+            return null;
+        }
+        
+        // Try to load saved sizes from localStorage
+        let sizes = [50, 50]; // Default 50/50 split
+        try {
+            const savedSizes = localStorage.getItem('ocmui_my_prs_split_sizes');
+            if (savedSizes) {
+                sizes = JSON.parse(savedSizes);
+                console.log('🔧 Loaded My PRs split sizes from storage:', sizes);
+            }
+        } catch (error) {
+            console.warn('🔧 Could not load My PRs split sizes:', error);
+        }
+        
+        // Initialize Split.js
+        const splitInstance = Split(['#my-prs-column', '#my-prs-jira-column'], {
+            sizes: sizes,              // Use saved or default sizes
+            minSize: 300,              // Minimum width for each pane
+            gutterSize: 8,             // Width of the drag handle
+            cursor: 'col-resize',      // Cursor when hovering over gutter
+            direction: 'horizontal',   // Split horizontally (left/right)
+            
+            // Snap settings for better UX
+            snapOffset: 30,         // Snap to edges within 30px
+            dragInterval: 1,        // Update every 1px for smooth dragging
+            
+            // Event handlers
+            onDrag: function(sizes) {
+                console.log('🔧 Dragging My PRs split panes:', sizes);
+            },
+            
+            onDragEnd: function(sizes) {
+                // Save user's preferred sizes to localStorage
+                try {
+                    localStorage.setItem('ocmui_my_prs_split_sizes', JSON.stringify(sizes));
+                    console.log('🔧 My PRs split sizes saved:', sizes);
+                } catch (error) {
+                    console.warn('🔧 Could not save My PRs split sizes:', error);
+                }
+            }
+        });
+        
+        console.log('✅ My PRs Split.js initialized successfully');
+        return splitInstance;
+        
+    } catch (error) {
+        console.error('❌ My PRs Split.js initialization failed:', error);
+    }
+}
+
+/**
  * Show loading state in the JIRA display area
  * @param {string} message - Loading message to display
  */
@@ -248,6 +320,21 @@ export function switchTab(tabName) {
                 'Associated JIRAs will be loaded here...', 
                 '📝');
         }
+    }
+    
+    // Reset right panel when switching to My PRs tab
+    if (tabName === 'my-prs') {
+        const myPrsJiraContent = document.getElementById('my-prs-jira-content');
+        if (myPrsJiraContent) {
+            showPlaceholderState('my-prs-jira-content', 
+                'Associated JIRAs will be loaded here...', 
+                '📝');
+        }
+    }
+    
+    // Cancel any ongoing My PRs API calls when navigating away
+    if (tabName !== 'my-prs' && window.cancelMyPRsRequests) {
+        window.cancelMyPRsRequests();
     }
     
     console.log('📑 Switched to tab:', tabName);

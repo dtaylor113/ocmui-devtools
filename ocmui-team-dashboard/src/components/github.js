@@ -54,8 +54,12 @@ export async function fetchAndDisplayGitHubPRs(jiraId) {
  * @returns {Promise<Array>} Array of PR search results
  */
 async function searchGithubPRs(jiraId) {
-    const searchQuery = `${jiraId} type:pr`;
+    // Use quoted search for exact JIRA ID matching to avoid partial matches
+    const searchQuery = `"${jiraId}" type:pr`;
     const searchUrl = `https://api.github.com/search/issues?q=${encodeURIComponent(searchQuery)}&sort=updated&order=desc`;
+    
+    console.log(`🔍 Searching GitHub for JIRA ${jiraId} with query: ${searchQuery}`);
+    console.log(`🌐 Search URL: ${searchUrl}`);
     
     const response = await fetch(searchUrl, {
         headers: {
@@ -69,7 +73,48 @@ async function searchGithubPRs(jiraId) {
     }
     
     const data = await response.json();
-    return data.items || [];
+    console.log(`📊 Found ${data.items?.length || 0} PRs for JIRA ${jiraId}:`, data.items?.map(pr => `#${pr.number}: ${pr.title}`));
+    
+    // Filter results to ensure they actually contain the JIRA ID
+    const filteredResults = (data.items || []).filter(pr => {
+        const containsJiraId = verifyPRContainsJiraId(pr, jiraId);
+        if (!containsJiraId) {
+            console.warn(`⚠️ PR #${pr.number} was returned by search but doesn't contain ${jiraId}. Title: "${pr.title}"`);
+        }
+        return containsJiraId;
+    });
+    
+    console.log(`✅ After filtering: ${filteredResults.length} PRs actually contain ${jiraId}`);
+    return filteredResults;
+}
+
+/**
+ * Verify that a PR actually contains the JIRA ID we're searching for
+ * @param {Object} pr - The PR object from GitHub search
+ * @param {string} jiraId - The JIRA ID to verify
+ * @returns {boolean} True if PR contains the JIRA ID
+ */
+function verifyPRContainsJiraId(pr, jiraId) {
+    // Check title
+    if (pr.title && pr.title.includes(jiraId)) {
+        console.log(`✅ Found ${jiraId} in PR #${pr.number} title`);
+        return true;
+    }
+    
+    // Check body/description
+    if (pr.body && pr.body.includes(jiraId)) {
+        console.log(`✅ Found ${jiraId} in PR #${pr.number} body`);
+        return true;
+    }
+    
+    // Check if it's in labels
+    if (pr.labels && pr.labels.some(label => label.name.includes(jiraId))) {
+        console.log(`✅ Found ${jiraId} in PR #${pr.number} labels`);
+        return true;
+    }
+    
+    console.log(`❌ ${jiraId} NOT found in PR #${pr.number} (title: "${pr.title}")`);
+    return false;
 }
 
 /**
