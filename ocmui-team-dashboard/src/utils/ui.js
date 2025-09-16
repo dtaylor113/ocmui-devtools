@@ -24,6 +24,7 @@ export function initializeSplitPanes() {
         initializeNewJiraSplitPanes();
         initializeNewReviewsSplitPanes();
         initializeNewMyPrsSplitPanes();
+        initializeMySprintJirasSplitPanes();
     }, 100);
 }
 
@@ -393,6 +394,62 @@ function initializeNewMyPrsSplitPanes() {
 }
 
 /**
+ * Initialize split panes for My Sprint JIRAs layout
+ */
+function initializeMySprintJirasSplitPanes() {
+    const listColumn = document.getElementById('my-sprint-jiras-list-column');
+    const githubColumn = document.getElementById('my-sprint-jiras-github-column');
+    
+    if (!listColumn || !githubColumn) {
+        console.log('🔧 My Sprint JIRAs split pane elements not found, skipping');
+        return;
+    }
+    
+    console.log('🔧 Initializing My Sprint JIRAs split panes');
+    
+    // Load saved split sizes or use defaults (50% list, 50% GitHub PRs)
+    let initialSizes = [50, 50];
+    try {
+        const savedSizes = localStorage.getItem('ocmui_my_sprint_jiras_split_sizes');
+        if (savedSizes) {
+            const parsedSizes = JSON.parse(savedSizes);
+            if (Array.isArray(parsedSizes) && parsedSizes.length === 2) {
+                initialSizes = parsedSizes;
+            }
+        }
+    } catch (error) {
+        console.warn('🔧 Could not restore My Sprint JIRAs split sizes, using defaults:', error);
+    }
+    
+    try {
+        const splitInstance = Split(['#my-sprint-jiras-list-column', '#my-sprint-jiras-github-column'], {
+            sizes: initialSizes,
+            minSize: 300,
+            gutterSize: 8,
+            cursor: 'col-resize',
+            direction: 'horizontal',
+            snapOffset: 30,
+            dragInterval: 1,
+            
+            onDragEnd: function(sizes) {
+                try {
+                    localStorage.setItem('ocmui_my_sprint_jiras_split_sizes', JSON.stringify(sizes));
+                    console.log('🔧 My Sprint JIRAs split sizes saved:', sizes);
+                } catch (error) {
+                    console.warn('🔧 Could not save My Sprint JIRAs split sizes:', error);
+                }
+            }
+        });
+        
+        console.log('✅ My Sprint JIRAs Split.js initialized successfully');
+        return splitInstance;
+        
+    } catch (error) {
+        console.error('❌ My Sprint JIRAs Split.js initialization failed:', error);
+    }
+}
+
+/**
  * Show loading state in the JIRA display area
  * @param {string} message - Loading message to display
  */
@@ -675,7 +732,13 @@ function triggerComponentActivation(primaryTabName, secondaryTabName) {
             }
         }
     } else if (primaryTabName === 'jira') {
-        if (secondaryTabName === 'jira-lookup') {
+        if (secondaryTabName === 'my-sprint-jiras') {
+            // Call the My Sprint JIRAs activation function directly
+            if (window.onMySprintJirasTabActivated) {
+                window.onMySprintJirasTabActivated();
+                console.log('🎯 Triggered My Sprint JIRAs activation');
+            }
+        } else if (secondaryTabName === 'jira-lookup') {
             // For JIRA Lookup, we don't need to trigger anything special
             // as it's always ready to accept input
             console.log('📧 JIRA Lookup activated (ready for input)');

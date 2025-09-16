@@ -41,25 +41,23 @@ function initializeJiraForContainer(columnId, contentId) {
     
     // Replace the title with new layout including inline input fields
     titleElement.innerHTML = `
-        <div class="title-left">
-            <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
-            <span>JIRA Ticket</span>
-        </div>
-        <div class="title-right">
-            <div class="jira-prefix-section">
-                <input type="text" id="jiraPrefixInput" placeholder="OCMUI-" maxlength="20" class="jira-prefix-input">
-                <div class="jira-prefix-dropdown" id="jiraPrefixDropdown" style="display: none;">
-                    <div class="prefix-placeholder">Recent prefixes will appear here</div>
+        <div class="jira-title-row">
+            <div class="title-left">
+                <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
+                <span>JIRA Ticket</span>
+            </div>
+            <div class="title-right">
+                <div class="jira-prefix-section">
+                    <input type="text" id="jiraPrefixInput" placeholder="OCMUI-" maxlength="20" class="jira-prefix-input">
+                    <div class="jira-prefix-dropdown" id="jiraPrefixDropdown" style="display: none;">
+                        <div class="prefix-placeholder">Recent prefixes will appear here</div>
+                    </div>
+                </div>
+                <div class="jira-number-section">
+                    <input type="text" id="jiraNumberInput" placeholder="1234" maxlength="8" class="jira-number-input">
                 </div>
             </div>
-            <div class="jira-number-section">
-                <input type="text" id="jiraNumberInput" placeholder="1234" maxlength="8" class="jira-number-input">
-            </div>
         </div>
-    `;
-    
-    // Set up main content area with history dropdown and ticket display
-    jiraContent.innerHTML = `
         <div class="jira-history-section">
             <label>Recent JIRAs:</label>
             <div class="jira-dropdown-wrapper">
@@ -72,6 +70,11 @@ function initializeJiraForContainer(columnId, contentId) {
                 </div>
             </div>
         </div>
+    `;
+    
+    // Set up main content area with spacing and ticket display
+    jiraContent.innerHTML = `
+        <div class="jira-content-spacer"></div>
         <div id="jiraTicketDisplay" class="jira-ticket-display">
             <div class="placeholder">Enter a JIRA ID to view ticket details</div>
         </div>

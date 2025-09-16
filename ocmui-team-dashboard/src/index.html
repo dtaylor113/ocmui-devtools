@@ -197,7 +197,26 @@
             color: #10b981; /* Emerald/Green for GitHub */
         }
         
-        .coming-soon { display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 18px; text-align: center; }
+        .coming-soon { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 18px; text-align: center; }
+        
+        /* JIRA Ticket Section Active State for Sprint JIRAs */
+        .sprint-jiras-list .jira-ticket-section {
+            margin: 12px 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .sprint-jiras-list .jira-ticket-section:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .sprint-jiras-list .jira-ticket-section.active {
+            background: linear-gradient(135deg, #1e5f3a, #1a4228);
+            border: 2px solid #10b981;
+            border-radius: 8px; /* Preserve rounded corners */
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
+            margin: 10px 6px; /* Slightly less margin to account for thicker border */
+        }
         
 
         @media (max-width: 768px) { 
@@ -229,6 +248,7 @@
                 padding: 16px; 
                 height: calc(100vh - 140px); 
             }
+            
         }
     </style>
 </head>
@@ -279,11 +299,24 @@
             
             <!-- My Sprint JIRAs Secondary Tab -->
             <div class="secondary-tab-content active" id="my-sprint-jiras-content">
-                <div class="placeholder-content">
-                    <div class="coming-soon">
-                        <h3>My Sprint JIRAs</h3>
-                        <p>This section will show your current sprint JIRAs</p>
-                        <p style="color: #666; font-size: 14px;">Coming soon...</p>
+                <div class="split-container" id="my-sprint-jiras-split-container">
+                    <div class="split-pane" id="my-sprint-jiras-list-column">
+                        <h3 class="column-title jira-title">
+                            <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
+                            My Sprint JIRAs
+                        </h3>
+                        <div id="my-sprint-jiras-list-content">
+                            <div class="coming-soon">Loading your sprint JIRAs...</div>
+                        </div>
+                    </div>
+                    <div class="split-pane" id="my-sprint-jiras-github-column">
+                        <h3 class="column-title github-title" id="my-sprint-jiras-github-title">
+                            <img src="assets/githubIcon.png" alt="GitHub" class="column-icon">
+                            <span class="title-text">Associated PRs</span>
+                        </h3>
+                        <div id="my-sprint-jiras-github-content">
+                            <div class="placeholder">Select a JIRA ticket from the list to view associated PRs...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -332,9 +365,9 @@
                         </div>
                     </div>
                     <div class="split-pane" id="reviews-jira-column">
-                        <h3 class="column-title jira-title">
+                        <h3 class="column-title jira-title" id="reviews-jira-title">
                             <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
-                            Associated JIRAs
+                            <span class="title-text">Associated JIRAs</span>
                         </h3>
                         <div id="reviews-jira-content">
                             <div class="coming-soon">Associated JIRAs will be loaded here...</div>
@@ -369,9 +402,9 @@
                         </div>
                     </div>
                     <div class="split-pane" id="my-prs-jira-column">
-                        <h3 class="column-title jira-title">
+                        <h3 class="column-title jira-title" id="my-prs-jira-title">
                             <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
-                            Associated JIRAs
+                            <span class="title-text">Associated JIRAs</span>
                         </h3>
                         <div id="my-prs-jira-content">
                             <div class="placeholder">Associated JIRAs will be loaded here...</div>

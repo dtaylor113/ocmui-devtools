@@ -74,6 +74,9 @@ function onReviewsTabActivated() {
         jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
     }
     
+    // Reset the JIRA panel title to default
+    resetJiraPanelTitle();
+    
     // Remove active state from all PRs since we're starting fresh
     document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
     
@@ -117,11 +120,12 @@ async function loadPRsAwaitingReview(forceRefresh = false) {
                 return async () => {
                     console.log('🔄 Manual refresh triggered for PRs I\'m Reviewing');
                     
-                    // Clear the JIRA content panel
+                    // Clear the JIRA content panel and reset title
                     const jiraContent = document.getElementById('reviews-jira-content');
                     if (jiraContent) {
                         jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
                     }
+                    resetJiraPanelTitle();
                     
                     // Remove active state from all PRs
                     document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
@@ -403,11 +407,12 @@ function displayPRsAwaitingReview(prs) {
         return async () => {
             console.log('🔄 Manual refresh triggered for PRs I\'m Reviewing');
             
-            // Clear the JIRA content panel
+            // Clear the JIRA content panel and reset title
             const jiraContent = document.getElementById('reviews-jira-content');
             if (jiraContent) {
                 jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
             }
+            resetJiraPanelTitle();
             
             // Remove active state from all PRs
             document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
@@ -472,6 +477,27 @@ function setupPRClickHandlers() {
 }
 
 /**
+ * Update the JIRA panel title with the PR number
+ * @param {string} prNumber - The PR number to display
+ */
+function updateJiraPanelTitle(prNumber) {
+    const titleElement = document.querySelector('#reviews-jira-title .title-text');
+    if (titleElement) {
+        titleElement.textContent = `JIRAs associated with #${prNumber}`;
+    }
+}
+
+/**
+ * Reset the JIRA panel title to default
+ */
+function resetJiraPanelTitle() {
+    const titleElement = document.querySelector('#reviews-jira-title .title-text');
+    if (titleElement) {
+        titleElement.textContent = 'Associated JIRAs';
+    }
+}
+
+/**
  * Load and display JIRAs associated with the selected PR
  * @param {string} repo - Repository name (owner/repo)
  * @param {string} prNumber - PR number
@@ -483,6 +509,9 @@ async function loadAssociatedJIRAsForPR(repo, prNumber) {
         console.error('❌ Reviews JIRA container not found: reviews-jira-content');
         return;
     }
+    
+    // Update the JIRA panel title
+    updateJiraPanelTitle(prNumber);
     
     // Show loading state
     jiraContainer.innerHTML = `

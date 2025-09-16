@@ -67,6 +67,15 @@ export function openSettingsModal() {
                             <a href="https://issues.redhat.com/secure/ViewProfile.jspa" target="_blank">Create JIRA Token →</a>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label for="jiraUsername">JIRA Username:</label>
+                        <input type="email" id="jiraUsername" 
+                               placeholder="your-email@redhat.com" 
+                               value="${appState.apiTokens.jiraUsername || ''}">
+                        <div class="help-text">
+                            <small>Your JIRA login email - used for "My Sprint JIRAs" to find tickets assigned to you</small>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" id="settingsCancel">Cancel</button>
@@ -121,11 +130,13 @@ export function saveSettings() {
     const githubToken = document.getElementById('githubToken').value.trim();
     const githubUsername = document.getElementById('githubUsername').value.trim();
     const jiraToken = document.getElementById('jiraToken').value.trim();
+    const jiraUsername = document.getElementById('jiraUsername').value.trim();
     
     // Update application state
     appState.apiTokens.github = githubToken;
     appState.apiTokens.githubUsername = githubUsername;
     appState.apiTokens.jira = jiraToken;
+    appState.apiTokens.jiraUsername = jiraUsername;
     
     // Persist to localStorage
     saveApiTokens();
@@ -268,7 +279,8 @@ export function updateReadyState() {
     
     const isReady = !!(appState.apiTokens.github && 
                       appState.apiTokens.jira && 
-                      appState.apiTokens.githubUsername);
+                      appState.apiTokens.githubUsername &&
+                      appState.apiTokens.jiraUsername);
     
     if (settingsAlert && settingsBtn) {
         if (isReady) {

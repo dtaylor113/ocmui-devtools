@@ -120,6 +120,9 @@ function onMyPrsTabActivated() {
         jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
     }
     
+    // Reset the JIRA panel title to default
+    resetMyPrsJiraPanelTitle();
+    
     // Load PRs if we have a GitHub username
     if (appState.apiTokens.githubUsername) {
         loadMyPRs();
@@ -550,11 +553,12 @@ function displayMyPRs(prs, options = {}) {
         return async () => {
             console.log(`🔄 Manual refresh triggered for My PRs (${prStatus})`);
             
-            // Clear the JIRA content panel
+            // Clear the JIRA content panel and reset title
             const jiraContent = document.getElementById('my-prs-jira-content');
             if (jiraContent) {
                 jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
             }
+            resetMyPrsJiraPanelTitle();
             
             // Remove active state from all PRs
             document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
@@ -636,6 +640,27 @@ function updateLoadMoreButton(loading, errorMessage = '') {
 }
 
 /**
+ * Update the JIRA panel title with the PR number
+ * @param {string} prNumber - The PR number to display
+ */
+function updateMyPrsJiraPanelTitle(prNumber) {
+    const titleElement = document.querySelector('#my-prs-jira-title .title-text');
+    if (titleElement) {
+        titleElement.textContent = `JIRAs associated with #${prNumber}`;
+    }
+}
+
+/**
+ * Reset the JIRA panel title to default
+ */
+function resetMyPrsJiraPanelTitle() {
+    const titleElement = document.querySelector('#my-prs-jira-title .title-text');
+    if (titleElement) {
+        titleElement.textContent = 'Associated JIRAs';
+    }
+}
+
+/**
  * Load associated JIRA tickets for a selected My PR
  * @param {string} repoName - Repository name
  * @param {string} prNumber - PR number
@@ -647,6 +672,9 @@ async function loadAssociatedJIRAsForMyPR(repoName, prNumber) {
         console.error('❌ My PRs JIRA container not found: my-prs-jira-content');
         return;
     }
+    
+    // Update the JIRA panel title
+    updateMyPrsJiraPanelTitle(prNumber);
     
     // Show loading state
     jiraContainer.innerHTML = `

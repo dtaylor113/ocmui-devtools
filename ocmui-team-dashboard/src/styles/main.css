@@ -181,22 +181,34 @@
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
-/* JIRA History Section */
+/* JIRA History Section - Second line with recent JIRAs dropdown */
 .jira-history-section {
-    margin-bottom: 8px;
+    margin-top: 8px;
+    margin-bottom: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* JIRA Content Spacer - Creates visual gap between controls and JIRA card */
+.jira-content-spacer {
+    height: 12px;
 }
 
 .jira-history-section label {
-    display: block;
     font-size: 14px;
     font-weight: 500;
     color: #fff;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     margin-left: 0;
+    white-space: nowrap;
 }
 
 .jira-dropdown-wrapper {
     position: relative;
+    flex: 1;
+    min-width: 0;
 }
 
 .jira-history-button {
@@ -209,6 +221,8 @@
     justify-content: space-between;
     align-items: center;
     transition: all 0.2s ease;
+    width: 100%;
+    min-width: 200px;
 }
 
 .jira-history-button:hover {
@@ -947,6 +961,21 @@
     gap: 16px;
 }
 
+/* JIRA-specific column title layout (overrides default for JIRA column) */
+#jira-column .column-title {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+/* JIRA Title Row - First line with title and search controls */
+.jira-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+}
+
 .title-left {
     display: flex;
     align-items: center;
@@ -992,11 +1021,20 @@
 
 /* My PRs Tab Split Container Padding */
 #my-prs-split-container .gutter {
-    margin: 0 8px !important;
+    margin: 0 6px !important;
 }
 
 #my-prs-split-container .split-pane {
-    padding: 0 8px;
+    padding: 0 6px;
+}
+
+/* My Sprint JIRAs Tab Split Container Padding */
+#my-sprint-jiras-split-container .gutter {
+    margin: 0 6px !important;
+}
+
+#my-sprint-jiras-split-container .split-pane {
+    padding: 0 6px;
 }
 
 /* My PRs Tab Controls */

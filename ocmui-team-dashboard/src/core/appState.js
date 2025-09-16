@@ -15,7 +15,8 @@ export let appState = {
     apiTokens: {                          // API authentication tokens
         github: '',                       // GitHub personal access token
         jira: '',                        // JIRA API token
-        githubUsername: ''               // GitHub username for API calls
+        githubUsername: '',              // GitHub username for API calls
+        jiraUsername: ''                 // JIRA username (email) for sprint queries
     },
     jiraHistory: [],                     // Recently accessed JIRA tickets (with metadata)
     jiraPrefixes: ['OCMUI-'],           // Project prefixes (OCMUI-, XCMSTRAT-, OCM-, etc.)
@@ -63,7 +64,7 @@ export function loadAppState() {
         // Reset to defaults on corruption
         appState = {
             currentTab: 'jira',
-            apiTokens: { github: '', jira: '', githubUsername: '' },
+            apiTokens: { github: '', jira: '', githubUsername: '', jiraUsername: '' },
             jiraHistory: [],
             jiraPrefixes: ['OCMUI-'],
             selectedJiraId: null
@@ -104,10 +105,11 @@ export function getDefaultJiraPrefix() {
 
 /**
  * Check if all required API tokens are configured
- * @returns {boolean} True if both GitHub and JIRA tokens are set
+ * @returns {boolean} True if all GitHub and JIRA credentials are set
  */
 export function areApiTokensConfigured() {
     return !!(appState.apiTokens.github && 
               appState.apiTokens.jira && 
-              appState.apiTokens.githubUsername);
+              appState.apiTokens.githubUsername &&
+              appState.apiTokens.jiraUsername);
 }

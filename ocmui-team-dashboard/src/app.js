@@ -25,6 +25,7 @@ import { initializeJiraTab, setGitHubPRFetcher } from './components/jira.js';
 import { fetchAndDisplayGitHubPRs } from './components/github.js';
 import { initializeReviewsTab } from './components/reviews.js';
 import { initializeMyPrsTab } from './components/myPrs.js';
+import { initializeMySprintJirasTab } from './components/mySprintJiras.js';
 
 // UI utilities
 import { initializeTabNavigation, initializeSplitPanes, updateTabTitlesWithUsername, initializeTwoLevelNavigationState } from './utils/ui.js';
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeJiraTab();
         initializeReviewsTab();
         initializeMyPrsTab();
+        initializeMySprintJirasTab();
         
         // Set up module cross-dependencies
         setupModuleDependencies();
