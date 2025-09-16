@@ -16,8 +16,27 @@ import { generateJiraCardHTML } from '../utils/jiraCard.js';
  * Sets up input fields, history dropdown, and event listeners
  */
 export function initializeJiraTab() {
+    // Initialize legacy structure if it exists
+    initializeJiraForContainer('jira-column', 'jira-content');
+    
+    // Initialize new structure if it exists (will use same IDs when active)
+    initializeJiraForContainer('new-jira-column', 'new-jira-content');
+}
+
+/**
+ * Initialize JIRA functionality for a specific container
+ * @param {string} columnId - ID of the column container
+ * @param {string} contentId - ID of the content container
+ */
+function initializeJiraForContainer(columnId, contentId) {
+    const jiraColumn = document.getElementById(columnId);
+    const jiraContent = document.getElementById(contentId);
+    
+    if (!jiraColumn || !jiraContent) return;
+    
+    console.log(`🔧 Initializing JIRA for container: ${columnId}`);
+    
     // Update the title to include input fields in header
-    const jiraColumn = document.getElementById('jira-column');
     const titleElement = jiraColumn.querySelector('.column-title');
     
     // Replace the title with new layout including inline input fields
@@ -40,7 +59,6 @@ export function initializeJiraTab() {
     `;
     
     // Set up main content area with history dropdown and ticket display
-    const jiraContent = document.getElementById('jira-content');
     jiraContent.innerHTML = `
         <div class="jira-history-section">
             <label>Recent JIRAs:</label>
@@ -54,14 +72,17 @@ export function initializeJiraTab() {
                 </div>
             </div>
         </div>
-        <div id="jiraTicketDisplay">
+        <div id="jiraTicketDisplay" class="jira-ticket-display">
             <div class="placeholder">Enter a JIRA ID to view ticket details</div>
         </div>
     `;
     
-    setupJiraInputFields();
-    setupJiraHistoryDropdown();
-    initializeJiraData();
+    // Only initialize handlers once (for the first container found)
+    if (columnId === 'new-jira-column' || !document.getElementById('new-jira-column')) {
+        setupJiraInputFields();
+        setupJiraHistoryDropdown();
+        initializeJiraData();
+    }
 }
 
 /**
@@ -69,8 +90,8 @@ export function initializeJiraTab() {
  * Handles prefix and number inputs with navigation and validation
  */
 function setupJiraInputFields() {
-    const jiraPrefixInput = document.getElementById('jiraPrefixInput');
-    const jiraNumberInput = document.getElementById('jiraNumberInput');
+    const jiraPrefixInput = document.getElementById('jiraPrefixInput') || document.getElementById('jiraPrefixInput-new') || document.getElementById('jiraPrefixInput-new');
+    const jiraNumberInput = document.getElementById('jiraNumberInput') || document.getElementById('jiraNumberInput-new') || document.getElementById('jiraNumberInput-new');
     
     // Set default prefix from saved preferences
     const savedPrefix = getDefaultJiraPrefix();
@@ -90,10 +111,13 @@ function setupJiraInputFields() {
  * Handles dropdown toggle, selection, and outside click detection
  */
 function setupJiraHistoryDropdown() {
-    const historyButton = document.getElementById('jiraHistoryButton');
-    const historyDropdown = document.getElementById('jiraHistoryDropdown');
+    // Get the appropriate element IDs for current structure
+    const historyButton = document.getElementById('jiraHistoryButton') || document.getElementById('jiraHistoryButton-new');
+    const historyDropdown = document.getElementById('jiraHistoryDropdown') || document.getElementById('jiraHistoryDropdown-new');
     
-    historyButton.addEventListener('click', toggleJiraHistoryDropdown);
+    if (historyButton) {
+        historyButton.addEventListener('click', toggleJiraHistoryDropdown);
+    }
     
     // Hide dropdown when clicking outside
     document.addEventListener('click', function(e) {
@@ -123,7 +147,7 @@ function handleJiraPrefixInput(event) {
     // Enter key moves focus to number input
     if (event.key === 'Enter') {
         event.preventDefault();
-        const numberInput = document.getElementById('jiraNumberInput');
+        const numberInput = document.getElementById('jiraNumberInput') || document.getElementById('jiraNumberInput-new');
         if (numberInput) {
             numberInput.focus();
         }
@@ -142,7 +166,7 @@ function handleJiraPrefixInput(event) {
  */
 function handleJiraNumberInput(event) {
     const numberInput = event.target;
-    const prefixInput = document.getElementById('jiraPrefixInput');
+    const prefixInput = document.getElementById('jiraPrefixInput') || document.getElementById('jiraPrefixInput-new');
     const numberValue = numberInput.value.trim();
     const prefixValue = prefixInput ? prefixInput.value.trim() : 'OCMUI-';
     
@@ -177,8 +201,8 @@ function handleJiraNumberInput(event) {
  * Refreshes both the dropdown contents and the button text
  */
 export function updateJiraHistoryList() {
-    const historyDropdown = document.getElementById('jiraHistoryDropdown');
-    const historyButton = document.getElementById('jiraHistoryButton');
+    const historyDropdown = document.getElementById('jiraHistoryDropdown') || document.getElementById('jiraHistoryDropdown-new');
+    const historyButton = document.getElementById('jiraHistoryButton') || document.getElementById('jiraHistoryButton-new');
     const selectedJiraSpan = historyButton?.querySelector('.selected-jira');
     
     if (!historyDropdown) return;
@@ -259,8 +283,8 @@ function handleHistoryItemClick(jiraId) {
         const prefix = match[1];
         const number = match[2];
         
-        const prefixInput = document.getElementById('jiraPrefixInput');
-        const numberInput = document.getElementById('jiraNumberInput');
+        const prefixInput = document.getElementById('jiraPrefixInput') || document.getElementById('jiraPrefixInput-new');
+        const numberInput = document.getElementById('jiraNumberInput') || document.getElementById('jiraNumberInput-new');
         
         if (prefixInput && numberInput) {
             prefixInput.value = prefix;
@@ -278,7 +302,7 @@ function handleHistoryItemClick(jiraId) {
  * Toggle the JIRA history dropdown visibility
  */
 export function toggleJiraHistoryDropdown() {
-    const dropdown = document.getElementById('jiraHistoryDropdown');
+    const dropdown = document.getElementById('jiraHistoryDropdown') || document.getElementById('jiraHistoryDropdown-new');
     const arrow = document.querySelector('.dropdown-arrow');
     
     if (dropdown.style.display === 'none') {
@@ -294,7 +318,7 @@ export function toggleJiraHistoryDropdown() {
  * Hide the JIRA history dropdown
  */
 export function hideJiraHistoryDropdown() {
-    const dropdown = document.getElementById('jiraHistoryDropdown');
+    const dropdown = document.getElementById('jiraHistoryDropdown') || document.getElementById('jiraHistoryDropdown-new');
     const arrow = document.querySelector('.dropdown-arrow');
     
     if (dropdown) dropdown.style.display = 'none';
@@ -358,7 +382,7 @@ export function addToJiraPrefixHistory(prefix) {
  * Show the JIRA prefix dropdown
  */
 function showJiraPrefixDropdown() {
-    const dropdown = document.getElementById('jiraPrefixDropdown');
+    const dropdown = document.getElementById('jiraPrefixDropdown') || document.getElementById('jiraPrefixDropdown-new');
     if (dropdown && appState.jiraPrefixes.length > 0) {
         dropdown.style.display = 'block';
     }
@@ -368,7 +392,7 @@ function showJiraPrefixDropdown() {
  * Hide the JIRA prefix dropdown
  */
 function hideJiraPrefixDropdown() {
-    const dropdown = document.getElementById('jiraPrefixDropdown');
+    const dropdown = document.getElementById('jiraPrefixDropdown') || document.getElementById('jiraPrefixDropdown-new');
     if (dropdown) {
         dropdown.style.display = 'none';
     }
@@ -386,7 +410,7 @@ function hideJiraPrefixDropdownDelayed() {
  * Update the JIRA prefix dropdown contents
  */
 function updateJiraPrefixDropdown() {
-    const dropdown = document.getElementById('jiraPrefixDropdown');
+    const dropdown = document.getElementById('jiraPrefixDropdown') || document.getElementById('jiraPrefixDropdown-new');
     if (!dropdown) return;
     
     dropdown.innerHTML = '';
@@ -405,11 +429,11 @@ function updateJiraPrefixDropdown() {
         div.className = 'prefix-item';
         div.textContent = prefix;
         div.addEventListener('click', () => {
-            const prefixInput = document.getElementById('jiraPrefixInput');
+            const prefixInput = document.getElementById('jiraPrefixInput') || document.getElementById('jiraPrefixInput-new');
             if (prefixInput) {
                 prefixInput.value = prefix;
                 hideJiraPrefixDropdown();
-                const numberInput = document.getElementById('jiraNumberInput');
+                const numberInput = document.getElementById('jiraNumberInput') || document.getElementById('jiraNumberInput-new');
                 if (numberInput) {
                     numberInput.focus();
                 }
@@ -486,7 +510,7 @@ async function fetchAndDisplayJiraTicket(jiraId) {
                 console.log('🔥 JIRA ticket displayed successfully');
             } catch (displayError) {
                 console.error('🔥 Error displaying JIRA ticket:', displayError);
-                const jiraDisplay = document.getElementById('jiraTicketDisplay');
+                const jiraDisplay = document.getElementById('jiraTicketDisplay') || document.getElementById('jiraTicketDisplay-new');
                 if (jiraDisplay) {
                     jiraDisplay.innerHTML = `<div class="error">Error displaying ticket: ${displayError.message}</div>`;
                 }
@@ -494,7 +518,7 @@ async function fetchAndDisplayJiraTicket(jiraId) {
             }
             
             // Clear the number input after successful search
-            const numberInput = document.getElementById('jiraNumberInput');
+            const numberInput = document.getElementById('jiraNumberInput') || document.getElementById('jiraNumberInput-new');
             if (numberInput) {
                 numberInput.value = '';
                 updateJiraHistoryList();
@@ -513,7 +537,7 @@ async function fetchAndDisplayJiraTicket(jiraId) {
         }
     } catch (error) {
         console.error('❌ JIRA fetch error:', error);
-        const jiraDisplay = document.getElementById('jiraTicketDisplay');
+        const jiraDisplay = document.getElementById('jiraTicketDisplay') || document.getElementById('jiraTicketDisplay-new');
         if (jiraDisplay) {
             jiraDisplay.innerHTML = `<div class="error">Error loading ${jiraId}: ${error.message}</div>`;
         }
@@ -527,7 +551,7 @@ async function fetchAndDisplayJiraTicket(jiraId) {
  * @param {Object} ticket - The JIRA ticket data
  */
 function displayJiraTicket(ticket) {
-    const jiraDisplay = document.getElementById('jiraTicketDisplay');
+    const jiraDisplay = document.getElementById('jiraTicketDisplay') || document.getElementById('jiraTicketDisplay-new');
     if (!jiraDisplay) return;
     
     // Generate JIRA card using shared component (collapsible, initially expanded, no section wrapper)

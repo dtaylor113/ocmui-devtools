@@ -8,10 +8,45 @@
  */
 
 import { appState } from '../core/appState.js';
-import { showErrorState, showPlaceholderState, showNotification } from '../utils/ui.js';
+import { showErrorState, showPlaceholderState, showNotification, updateColumnTitleWithTimestamp, showGitHubRateLimitWarning } from '../utils/ui.js';
 import { parseJiraMarkdown, getBadgeClass } from '../utils/formatting.js';
 import { generatePRCardsHTML } from '../utils/prCard.js';
 import { generateJiraCardsFromResults } from '../utils/jiraCard.js';
+
+// Auto-refresh timer for reviews
+let reviewsAutoRefreshTimer = null;
+const AUTO_REFRESH_INTERVAL = 300000; // 5 minutes
+
+/**
+ * Clear auto-refresh timer for reviews
+ */
+function clearReviewsAutoRefreshTimer() {
+    if (reviewsAutoRefreshTimer) {
+        clearTimeout(reviewsAutoRefreshTimer);
+        reviewsAutoRefreshTimer = null;
+        console.log('🕐 Cleared auto-refresh timer for reviews');
+    }
+}
+
+/**
+ * Set auto-refresh timer for reviews
+ */
+function setReviewsAutoRefreshTimer() {
+    // Clear existing timer first
+    clearReviewsAutoRefreshTimer();
+    
+    reviewsAutoRefreshTimer = setTimeout(() => {
+        console.log('🕐 Auto-refresh triggered for Reviews after 5 minutes');
+        console.log('🔄 Auto-refreshing Reviews...');
+        loadPRsAwaitingReview(true); // forceRefresh = true
+    }, AUTO_REFRESH_INTERVAL);
+    
+    console.log('🕐 Set auto-refresh timer for Reviews (5 minutes)');
+}
+
+// Removed getReviewsElementIds() - using direct IDs for clarity
+// PRs Content: 'reviews-prs-content'
+// JIRA Content: 'reviews-jira-content'
 
 /**
  * Initialize the My Code Reviews tab
@@ -20,11 +55,8 @@ import { generateJiraCardsFromResults } from '../utils/jiraCard.js';
 export function initializeReviewsTab() {
     console.log('🔄 Initializing Reviews tab...');
     
-    // Set up tab activation handler
-    const reviewsTab = document.querySelector('[data-tab="reviews"]');
-    if (reviewsTab) {
-        reviewsTab.addEventListener('click', onReviewsTabActivated);
-    }
+    // Navigation activation is handled by triggerComponentActivation in ui.js
+    // Removed legacy data-tab event listener as it's no longer needed
     
     console.log('✅ Reviews tab initialized');
 }
@@ -36,9 +68,18 @@ export function initializeReviewsTab() {
 function onReviewsTabActivated() {
     console.log('🔄 Reviews tab activated');
     
+    // Reset the JIRA content panel to placeholder state
+    const jiraContent = document.getElementById('reviews-jira-content');
+    if (jiraContent) {
+        jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
+    }
+    
+    // Remove active state from all PRs since we're starting fresh
+    document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
+    
     // Check if we have required API tokens
     if (!appState.apiTokens.github || !appState.apiTokens.githubUsername) {
-        showErrorState('reviews-prs-content', 
+        showErrorState(elementIds.prsContentId, 
             'GitHub credentials required', 
             'Please configure your GitHub token and username in Settings');
         return;
@@ -51,12 +92,60 @@ function onReviewsTabActivated() {
 /**
  * Load PRs where the current user is assigned as a reviewer
  * Shows loading state while fetching data
+ * @param {boolean} forceRefresh - Whether to bypass cache and force refresh
  */
-async function loadPRsAwaitingReview() {
+async function loadPRsAwaitingReview(forceRefresh = false) {
     const prsContainer = document.getElementById('reviews-prs-content');
     
+    // Check cache first (unless force refreshing)
+    if (!forceRefresh) {
+        // Check if we've loaded data recently to prevent GitHub API rate limiting
+        // GitHub Search API has strict limit: 30 requests/minute
+        const lastLoadTime = window.reviewsLastLoadTime || 0;
+        const now = Date.now();
+        const CACHE_DURATION = 300000; // 5 minutes cache to prevent rate limiting
+        
+        if (prsContainer && prsContainer.innerHTML && 
+            !prsContainer.innerHTML.includes('Loading') && 
+            !prsContainer.innerHTML.includes('Failed') &&
+            (now - lastLoadTime) < CACHE_DURATION) {
+            const remainingTime = Math.round((CACHE_DURATION - (now - lastLoadTime)) / 1000);
+            console.log(`✅ Reviews PRs cached for ${remainingTime}s more to prevent GitHub rate limiting`);
+            
+            // Update UI to show cached data with refresh button
+            const createRefreshCallback = () => {
+                return async () => {
+                    console.log('🔄 Manual refresh triggered for PRs I\'m Reviewing');
+                    
+                    // Clear the JIRA content panel
+                    const jiraContent = document.getElementById('reviews-jira-content');
+                    if (jiraContent) {
+                        jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
+                    }
+                    
+                    // Remove active state from all PRs
+                    document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
+                    
+                    await loadPRsAwaitingReview(true); // forceRefresh = true
+                };
+            };
+            
+            updateColumnTitleWithTimestamp('#reviews-prs-column .column-title', 'PRs I\'m Reviewing', window.reviewsLastLoadTime, createRefreshCallback());
+            return;
+        }
+    }
+    
+    // Set load timestamp to prevent rapid successive calls
+    window.reviewsLastLoadTime = Date.now();
+    
+    // Clear existing timer if this is a manual refresh
+    if (forceRefresh) {
+        console.log('🕐 Manual refresh - clearing reviews timer');
+        clearReviewsAutoRefreshTimer();
+    }
+    
     if (!prsContainer) {
-        console.error('❌ Reviews PRs container not found');
+        console.error('❌ Reviews PRs container not found:', elementIds.prsContentId);
         return;
     }
     
@@ -99,11 +188,17 @@ async function loadPRsAwaitingReview() {
         
     } catch (error) {
         console.error('❌ Error loading PRs awaiting review:', error);
-        showErrorState('reviews-prs-content', 
-            'Failed to load PRs awaiting review', 
-            error.message);
         
-        showNotification('Failed to load reviews. Check your GitHub token.', 'error');
+        // Check if it's a 403 rate limiting error
+        if (error.message && error.message.includes('403')) {
+            showGitHubRateLimitWarning('reviews-prs-content', 'load PRs awaiting your review');
+            showNotification('GitHub API rate limit reached. Data is cached for 5 minutes.', 'warning');
+        } else {
+            showErrorState('reviews-prs-content', 
+                'Failed to load PRs awaiting review', 
+                error.message);
+            showNotification('Failed to load reviews. Check your GitHub token.', 'error');
+        }
     }
 }
 
@@ -274,7 +369,7 @@ function displayPRsAwaitingReview(prs) {
     const prsContainer = document.getElementById('reviews-prs-content');
     
     if (!prsContainer) {
-        console.error('❌ Reviews PRs container not found');
+        console.error('❌ Reviews PRs container not found: reviews-prs-content');
         return;
     }
     
@@ -303,6 +398,27 @@ function displayPRsAwaitingReview(prs) {
         </div>
     `;
     
+    // Create refresh callback
+    const createRefreshCallback = () => {
+        return async () => {
+            console.log('🔄 Manual refresh triggered for PRs I\'m Reviewing');
+            
+            // Clear the JIRA content panel
+            const jiraContent = document.getElementById('reviews-jira-content');
+            if (jiraContent) {
+                jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
+            }
+            
+            // Remove active state from all PRs
+            document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
+            
+            await loadPRsAwaitingReview(true); // forceRefresh = true
+        };
+    };
+    
+    // Update column title with timestamp and refresh button
+    updateColumnTitleWithTimestamp('#reviews-prs-column .column-title', 'PRs I\'m Reviewing', window.reviewsLastLoadTime, createRefreshCallback());
+    
     // Make click handler available globally
     window.selectPRForJiraLookup = function(element) {
         // Remove active state from other PRs
@@ -311,24 +427,22 @@ function displayPRsAwaitingReview(prs) {
         // Add active state to clicked PR
         element.classList.add('active');
         
-        // Extract PR info from the element
-        const titleElement = element.querySelector('.github-pr-title-text');
-        const prTitle = titleElement ? titleElement.textContent : '';
-        const prNumber = prTitle.match(/#(\d+)/)?.[1] || '';
-        const repoElement = element.querySelector('.github-pr-author');
+        // Extract PR info from data attributes (more reliable than parsing text)
+        const repoName = element.getAttribute('data-repo-name');
+        const prNumber = element.getAttribute('data-pr-number');
         
-        if (prNumber) {
-            console.log(`🔍 Selected PR #${prNumber} for JIRA lookup`);
-            
-            // Find the PR data
-            const selectedPR = prs.find(pr => pr.number.toString() === prNumber);
-            if (selectedPR) {
-                loadAssociatedJIRAsForPR(selectedPR.repoName, prNumber);
-            }
+        if (prNumber && repoName) {
+            console.log(`🔍 Selected PR #${prNumber} from ${repoName} for JIRA lookup`);
+            loadAssociatedJIRAsForPR(repoName, prNumber);
+        } else {
+            console.error('❌ Could not extract PR info from element:', { repoName, prNumber });
         }
     };
     
     console.log(`✅ Displayed ${prs.length} PRs awaiting review`);
+    
+    // Set auto-refresh timer for successful data load
+    setReviewsAutoRefreshTimer();
 }
 
 /**
@@ -366,7 +480,7 @@ async function loadAssociatedJIRAsForPR(repo, prNumber) {
     const jiraContainer = document.getElementById('reviews-jira-content');
     
     if (!jiraContainer) {
-        console.error('❌ Reviews JIRA container not found');
+        console.error('❌ Reviews JIRA container not found: reviews-jira-content');
         return;
     }
     
@@ -471,7 +585,7 @@ async function loadAllJIRADetails(jiraIds, repo, prNumber) {
     const jiraContainer = document.getElementById('reviews-jira-content');
     
     if (!jiraContainer) {
-        console.error('❌ Reviews JIRA container not found');
+        console.error('❌ Reviews JIRA container not found: reviews-jira-content');
         return;
     }
     
@@ -573,7 +687,7 @@ function displayLoadedJIRAs(jiraResults, repo, prNumber) {
     const jiraContainer = document.getElementById('reviews-jira-content');
     
     if (!jiraContainer) {
-        console.error('❌ Reviews JIRA container not found');
+        console.error('❌ Reviews JIRA container not found: reviews-jira-content');
         return;
     }
     
@@ -628,4 +742,9 @@ function formatCommentsHtml(comments) {
             </div>
         </div>
     `;
+}
+
+// Make activation function globally available for two-level navigation
+if (typeof window !== 'undefined') {
+    window.onReviewsTabActivated = onReviewsTabActivated;
 }

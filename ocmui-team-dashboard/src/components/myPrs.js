@@ -11,16 +11,68 @@
  */
 
 import { appState } from '../core/appState.js';
-import { showErrorState, showPlaceholderState, showNotification, switchTab, initializeMyPrsSplitPanes } from '../utils/ui.js';
+import { showErrorState, showPlaceholderState, showNotification, initializeMyPrsSplitPanes, updateColumnTitleWithTimestamp, showGitHubRateLimitWarning } from '../utils/ui.js';
 import { parseJiraMarkdown, getBadgeClass } from '../utils/formatting.js';
 import { generatePRCardsHTML } from '../utils/prCard.js';
 import { generateJiraCardsFromResults } from '../utils/jiraCard.js';
+
+// Removed getMyPrsElementIds() - using direct IDs for clarity  
+// PRs Content: 'my-prs-content'
+// JIRA Content: 'my-prs-jira-content'
 
 // Global state for My PRs tab
 let currentAbortController = null;
 let loadedPRs = [];
 let currentPage = 1;
 const CLOSED_PRS_PER_PAGE = 5;
+
+// Auto-refresh timers
+let openPRsAutoRefreshTimer = null;
+let closedPRsAutoRefreshTimer = null;
+const AUTO_REFRESH_INTERVAL = 300000; // 5 minutes
+
+/**
+ * Clear auto-refresh timer for specific PR status
+ * @param {string} prStatus - 'open' or 'closed'
+ */
+function clearAutoRefreshTimer(prStatus) {
+    if (prStatus === 'closed' && closedPRsAutoRefreshTimer) {
+        clearTimeout(closedPRsAutoRefreshTimer);
+        closedPRsAutoRefreshTimer = null;
+        console.log('🕐 Cleared auto-refresh timer for closed PRs');
+    } else if (prStatus === 'open' && openPRsAutoRefreshTimer) {
+        clearTimeout(openPRsAutoRefreshTimer);
+        openPRsAutoRefreshTimer = null;
+        console.log('🕐 Cleared auto-refresh timer for open PRs');
+    }
+}
+
+/**
+ * Set auto-refresh timer for specific PR status
+ * @param {string} prStatus - 'open' or 'closed'
+ */
+function setAutoRefreshTimer(prStatus) {
+    // Clear existing timer first
+    clearAutoRefreshTimer(prStatus);
+    
+    const timer = setTimeout(() => {
+        console.log(`🕐 Auto-refresh triggered for ${prStatus} PRs after 5 minutes`);
+        
+        // Only auto-refresh if we're currently viewing this PR status
+        if (getCurrentPRStatus() === prStatus) {
+            console.log(`🔄 Auto-refreshing ${prStatus} PRs...`);
+            loadMyPRs(false, true); // forceRefresh = true
+        }
+    }, AUTO_REFRESH_INTERVAL);
+    
+    if (prStatus === 'closed') {
+        closedPRsAutoRefreshTimer = timer;
+    } else {
+        openPRsAutoRefreshTimer = timer;
+    }
+    
+    console.log(`🕐 Set auto-refresh timer for ${prStatus} PRs (5 minutes)`);
+}
 
 /**
  * Initialize the My PRs tab
@@ -35,10 +87,12 @@ export function initializeMyPrsTab() {
     // Set up radio button change handlers
     setupRadioButtonHandlers();
     
-    // Set up tab activation handler
-    const myPrsTab = document.querySelector('[data-tab="my-prs"]');
-    if (myPrsTab) {
-        myPrsTab.addEventListener('click', onMyPrsTabActivated);
+    // Navigation activation is handled by triggerComponentActivation in ui.js
+    // Removed legacy data-tab event listener as it's no longer needed
+    
+    // Make activation function globally available for two-level navigation
+    if (typeof window !== 'undefined') {
+        window.onMyPrsTabActivated = onMyPrsTabActivated;
     }
     
     // Make cancellation function available globally for tab navigation
@@ -84,17 +138,30 @@ function setupRadioButtonHandlers() {
             if (e.target.checked) {
                 console.log(`📻 Filter changed to: ${e.target.value}`);
                 
+                // Reset the JIRA content panel to placeholder state
+                const jiraContent = document.getElementById('my-prs-jira-content');
+                if (jiraContent) {
+                    jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
+                }
+                
+                // Remove active state from all PRs since we're switching filters
+                document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
+                
                 // Cancel any ongoing API calls
                 if (currentAbortController) {
                     currentAbortController.abort();
                     console.log('🚫 Cancelled previous API call');
                 }
                 
+                // Clear auto-refresh timers when switching filters
+                clearAutoRefreshTimer('open');
+                clearAutoRefreshTimer('closed');
+                
                 // Reset pagination state
                 loadedPRs = [];
                 currentPage = 1;
                 
-                // Load PRs with new filter
+                // Load PRs with new filter (will use cache if available)
                 loadMyPRs();
             }
         });
@@ -116,7 +183,6 @@ function getCurrentPRStatus() {
  */
 function setLoadingState(loading) {
     const radioButtons = document.querySelectorAll('input[name="pr-status"]');
-    const myPrsTab = document.querySelector('[data-tab="my-prs"]');
     
     // Disable/enable radio buttons
     radioButtons.forEach(radio => {
@@ -133,26 +199,69 @@ function setLoadingState(loading) {
             group.style.pointerEvents = 'auto';
         }
     });
-    
-    // Optionally disable tab (but allow navigation away to cancel)
-    if (myPrsTab) {
-        if (loading) {
-            myPrsTab.style.opacity = '0.7';
-        } else {
-            myPrsTab.style.opacity = '1';
-        }
-    }
 }
 
 /**
  * Load PRs authored by the current user
  * @param {boolean} loadMore - Whether this is a "load more" request
+ * @param {boolean} forceRefresh - Whether to bypass cache and force refresh
  */
-async function loadMyPRs(loadMore = false) {
+async function loadMyPRs(loadMore = false, forceRefresh = false) {
     const prsContainer = document.getElementById('my-prs-content');
     const username = appState.apiTokens.githubUsername;
     const githubToken = appState.apiTokens.github;
     const prStatus = getCurrentPRStatus();
+    
+    // Check cache first (unless loading more results or force refreshing)
+    if (!loadMore && !forceRefresh) {
+        // Check if we've loaded data recently to prevent GitHub API rate limiting
+        // GitHub Search API has strict limit: 30 requests/minute
+        // Use separate timestamps for open vs closed PRs
+        const lastLoadTime = (prStatus === 'closed') ? 
+            (window.myPrsClosedLastLoadTime || 0) : 
+            (window.myPrsOpenLastLoadTime || 0);
+        const now = Date.now();
+        const CACHE_DURATION = 300000; // 5 minutes cache to prevent rate limiting
+        
+        // Check if we have cached data for this specific PR status (not just any data in container)
+        const hasCachedData = (prStatus === 'closed') ? 
+            window.cachedClosedPRs && window.cachedClosedPRs.length > 0 :
+            window.cachedOpenPRs && window.cachedOpenPRs.length > 0;
+            
+        if (hasCachedData && (now - lastLoadTime) < CACHE_DURATION) {
+            const remainingTime = Math.round((CACHE_DURATION - (now - lastLoadTime)) / 1000);
+            console.log(`✅ My PRs (${prStatus}) cached for ${remainingTime}s more to prevent GitHub rate limiting`);
+            
+            console.log(`🕒 Cache hit for ${prStatus} PRs - Using cached data`);
+            console.log(`🕒 Available timestamps - Open: ${window.myPrsOpenLastLoadTime ? new Date(window.myPrsOpenLastLoadTime).toLocaleTimeString() : 'undefined'}, Closed: ${window.myPrsClosedLastLoadTime ? new Date(window.myPrsClosedLastLoadTime).toLocaleTimeString() : 'undefined'}`);
+            
+            // Display cached data for the current filter
+            const cachedData = (prStatus === 'closed') ? window.cachedClosedPRs : window.cachedOpenPRs;
+            displayMyPRs(cachedData, { showLoadMore: false, totalAvailable: cachedData.length });
+            return;
+        }
+    }
+    
+    // Set load timestamp when making actual API call
+    // Use separate timestamps for open vs closed PRs
+    if (!loadMore) {
+        const timestamp = Date.now();
+        console.log(`🕒 Setting timestamp for ${prStatus} PRs: ${new Date(timestamp).toLocaleTimeString()}`);
+        if (prStatus === 'closed') {
+            window.myPrsClosedLastLoadTime = timestamp;
+            console.log(`🕒 Closed timestamp now: ${new Date(window.myPrsClosedLastLoadTime).toLocaleTimeString()}`);
+        } else {
+            window.myPrsOpenLastLoadTime = timestamp;
+            console.log(`🕒 Open timestamp now: ${new Date(window.myPrsOpenLastLoadTime).toLocaleTimeString()}`);
+        }
+        console.log(`🕒 Current state - Open: ${window.myPrsOpenLastLoadTime ? new Date(window.myPrsOpenLastLoadTime).toLocaleTimeString() : 'undefined'}, Closed: ${window.myPrsClosedLastLoadTime ? new Date(window.myPrsClosedLastLoadTime).toLocaleTimeString() : 'undefined'}`);
+        
+        // Clear existing timer for this status and set a new one for auto-refresh
+        if (forceRefresh) {
+            console.log(`🕐 Manual refresh - clearing timer for ${prStatus} PRs`);
+            clearAutoRefreshTimer(prStatus);
+        }
+    }
     
     if (!username || !githubToken) {
         showErrorState('my-prs-content', 'Configuration missing', 'Please configure GitHub username and token in Settings');
@@ -228,6 +337,11 @@ async function loadMyPRs(loadMore = false) {
             totalAvailable: searchData.total_count
         });
         
+        // Set auto-refresh timer for successful data load (only for initial loads, not "load more")
+        if (!loadMore) {
+            setAutoRefreshTimer(prStatus);
+        }
+        
         // Increment page for next "load more" request
         if (newPRs.length === perPage) {
             currentPage++;
@@ -241,7 +355,14 @@ async function loadMyPRs(loadMore = false) {
         
         console.error('❌ Error loading My PRs:', error);
         if (!loadMore) {
-            showErrorState('my-prs-content', 'Failed to load PRs', error.message);
+            // Check if it's a 403 rate limiting error
+            if (error.message && error.message.includes('403')) {
+                showGitHubRateLimitWarning('my-prs-content', 'load your PRs');
+                showNotification('GitHub API rate limit reached. Data is cached for 5 minutes.', 'warning');
+            } else {
+                showErrorState('my-prs-content', 'Failed to load PRs', error.message);
+                showNotification('Failed to load PRs. Check your GitHub token.', 'error');
+            }
         } else {
             updateLoadMoreButton(false, 'Failed to load more PRs');
         }
@@ -365,14 +486,21 @@ async function enhancePRsWithDetails(prs) {
 function displayMyPRs(prs, options = {}) {
     const { showLoadMore = false, totalAvailable = 0 } = options;
     const prsContainer = document.getElementById('my-prs-content');
+    const prStatus = getCurrentPRStatus();
+    
+    // Cache the PRs data separately for open vs closed
+    if (prStatus === 'closed') {
+        window.cachedClosedPRs = prs;
+    } else {
+        window.cachedOpenPRs = prs;
+    }
     
     if (!prsContainer) {
-        console.error('❌ My PRs container not found');
+        console.error('❌ My PRs container not found: my-prs-content');
         return;
     }
     
     if (prs.length === 0) {
-        const prStatus = getCurrentPRStatus();
         showPlaceholderState('my-prs-content', 
             `No ${prStatus} PRs found`, 
             prStatus === 'open' ? '📝' : '✅');
@@ -417,6 +545,35 @@ function displayMyPRs(prs, options = {}) {
         </div>
     `;
     
+    // Create refresh callback for this specific PR status
+    const createRefreshCallback = () => {
+        return async () => {
+            console.log(`🔄 Manual refresh triggered for My PRs (${prStatus})`);
+            
+            // Clear the JIRA content panel
+            const jiraContent = document.getElementById('my-prs-jira-content');
+            if (jiraContent) {
+                jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
+            }
+            
+            // Remove active state from all PRs
+            document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
+            
+            await loadMyPRs(false, true); // forceRefresh = true
+        };
+    };
+    
+    // Update column title with timestamp and refresh button
+    const timestamp = (prStatus === 'closed') ? 
+        window.myPrsClosedLastLoadTime : 
+        window.myPrsOpenLastLoadTime;
+        
+    console.log(`🕒 displayMyPRs for ${prStatus} PRs - Using timestamp: ${timestamp ? new Date(timestamp).toLocaleTimeString() : 'undefined'}`);
+    console.log(`🕒 Available timestamps - Open: ${window.myPrsOpenLastLoadTime ? new Date(window.myPrsOpenLastLoadTime).toLocaleTimeString() : 'undefined'}, Closed: ${window.myPrsClosedLastLoadTime ? new Date(window.myPrsClosedLastLoadTime).toLocaleTimeString() : 'undefined'}`);
+    
+    // Update column title with timestamp and refresh button
+    updateColumnTitleWithTimestamp('#my-prs-column .column-title', 'My PRs', timestamp, createRefreshCallback());
+    
     // Make click handler available globally
     window.selectMyPRForJiraLookup = function(element) {
         // Remove active state from other PRs
@@ -425,19 +582,15 @@ function displayMyPRs(prs, options = {}) {
         // Add active state to clicked PR
         element.classList.add('active');
         
-        // Extract PR info from the element
-        const titleElement = element.querySelector('.github-pr-title-text');
-        const prTitle = titleElement ? titleElement.textContent : '';
-        const prNumber = prTitle.match(/#(\d+)/)?.[1] || '';
+        // Extract PR info from data attributes (more reliable than parsing text)
+        const repoName = element.getAttribute('data-repo-name');
+        const prNumber = element.getAttribute('data-pr-number');
         
-        if (prNumber) {
-            console.log(`🔍 Selected My PR #${prNumber} for JIRA lookup`);
-            
-            // Find the PR data
-            const selectedPR = prs.find(pr => pr.number.toString() === prNumber);
-            if (selectedPR) {
-                loadAssociatedJIRAsForMyPR(selectedPR.repoName, prNumber);
-            }
+        if (prNumber && repoName) {
+            console.log(`🔍 Selected My PR #${prNumber} from ${repoName} for JIRA lookup`);
+            loadAssociatedJIRAsForMyPR(repoName, prNumber);
+        } else {
+            console.error('❌ Could not extract PR info from element:', { repoName, prNumber });
         }
     };
     
@@ -491,7 +644,7 @@ async function loadAssociatedJIRAsForMyPR(repoName, prNumber) {
     const jiraContainer = document.getElementById('my-prs-jira-content');
     
     if (!jiraContainer) {
-        console.error('❌ My PRs JIRA container not found');
+        console.error('❌ My PRs JIRA container not found: my-prs-jira-content');
         return;
     }
     
@@ -551,13 +704,26 @@ async function loadAssociatedJIRAsForMyPR(repoName, prNumber) {
  */
 function extractJIRAIds(title, body) {
     const text = `${title || ''} ${body || ''}`;
+    const jiraIds = new Set();
     
-    // Match JIRA ticket patterns (case-insensitive)
-    const jiraPattern = /\b([A-Z]+-\d+)\b/gi;
-    const matches = text.match(jiraPattern) || [];
+    // Use specific JIRA prefixes from app state (same approach as reviews.js)
+    const prefixes = appState.jiraPrefixes || ['OCMUI-', 'OCM-', 'XCMSTRAT-'];
     
-    // Remove duplicates and return
-    const jiraIds = [...new Set(matches.map(match => match.toUpperCase()))];
+    prefixes.forEach(prefix => {
+        // Match pattern: PREFIX-NUMBER (e.g., OCMUI-1234)
+        const regex = new RegExp(`${prefix.replace('-', '\\-')}(\\d+)`, 'gi');
+        const matches = text.match(regex);
+        
+        if (matches) {
+            matches.forEach(match => {
+                const jiraId = match.toUpperCase();
+                // Additional filter to exclude unwanted patterns
+                if (!jiraId.includes('CLAUDE')) {
+                    jiraIds.add(jiraId);
+                }
+            });
+        }
+    });
     
     return Array.from(jiraIds);
 }
@@ -648,7 +814,7 @@ function displayLoadedJIRAsForMyPR(jiraResults, repo, prNumber) {
     const jiraContainer = document.getElementById('my-prs-jira-content');
     
     if (!jiraContainer) {
-        console.error('❌ My PRs JIRA container not found');
+        console.error('❌ My PRs JIRA container not found: my-prs-jira-content');
         return;
     }
     
@@ -676,4 +842,9 @@ function displayLoadedJIRAsForMyPR(jiraResults, repo, prNumber) {
     console.log(`✅ Displayed ${jiraResults.length} JIRA tickets for My PR #${prNumber}`);
     
     // Note: toggleJiraMoreInfo function is already available globally from reviews.js or jira.js
+}
+
+// Make activation function globally available for two-level navigation
+if (typeof window !== 'undefined') {
+    window.onMyPrsTabActivated = onMyPrsTabActivated;
 }

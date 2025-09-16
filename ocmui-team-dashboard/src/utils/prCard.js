@@ -165,9 +165,10 @@ export function generatePRCardHTML(pr, options = {}) {
     // Generate card HTML
     const cardClasses = `github-pr-item ${clickHandler ? 'clickable-pr' : ''}`;
     const clickAttributes = clickHandler ? `onclick="${clickHandler}" style="cursor: pointer;"` : '';
+    const dataAttributes = `data-repo-name="${repoName}" data-pr-number="${prNumber}"`;
     
     return `
-        <div class="${cardClasses}" ${clickAttributes}>
+        <div class="${cardClasses}" ${clickAttributes} ${dataAttributes}>
             <div class="github-pr-header-row">
                 ${titleSection}
                 <div class="github-pr-status-row">

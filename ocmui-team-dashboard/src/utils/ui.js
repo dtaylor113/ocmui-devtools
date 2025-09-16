@@ -7,16 +7,23 @@
  */
 
 import Split from 'split.js';
+import { formatLastUpdated } from './formatting.js';
 
 /**
  * Initialize split panes for resizable columns
- * Sets up split panes for both JIRA and Reviews tabs
+ * Sets up split panes for both legacy and new navigation structures
  */
 export function initializeSplitPanes() {
     // Small delay to ensure DOM elements are fully rendered
     setTimeout(() => {
+        // Initialize legacy split panes
         initializeJiraSplitPanes();
         initializeReviewsSplitPanes();
+        
+        // Initialize new structure split panes
+        initializeNewJiraSplitPanes();
+        initializeNewReviewsSplitPanes();
+        initializeNewMyPrsSplitPanes();
     }, 100);
 }
 
@@ -227,6 +234,165 @@ export function initializeMyPrsSplitPanes() {
 }
 
 /**
+ * NEW: Initialize split panes for new JIRA structure
+ */
+function initializeNewJiraSplitPanes() {
+    const jiraColumn = document.getElementById('new-jira-column');
+    const githubColumn = document.getElementById('new-github-column');
+    
+    if (!jiraColumn || !githubColumn) return;
+    
+    console.log('🔧 Initializing NEW JIRA split panes');
+    
+    // Load saved split sizes or use defaults
+    let initialSizes = [60, 40];
+    try {
+        const savedSizes = localStorage.getItem('ocmui_new_jira_split_sizes');
+        if (savedSizes) {
+            const parsedSizes = JSON.parse(savedSizes);
+            if (Array.isArray(parsedSizes) && parsedSizes.length === 2) {
+                initialSizes = parsedSizes;
+            }
+        }
+    } catch (error) {
+        console.warn('🔧 Could not restore NEW JIRA split sizes, using defaults:', error);
+    }
+    
+    try {
+        const splitInstance = Split(['#new-jira-column', '#new-github-column'], {
+            sizes: initialSizes,
+            minSize: 300,
+            gutterSize: 8,
+            cursor: 'col-resize',
+            direction: 'horizontal',
+            snapOffset: 30,
+            dragInterval: 1,
+            
+            onDragEnd: function(sizes) {
+                try {
+                    localStorage.setItem('ocmui_new_jira_split_sizes', JSON.stringify(sizes));
+                    console.log('🔧 NEW JIRA split sizes saved:', sizes);
+                } catch (error) {
+                    console.warn('🔧 Could not save NEW JIRA split sizes:', error);
+                }
+            }
+        });
+        
+        console.log('✅ NEW JIRA Split.js initialized successfully');
+        return splitInstance;
+        
+    } catch (error) {
+        console.error('❌ NEW JIRA Split.js initialization failed:', error);
+    }
+}
+
+/**
+ * NEW: Initialize split panes for new Reviews structure
+ */
+function initializeNewReviewsSplitPanes() {
+    const reviewsPrsColumn = document.getElementById('new-reviews-prs-column');
+    const reviewsJiraColumn = document.getElementById('new-reviews-jira-column');
+    
+    if (!reviewsPrsColumn || !reviewsJiraColumn) return;
+    
+    console.log('🔧 Initializing NEW Reviews split panes');
+    
+    // Load saved split sizes or use defaults
+    let initialSizes = [50, 50];
+    try {
+        const savedSizes = localStorage.getItem('ocmui_new_reviews_split_sizes');
+        if (savedSizes) {
+            const parsedSizes = JSON.parse(savedSizes);
+            if (Array.isArray(parsedSizes) && parsedSizes.length === 2) {
+                initialSizes = parsedSizes;
+            }
+        }
+    } catch (error) {
+        console.warn('🔧 Could not restore NEW Reviews split sizes, using defaults:', error);
+    }
+    
+    try {
+        const splitInstance = Split(['#new-reviews-prs-column', '#new-reviews-jira-column'], {
+            sizes: initialSizes,
+            minSize: 300,
+            gutterSize: 8,
+            cursor: 'col-resize',
+            direction: 'horizontal',
+            snapOffset: 30,
+            dragInterval: 1,
+            
+            onDragEnd: function(sizes) {
+                try {
+                    localStorage.setItem('ocmui_new_reviews_split_sizes', JSON.stringify(sizes));
+                    console.log('🔧 NEW Reviews split sizes saved:', sizes);
+                } catch (error) {
+                    console.warn('🔧 Could not save NEW Reviews split sizes:', error);
+                }
+            }
+        });
+        
+        console.log('✅ NEW Reviews Split.js initialized successfully');
+        return splitInstance;
+        
+    } catch (error) {
+        console.error('❌ NEW Reviews Split.js initialization failed:', error);
+    }
+}
+
+/**
+ * NEW: Initialize split panes for new My PRs structure
+ */
+function initializeNewMyPrsSplitPanes() {
+    const myPrsColumn = document.getElementById('new-my-prs-column');
+    const myPrsJiraColumn = document.getElementById('new-my-prs-jira-column');
+    
+    if (!myPrsColumn || !myPrsJiraColumn) return;
+    
+    console.log('🔧 Initializing NEW My PRs split panes');
+    
+    // Load saved split sizes or use defaults
+    let initialSizes = [50, 50];
+    try {
+        const savedSizes = localStorage.getItem('ocmui_new_my_prs_split_sizes');
+        if (savedSizes) {
+            const parsedSizes = JSON.parse(savedSizes);
+            if (Array.isArray(parsedSizes) && parsedSizes.length === 2) {
+                initialSizes = parsedSizes;
+            }
+        }
+    } catch (error) {
+        console.warn('🔧 Could not restore NEW My PRs split sizes, using defaults:', error);
+    }
+    
+    try {
+        const splitInstance = Split(['#new-my-prs-column', '#new-my-prs-jira-column'], {
+            sizes: initialSizes,
+            minSize: 300,
+            gutterSize: 8,
+            cursor: 'col-resize',
+            direction: 'horizontal',
+            snapOffset: 30,
+            dragInterval: 1,
+            
+            onDragEnd: function(sizes) {
+                try {
+                    localStorage.setItem('ocmui_new_my_prs_split_sizes', JSON.stringify(sizes));
+                    console.log('🔧 NEW My PRs split sizes saved:', sizes);
+                } catch (error) {
+                    console.warn('🔧 Could not save NEW My PRs split sizes:', error);
+                }
+            }
+        });
+        
+        console.log('✅ NEW My PRs Split.js initialized successfully');
+        return splitInstance;
+        
+    } catch (error) {
+        console.error('❌ NEW My PRs Split.js initialization failed:', error);
+    }
+}
+
+/**
  * Show loading state in the JIRA display area
  * @param {string} message - Loading message to display
  */
@@ -285,60 +451,241 @@ export function showPlaceholderState(containerId, message, icon = null) {
  * Sets up tab switching and maintains active state
  */
 export function initializeTabNavigation() {
-    const tabButtons = document.querySelectorAll('.nav-tab');
-    
-    tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const tabName = this.getAttribute('data-tab');
-            switchTab(tabName);
-        });
-    });
+    console.log('🔧 Initializing navigation...');
+    // Initialize the two-level navigation system only
+    initializeTwoLevelNavigation();
 }
 
 /**
- * Switch to a specific tab
- * @param {string} tabName - Name of tab to switch to ('jira', 'reviews', 'my-prs')
+ * Initialize two-level navigation functionality
+ * Sets up primary and secondary tab switching with state management
  */
-export function switchTab(tabName) {
-    // Update tab button states
-    document.querySelectorAll('.nav-tab').forEach(tab => {
+export function initializeTwoLevelNavigation() {
+    console.log('🔧 Initializing two-level navigation...');
+    
+    // Initialize primary tab navigation (JIRA | GitHub)
+    const primaryTabButtons = document.querySelectorAll('.primary-nav-tab');
+    primaryTabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const primaryTabName = this.getAttribute('data-primary-tab');
+            switchPrimaryTab(primaryTabName);
+        });
+    });
+    
+    // Initialize secondary tab navigation for JIRA
+    const jiraSecondaryButtons = document.querySelectorAll('#jira-secondary-nav .secondary-nav-tab');
+    jiraSecondaryButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const secondaryTabName = this.getAttribute('data-secondary-tab');
+            switchSecondaryTab('jira', secondaryTabName);
+        });
+    });
+    
+    // Initialize secondary tab navigation for GitHub  
+    const githubSecondaryButtons = document.querySelectorAll('#github-secondary-nav .secondary-nav-tab');
+    githubSecondaryButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const secondaryTabName = this.getAttribute('data-secondary-tab');
+            switchSecondaryTab('github', secondaryTabName);
+        });
+        
+        // Double-click handler removed to prevent GitHub API rate limiting
+    });
+    
+    console.log('✅ Two-level navigation initialized with 5-minute caching to prevent GitHub rate limiting');
+}
+
+/**
+ * Switch primary tab (JIRA | GitHub)
+ * @param {string} primaryTabName - Primary tab name ('jira' or 'github')
+ */
+export function switchPrimaryTab(primaryTabName) {
+    console.log(`🔄 Switching to primary tab: ${primaryTabName}`);
+    
+    // Update primary tab button states
+    document.querySelectorAll('.primary-nav-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
+    document.querySelector(`[data-primary-tab="${primaryTabName}"]`)?.classList.add('active');
     
-    // Update tab content visibility
-    document.querySelectorAll('.tab-content').forEach(content => {
+    // Show/hide appropriate secondary navigation
+    const jiraSecondaryNav = document.getElementById('jira-secondary-nav');
+    const githubSecondaryNav = document.getElementById('github-secondary-nav');
+    
+    if (primaryTabName === 'jira') {
+        jiraSecondaryNav.style.display = 'flex';
+        githubSecondaryNav.style.display = 'none';
+    } else if (primaryTabName === 'github') {
+        jiraSecondaryNav.style.display = 'none';
+        githubSecondaryNav.style.display = 'flex';
+    }
+    
+    // Show/hide primary content areas
+    showPrimaryContent(primaryTabName);
+    
+    // Trigger secondary tab based on current state or default
+    const activeSecondaryTab = getActiveSecondaryTab(primaryTabName);
+    switchSecondaryTab(primaryTabName, activeSecondaryTab);
+}
+
+/**
+ * Switch secondary tab within a primary section
+ * @param {string} primaryTabName - Primary tab name ('jira' or 'github')
+ * @param {string} secondaryTabName - Secondary tab name
+ */
+export function switchSecondaryTab(primaryTabName, secondaryTabName) {
+    console.log(`🔄 Switching to secondary tab: ${primaryTabName} > ${secondaryTabName}`);
+    
+    // Update secondary tab button states within the active primary section
+    const secondaryNavId = `${primaryTabName}-secondary-nav`;
+    const secondaryNav = document.getElementById(secondaryNavId);
+    if (secondaryNav) {
+        secondaryNav.querySelectorAll('.secondary-nav-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        secondaryNav.querySelector(`[data-secondary-tab="${secondaryTabName}"]`)?.classList.add('active');
+    }
+    
+    // Show appropriate secondary content
+    showSecondaryContent(primaryTabName, secondaryTabName);
+    
+    // Trigger component activation for specific tabs
+    triggerComponentActivation(primaryTabName, secondaryTabName);
+}
+
+/**
+ * Show/hide primary content areas
+ * @param {string} primaryTabName - Primary tab name ('jira' or 'github')
+ */
+function showPrimaryContent(primaryTabName) {
+    // Ensure main content area is visible
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+    }
+    
+    // Update primary content visibility
+    document.querySelectorAll('.primary-tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    document.getElementById(`${tabName}-tab`)?.classList.add('active');
-    
-    // Reset right panel when switching to My Code Reviews tab
-    if (tabName === 'reviews') {
-        const reviewsJiraContent = document.getElementById('reviews-jira-content');
-        if (reviewsJiraContent) {
-            showPlaceholderState('reviews-jira-content', 
-                'Associated JIRAs will be loaded here...', 
-                '📝');
-        }
-    }
-    
-    // Reset right panel when switching to My PRs tab
-    if (tabName === 'my-prs') {
-        const myPrsJiraContent = document.getElementById('my-prs-jira-content');
-        if (myPrsJiraContent) {
-            showPlaceholderState('my-prs-jira-content', 
-                'Associated JIRAs will be loaded here...', 
-                '📝');
-        }
-    }
-    
-    // Cancel any ongoing My PRs API calls when navigating away
-    if (tabName !== 'my-prs' && window.cancelMyPRsRequests) {
-        window.cancelMyPRsRequests();
-    }
-    
-    console.log('📑 Switched to tab:', tabName);
+    document.getElementById(`${primaryTabName}-primary-content`)?.classList.add('active');
 }
+
+/**
+ * Show/hide secondary content within primary content
+ * @param {string} primaryTabName - Primary tab name ('jira' or 'github')
+ * @param {string} secondaryTabName - Secondary tab name
+ */
+function showSecondaryContent(primaryTabName, secondaryTabName) {
+    const primaryContent = document.getElementById(`${primaryTabName}-primary-content`);
+    if (!primaryContent) return;
+    
+    // Hide all secondary content within this primary section
+    primaryContent.querySelectorAll('.secondary-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Map secondary tab names to content IDs
+    const contentMapping = {
+        'jira': {
+            'my-sprint-jiras': 'my-sprint-jiras-content',
+            'jira-lookup': 'jira-lookup-content'
+        },
+        'github': {
+            'my-code-reviews': 'my-code-reviews-content',
+            'my-prs': 'my-prs-content-tab',
+            'github-lookup': 'github-lookup-content'
+        }
+    };
+    
+    const contentId = contentMapping[primaryTabName]?.[secondaryTabName];
+    if (contentId) {
+        document.getElementById(contentId)?.classList.add('active');
+    }
+}
+
+/**
+ * NEW: Get the active secondary tab for a primary section, or return default
+ * @param {string} primaryTabName - Primary tab name
+ * @returns {string} Active or default secondary tab name
+ */
+function getActiveSecondaryTab(primaryTabName) {
+    const secondaryNavId = `${primaryTabName}-secondary-nav`;
+    const secondaryNav = document.getElementById(secondaryNavId);
+    if (!secondaryNav) return getDefaultSecondaryTab(primaryTabName);
+    
+    const activeButton = secondaryNav.querySelector('.secondary-nav-tab.active');
+    if (activeButton) {
+        return activeButton.getAttribute('data-secondary-tab');
+    }
+    
+    return getDefaultSecondaryTab(primaryTabName);
+}
+
+/**
+ * NEW: Get default secondary tab for a primary section
+ * @param {string} primaryTabName - Primary tab name
+ * @returns {string} Default secondary tab name
+ */
+function getDefaultSecondaryTab(primaryTabName) {
+    const defaults = {
+        'jira': 'my-sprint-jiras',
+        'github': 'my-code-reviews'
+    };
+    return defaults[primaryTabName] || 'my-sprint-jiras';
+}
+
+/**
+ * NEW: Set initial state for two-level navigation
+ * Call this after DOM is loaded to set up proper default state
+ */
+export function initializeTwoLevelNavigationState() {
+    console.log('🔧 Setting initial two-level navigation state...');
+    
+    // Set JIRA as default primary tab and ensure proper initial state
+    setTimeout(() => {
+        switchPrimaryTab('jira');
+        console.log('✅ Two-level navigation initial state set');
+    }, 100);
+}
+
+/**
+ * NEW: Trigger component activation for specific secondary tabs
+ * @param {string} primaryTabName - Primary tab name
+ * @param {string} secondaryTabName - Secondary tab name
+ */
+function triggerComponentActivation(primaryTabName, secondaryTabName) {
+    console.log(`🔄 Triggering component activation: ${primaryTabName} > ${secondaryTabName}`);
+    
+    // We need to manually call the activation functions instead of dispatching click events
+    // to avoid infinite recursion
+    if (primaryTabName === 'github') {
+        if (secondaryTabName === 'my-code-reviews') {
+            // Call the Reviews activation function directly
+            // Import and call the function - we'll need to make it available globally
+            if (window.onReviewsTabActivated) {
+                window.onReviewsTabActivated();
+                console.log('📧 Triggered My Code Reviews activation');
+            }
+        } else if (secondaryTabName === 'my-prs') {
+            // Call the MyPrs activation function directly
+            if (window.onMyPrsTabActivated) {
+                window.onMyPrsTabActivated();
+                console.log('📧 Triggered My PRs activation');
+            }
+        }
+    } else if (primaryTabName === 'jira') {
+        if (secondaryTabName === 'jira-lookup') {
+            // For JIRA Lookup, we don't need to trigger anything special
+            // as it's always ready to accept input
+            console.log('📧 JIRA Lookup activated (ready for input)');
+        }
+    }
+}
+
+// NOTE: switchPrimaryTab and switchSecondaryTab are already exported in their function declarations above
+
+// Removed old switchTab function - replaced by two-level navigation system
 
 /**
  * Create a notification toast
@@ -550,4 +897,128 @@ export function updateTabTitlesWithUsername() {
     }
     
     console.log('✅ Column titles updated successfully');
+}
+
+/**
+ * Update column title with "Last Refreshed" timestamp
+ * @param {string} columnSelector - CSS selector for the column title element
+ * @param {string} baseTitle - Base title text (e.g., "PRs I'm Reviewing", "My PRs")
+ * @param {number} timestamp - Last refresh timestamp in milliseconds
+ */
+export function updateColumnTitleWithTimestamp(columnSelector, baseTitle, timestamp, refreshCallback = null) {
+    const titleElement = document.querySelector(columnSelector);
+    if (!titleElement) return;
+    
+    // Find existing icon
+    const icon = titleElement.querySelector('img');
+    
+    // Create new title content
+    const titleText = document.createElement('span');
+    titleText.className = 'title-text';
+    titleText.textContent = baseTitle;
+    
+    // Create timestamp container
+    const timestampContainer = document.createElement('small');
+    timestampContainer.className = 'last-refreshed-container';
+    timestampContainer.style.cssText = 'color: #666; font-weight: normal; margin-left: 8px; display: block; font-size: 0.8em; display: flex; align-items: center; gap: 8px;';
+    
+    // Create timestamp element
+    const timestampElement = document.createElement('span');
+    timestampElement.className = 'last-refreshed-time';
+    timestampElement.textContent = formatLastUpdated(timestamp);
+    
+    timestampContainer.appendChild(timestampElement);
+    
+    // Add refresh button if callback provided
+    if (refreshCallback) {
+        const refreshButton = document.createElement('button');
+        refreshButton.className = 'refresh-btn';
+        refreshButton.textContent = '🔄 Refresh';
+        refreshButton.title = 'Refresh data';
+        refreshButton.style.cssText = 'background: transparent; color: #0066cc; border: none; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; cursor: pointer; display: inline-flex; align-items: center; gap: 2px;';
+        
+        // Add hover effects
+        refreshButton.onmouseover = () => {
+            refreshButton.style.background = '#f0f8ff';
+            refreshButton.style.color = '#0052a3';
+        };
+        refreshButton.onmouseout = () => {
+            refreshButton.style.background = 'transparent';
+            refreshButton.style.color = '#0066cc';
+        };
+        
+        refreshButton.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            refreshButton.disabled = true;
+            refreshButton.textContent = '⏳ Refreshing...';
+            
+            // Call the refresh callback
+            refreshCallback().finally(() => {
+                refreshButton.disabled = false;
+                refreshButton.textContent = '🔄 Refresh';
+            });
+        };
+        
+        timestampContainer.appendChild(refreshButton);
+    }
+    
+    // Add auto-update info text
+    const infoText = document.createElement('span');
+    infoText.className = 'auto-update-info';
+    infoText.textContent = ' • updates every 5 minutes';
+    infoText.style.cssText = 'color: #999; font-size: 0.8em; margin-left: 4px;';
+    timestampContainer.appendChild(infoText);
+    
+    // Clear and rebuild title
+    titleElement.innerHTML = '';
+    if (icon) {
+        titleElement.appendChild(icon);
+    }
+    titleElement.appendChild(titleText);
+    titleElement.appendChild(timestampContainer);
+}
+
+/**
+ * Show GitHub API rate limit warning instead of generic 403 error
+ * @param {string} containerId - ID of container to show warning in
+ * @param {string} action - What action was being attempted (e.g., "load PRs", "search repositories")
+ */
+export function showGitHubRateLimitWarning(containerId, action) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="error-state github-rate-limit-warning">
+            <div class="error-icon">⚠️</div>
+            <div class="error-content">
+                <h4>GitHub API Rate Limit Reached</h4>
+                <p>Too many requests were made to GitHub's API while trying to ${action}.</p>
+                
+                <div class="rate-limit-info">
+                    <h5>📊 GitHub API Limits:</h5>
+                    <ul>
+                        <li><strong>Search API:</strong> 30 requests/minute</li>
+                        <li><strong>Regular API:</strong> 5,000 requests/hour</li>
+                    </ul>
+                </div>
+                
+                <div class="suggestions">
+                    <h5>💡 What you can do:</h5>
+                    <ul>
+                        <li><strong>Wait:</strong> Limits reset automatically</li>
+                        <li><strong>Cached data:</strong> Recent data is cached for 5 minutes</li>
+                        <li><strong>Try later:</strong> Switch to other tabs and return later</li>
+                    </ul>
+                </div>
+                
+                <div class="next-steps">
+                    <button class="retry-btn" onclick="location.reload()" 
+                            style="background: #0066cc; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                        🔄 Refresh Page
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
 }

@@ -195,11 +195,15 @@ export function processReviewers(reviews, requestedReviewers, currentUser = null
         const isCurrentUser = currentUser && username === currentUser;
         const hasComments = info.hasComments;
         
-        // Add comment indicator and make clickable if reviewer has comments
-        const commentIcon = hasComments ? ' 💬' : '';
+        // Make clickable if reviewer has comments (but don't add duplicate comment icon)
+        // The stateIcon already includes a comment icon if state is 'commented'
         const clickHandler = hasComments && prInfo ? 
             `onclick="event.stopPropagation(); showReviewerComments('${username}', '${prInfo.repoName}', ${prInfo.number})"` : '';
         const clickableClass = hasComments ? 'clickable-reviewer' : '';
+        
+        // Only add comment icon if reviewer has comments but no formal review state
+        const needsCommentIcon = hasComments && info.state === 'review_requested';
+        const commentIcon = needsCommentIcon ? ' 💬' : '';
         
         // Debug logging
         if (hasComments) {

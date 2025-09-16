@@ -28,14 +28,135 @@
         .header-button { display: flex; align-items: center; gap: 8px; background: #333; border: 1px solid #444; border-radius: 6px; color: white; padding: 8px 12px; text-decoration: none; cursor: pointer; transition: all 0.2s ease; font-size: 14px; }
         .header-button:hover { background: #444; border-color: #555; transform: translateY(-1px); }
         
-        .nav-tabs { background-color: #111; border-bottom: 1px solid #333; padding: 0 24px; display: flex; gap: 0; }
-        .nav-tab { background: transparent; border: none; color: #888; padding: 16px 24px; cursor: pointer; font-size: 14px; font-weight: 500; border-bottom: 3px solid transparent; transition: all 0.2s ease; }
-        .nav-tab:hover { color: #fff; background-color: rgba(255, 255, 255, 0.05); }
-        .nav-tab.active { color: #3b82f6; border-bottom-color: #3b82f6; background-color: rgba(59, 130, 246, 0.1); }
+        /* Removed old .nav-tabs and .nav-tab rules - replaced by two-level navigation */
+        
+        /* Two-Level Navigation Styles */
+        
+        /* Primary Navigation (Level 1: JIRA | GitHub) */
+        .primary-nav-tabs { 
+            background-color: #1a1a1a; 
+            border-bottom: 2px solid #444; 
+            padding: 0 24px; 
+            display: flex; 
+            gap: 0; 
+        }
+        .primary-nav-tab { 
+            background: transparent; 
+            border: none; 
+            color: #ccc; 
+            padding: 20px 32px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 600; 
+            border-bottom: 4px solid transparent; 
+            transition: all 0.3s ease; 
+            position: relative;
+        }
+        .primary-nav-tab:hover { 
+            color: #fff; 
+            background-color: rgba(255, 255, 255, 0.08); 
+        }
+        .primary-nav-tab.active { 
+            color: #60a5fa; 
+            border-bottom-color: #60a5fa; 
+            background-color: rgba(96, 165, 250, 0.15); 
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.2);
+        }
+        .primary-nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #60a5fa, transparent);
+        }
+        
+        /* Secondary Navigation (Level 2: Sub-tabs) */
+        .secondary-nav-tabs { 
+            background-color: #111; 
+            border-bottom: 1px solid #333; 
+            padding: 0 24px; 
+            display: flex; 
+            gap: 0;
+            margin-left: 32px; /* Indent to show hierarchy */
+        }
+        .secondary-nav-tab { 
+            background: transparent; 
+            border: none; 
+            color: #888; 
+            padding: 14px 20px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: 500; 
+            border-bottom: 2px solid transparent; 
+            transition: all 0.2s ease; 
+            position: relative;
+        }
+        .secondary-nav-tab:hover { 
+            color: #fff; 
+            background-color: rgba(255, 255, 255, 0.05); 
+        }
+        .secondary-nav-tab.active { 
+            color: #3b82f6; 
+            border-bottom-color: #3b82f6; 
+            background-color: rgba(59, 130, 246, 0.1); 
+        }
+        .secondary-nav-tab.active::before {
+            /* Temporarily disabled to fix visual artifact */
+            /* content: '';
+            position: absolute;
+            left: -32px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 1px;
+            background: #3b82f6;
+            opacity: 0.5; */
+        }
+        
+        /* Content Area Styles */
+        .new-main-content { 
+            padding: 24px; 
+            height: calc(100vh - 160px); 
+            overflow-y: auto; 
+        }
+        .primary-tab-content { 
+            display: none; 
+            height: 100%; 
+        }
+        .primary-tab-content.active { 
+            display: block; 
+        }
+        .secondary-tab-content { 
+            display: none; 
+            height: 100%; 
+        }
+        .secondary-tab-content.active { 
+            display: block; 
+        }
+        
+        /* Placeholder Content Styling */
+        .placeholder-content { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100%; 
+            text-align: center;
+        }
+        .placeholder-content .coming-soon h3 { 
+            color: #60a5fa; 
+            font-size: 24px; 
+            margin-bottom: 16px; 
+        }
+        .placeholder-content .coming-soon p { 
+            color: #ccc; 
+            font-size: 16px; 
+            margin-bottom: 8px; 
+        }
         
         .main-content { padding: 24px; height: calc(100vh - 120px); overflow-y: auto; }
-        .tab-content { display: none; height: 100%; }
-        .tab-content.active { display: block; }
+        /* Removed unused .tab-content rules from old navigation system */
         
         .two-column-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; height: 100%; }
         .column { background: #111; border-radius: 8px; padding: 20px; border: 1px solid #333; }
@@ -83,6 +204,31 @@
             .two-column-layout { grid-template-columns: 1fr; gap: 16px; }
             .header { padding: 12px 16px; }
             .main-content { padding: 16px; }
+            
+            /* NEW: Responsive Two-Level Navigation */
+            .primary-nav-tabs { padding: 0 16px; }
+            .primary-nav-tab { 
+                padding: 16px 20px; 
+                font-size: 14px; 
+            }
+            .secondary-nav-tabs { 
+                padding: 0 16px; 
+                margin-left: 0; /* Remove indent on mobile */
+                overflow-x: auto; 
+                scrollbar-width: none; 
+                -ms-overflow-style: none;
+            }
+            .secondary-nav-tabs::-webkit-scrollbar { display: none; }
+            .secondary-nav-tab { 
+                padding: 12px 16px; 
+                font-size: 13px; 
+                white-space: nowrap; 
+            }
+            .secondary-nav-tab.active::before { display: none; }
+            .new-main-content { 
+                padding: 16px; 
+                height: calc(100vh - 140px); 
+            }
         }
     </style>
 </head>
@@ -105,93 +251,148 @@
         </div>
     </div>
     
-    <nav class="nav-tabs">
-        <button class="nav-tab active" data-tab="jira">JIRA</button>
-        <button class="nav-tab" data-tab="reviews">My Code Reviews</button>
-        <button class="nav-tab" data-tab="my-prs">My PRs</button>
+    <!-- Two-Level Navigation Structure -->
+    <nav class="primary-nav-tabs">
+        <button class="primary-nav-tab active" data-primary-tab="jira">JIRA</button>
+        <button class="primary-nav-tab" data-primary-tab="github">GitHub</button>
     </nav>
     
+    <!-- NEW: Secondary Navigation for JIRA -->
+    <nav class="secondary-nav-tabs" id="jira-secondary-nav">
+        <button class="secondary-nav-tab active" data-secondary-tab="my-sprint-jiras">My Sprint JIRAs</button>
+        <button class="secondary-nav-tab" data-secondary-tab="jira-lookup">JIRA Lookup</button>
+    </nav>
+    
+    <!-- Secondary Navigation for GitHub -->
+    <nav class="secondary-nav-tabs" id="github-secondary-nav" style="display: none;">
+        <button class="secondary-nav-tab active" data-secondary-tab="my-code-reviews">My Code Reviews</button>
+        <button class="secondary-nav-tab" data-secondary-tab="my-prs">My PRs</button>
+        <button class="secondary-nav-tab" data-secondary-tab="github-lookup">PR Lookup</button>
+    </nav>
+    
+    
+    
+    <!-- Two-Level Navigation Content Areas -->
     <main class="main-content">
-        <div class="tab-content active" id="jira-tab">
-            <div class="split-container" id="split-container">
-                <div class="split-pane" id="jira-column">
-                    <h3 class="column-title jira-title">
-                        <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
-                        JIRA Ticket
-                    </h3>
-                    <div id="jira-content">
-                        <div class="coming-soon">JIRA integration loading...</div>
-                    </div>
-                </div>
-                <div class="split-pane" id="github-column">
-                    <h3 class="column-title github-title">
-                        <img src="assets/githubIcon.png" alt="GitHub" class="column-icon">
-                        Associated GitHub PRs
-                    </h3>
-                    <div id="github-content">
-                        <div class="coming-soon">GitHub PRs will appear here...</div>
+        <!-- JIRA Primary Tab Content -->
+        <div class="primary-tab-content active" id="jira-primary-content">
+            
+            <!-- My Sprint JIRAs Secondary Tab -->
+            <div class="secondary-tab-content active" id="my-sprint-jiras-content">
+                <div class="placeholder-content">
+                    <div class="coming-soon">
+                        <h3>My Sprint JIRAs</h3>
+                        <p>This section will show your current sprint JIRAs</p>
+                        <p style="color: #666; font-size: 14px;">Coming soon...</p>
                     </div>
                 </div>
             </div>
+            
+            <!-- JIRA Lookup Secondary Tab -->
+            <div class="secondary-tab-content" id="jira-lookup-content">
+                <!-- This will contain the current JIRA tab functionality -->
+                <div class="split-container" id="jira-split-container">
+                    <div class="split-pane" id="jira-column">
+                        <h3 class="column-title jira-title">
+                            <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
+                            JIRA Ticket
+                        </h3>
+                        <div id="jira-content">
+                            <div class="coming-soon">JIRA integration loading...</div>
+                        </div>
+                    </div>
+                    <div class="split-pane" id="github-column">
+                        <h3 class="column-title github-title">
+                            <img src="assets/githubIcon.png" alt="GitHub" class="column-icon">
+                            Associated GitHub PRs
+                        </h3>
+                        <div id="github-content">
+                            <div class="coming-soon">GitHub PRs will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
         </div>
         
-        <div class="tab-content" id="reviews-tab">
-            <div class="split-container" id="reviews-split-container">
-                <div class="split-pane" id="reviews-prs-column">
-                    <h3 class="column-title github-title">
-                        <img src="assets/githubIcon.png" alt="GitHub" class="column-icon">
-                        PRs I'm Reviewing
-                    </h3>
-                    <div id="reviews-prs-content">
-                        <div class="coming-soon">Loading reviews awaiting your review...</div>
+        <!-- GitHub Primary Tab Content -->
+        <div class="primary-tab-content" id="github-primary-content">
+            
+            <!-- My Code Reviews Secondary Tab -->
+            <div class="secondary-tab-content active" id="my-code-reviews-content">
+                <!-- This will contain the current reviews tab functionality -->
+                <div class="split-container" id="reviews-split-container">
+                    <div class="split-pane" id="reviews-prs-column">
+                        <h3 class="column-title github-title">
+                            <img src="assets/githubIcon.png" alt="GitHub" class="column-icon">
+                            PRs I'm Reviewing
+                        </h3>
+                        <div id="reviews-prs-content">
+                            <div class="coming-soon">Loading reviews awaiting your review...</div>
+                        </div>
                     </div>
-                </div>
-                <div class="split-pane" id="reviews-jira-column">
-                    <h3 class="column-title jira-title">
-                        <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
-                        Associated JIRAs
-                    </h3>
-                    <div id="reviews-jira-content">
-                        <div class="coming-soon">Associated JIRAs will be loaded here...</div>
+                    <div class="split-pane" id="reviews-jira-column">
+                        <h3 class="column-title jira-title">
+                            <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
+                            Associated JIRAs
+                        </h3>
+                        <div id="reviews-jira-content">
+                            <div class="coming-soon">Associated JIRAs will be loaded here...</div>
+                        </div>
                     </div>
                 </div>
             </div>
+            
+            <!-- My PRs Secondary Tab -->
+            <div class="secondary-tab-content" id="my-prs-content-tab">
+                <!-- This will contain the current My PRs tab functionality -->
+                <div class="my-prs-controls">
+                    <div class="pr-filter-controls">
+                        <label class="radio-group">
+                            <input type="radio" name="pr-status" value="open" checked>
+                            <span>Open PRs</span>
+                        </label>
+                        <label class="radio-group">
+                            <input type="radio" name="pr-status" value="closed">
+                            <span>Closed PRs</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="split-container" id="my-prs-split-container">
+                    <div class="split-pane" id="my-prs-column">
+                        <h3 class="column-title github-title">
+                            <img src="assets/githubIcon.png" alt="GitHub" class="column-icon">
+                            My PRs
+                        </h3>
+                        <div id="my-prs-content">
+                            <div class="coming-soon">Loading your PRs...</div>
+                        </div>
+                    </div>
+                    <div class="split-pane" id="my-prs-jira-column">
+                        <h3 class="column-title jira-title">
+                            <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
+                            Associated JIRAs
+                        </h3>
+                        <div id="my-prs-jira-content">
+                            <div class="placeholder">Associated JIRAs will be loaded here...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PR Lookup Secondary Tab -->
+            <div class="secondary-tab-content" id="github-lookup-content">
+                <div class="placeholder-content">
+                    <div class="coming-soon">
+                        <h3>PR Lookup</h3>
+                        <p>This section will provide GitHub PR lookup functionality</p>
+                        <p style="color: #666; font-size: 14px;">Coming soon...</p>
+                    </div>
+                </div>
+            </div>
+            
         </div>
         
-        <div class="tab-content" id="my-prs-tab">
-            <div class="my-prs-controls">
-                <div class="pr-filter-controls">
-                    <label class="radio-group">
-                        <input type="radio" name="pr-status" value="open" checked>
-                        <span>Open PRs</span>
-                    </label>
-                    <label class="radio-group">
-                        <input type="radio" name="pr-status" value="closed">
-                        <span>Closed PRs</span>
-                    </label>
-                </div>
-            </div>
-            <div class="split-container" id="my-prs-split-container">
-                <div class="split-pane" id="my-prs-column">
-                    <h3 class="column-title github-title">
-                        <img src="assets/githubIcon.png" alt="GitHub" class="column-icon">
-                        My PRs
-                    </h3>
-                    <div id="my-prs-content">
-                        <div class="coming-soon">Loading your PRs...</div>
-                    </div>
-                </div>
-                <div class="split-pane" id="my-prs-jira-column">
-                    <h3 class="column-title jira-title">
-                        <img src="assets/jiraLogo.png" alt="JIRA" class="column-icon">
-                        Associated JIRAs
-                    </h3>
-                    <div id="my-prs-jira-content">
-                        <div class="placeholder">Associated JIRAs will be loaded here...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
     
     <div id="settingsModal" class="modal" style="display: none;"></div>

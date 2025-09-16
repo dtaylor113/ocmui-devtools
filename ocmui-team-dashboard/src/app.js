@@ -27,7 +27,7 @@ import { initializeReviewsTab } from './components/reviews.js';
 import { initializeMyPrsTab } from './components/myPrs.js';
 
 // UI utilities
-import { initializeTabNavigation, initializeSplitPanes, updateTabTitlesWithUsername } from './utils/ui.js';
+import { initializeTabNavigation, initializeSplitPanes, updateTabTitlesWithUsername, initializeTwoLevelNavigationState } from './utils/ui.js';
 import './utils/collapsibleSection.js';
 import './utils/reviewerUtils.js'; // Ensure global showReviewerComments function is available
 
@@ -62,6 +62,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update tab titles with GitHub username (if available)
         updateTabTitlesWithUsername();
+        
+        // NEW: Initialize two-level navigation state
+        initializeTwoLevelNavigationState();
         
         console.log('📊 Application state loaded:', {
             currentTab: appState.currentTab,

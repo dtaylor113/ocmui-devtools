@@ -415,3 +415,70 @@ export function formatGitHubCommentsHtml(comments, showEmptyState = true) {
         </div>
     `;
 }
+
+/**
+ * Format time elapsed since a timestamp in a human-readable way
+ * @param {number} timestamp - Timestamp in milliseconds
+ * @returns {string} - Formatted elapsed time (e.g., "2m 30s ago")
+ */
+export function formatTimeAgo(timestamp) {
+    if (!timestamp) return 'Never';
+    
+    const now = Date.now();
+    const elapsed = now - timestamp;
+    const seconds = Math.floor(elapsed / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) {
+        return `${days}d ago`;
+    } else if (hours > 0) {
+        return `${hours}h ago`;
+    } else if (minutes > 0) {
+        const remainingSeconds = seconds % 60;
+        if (remainingSeconds > 0 && minutes < 5) {
+            return `${minutes}m ${remainingSeconds}s ago`;
+        }
+        return `${minutes}m ago`;
+    } else if (seconds > 0) {
+        return `${seconds}s ago`;
+    } else {
+        return 'Just now';
+    }
+}
+
+/**
+ * Format timestamp as "Last Updated: 10:23am EST" 
+ * @param {number} timestamp - Timestamp in milliseconds
+ * @returns {string} - Formatted time string
+ */
+export function formatLastUpdated(timestamp) {
+    if (!timestamp) return 'Never updated';
+    
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    // Convert to seconds
+    const seconds = Math.floor(diff / 1000);
+    
+    if (seconds < 60) {
+        return `Last Updated: ${seconds}s ago`;
+    }
+    
+    // Convert to minutes
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+        return `Last Updated: ${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    }
+    
+    // Convert to hours
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return `Last Updated: ${hours} hour${hours === 1 ? '' : 's'} ago`;
+    }
+    
+    // Convert to days
+    const days = Math.floor(hours / 24);
+    return `Last Updated: ${days} day${days === 1 ? '' : 's'} ago`;
+}
