@@ -540,24 +540,7 @@ function displayJiraTicket(ticket) {
     
     jiraDisplay.innerHTML = ticketHtml;
     
-    // Make toggle function available globally for onclick handlers
-    window.toggleJiraMoreInfo = function(ticketKey) {
-        const content = document.getElementById(`more-info-${ticketKey}`);
-        const toggle = document.querySelector(`[onclick*="${ticketKey}"]`);
-        
-        if (content && toggle) {
-            const icon = toggle.querySelector('.toggle-icon');
-            const isExpanded = content.classList.contains('expanded');
-            
-            if (isExpanded) {
-                content.classList.remove('expanded');
-                if (icon) icon.textContent = '▶';
-            } else {
-                content.classList.add('expanded');
-                if (icon) icon.textContent = '▼';
-            }
-        }
-    };
+    // Note: toggleJiraMoreInfo function is provided by the shared collapsible component
 }
 
 

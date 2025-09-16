@@ -489,3 +489,65 @@ export function isElementVisible(element, threshold = 0.1) {
     
     return visibleHeight >= elementHeight * threshold;
 }
+
+/**
+ * Update column titles with GitHub username
+ * Personalizes column titles to show the actual GitHub username (keeps nav tabs unchanged)
+ */
+export function updateTabTitlesWithUsername() {
+    // Get username from app state via the debug interface
+    let username = null;
+    
+    // Try to get username from debug interface first
+    if (window.OCMUIDebug?.appState?.apiTokens?.githubUsername) {
+        username = window.OCMUIDebug.appState.apiTokens.githubUsername;
+    } else {
+        // Fallback: try to import and access directly
+        try {
+            // Since this might run before app state is available on debug interface,
+            // we can try accessing localStorage directly as a fallback
+            const storedTokens = localStorage.getItem('ocmui_api_tokens');
+            if (storedTokens) {
+                const tokens = JSON.parse(storedTokens);
+                username = tokens.githubUsername;
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not access GitHub username for title update:', error);
+        }
+    }
+    
+    if (!username) {
+        console.log('🔄 No GitHub username configured, keeping default titles');
+        return;
+    }
+    
+    console.log(`🔄 Updating column titles with username: ${username}`);
+    
+    // Keep nav tabs as-is, only update column titles
+    
+    // Update "PRs I'm Reviewing" column title
+    const reviewingTitle = document.querySelector('#reviews-prs-column .column-title');
+    if (reviewingTitle) {
+        const icon = reviewingTitle.querySelector('img');
+        reviewingTitle.innerHTML = '';
+        if (icon) {
+            reviewingTitle.appendChild(icon);
+        }
+        reviewingTitle.appendChild(document.createTextNode(`PRs ${username} is Reviewing`));
+        console.log('✅ Updated My Code Reviews column title');
+    }
+    
+    // Update "My PRs" column title
+    const myPrsTitle = document.querySelector('#my-prs-column .column-title');
+    if (myPrsTitle) {
+        const icon = myPrsTitle.querySelector('img');
+        myPrsTitle.innerHTML = '';
+        if (icon) {
+            myPrsTitle.appendChild(icon);
+        }
+        myPrsTitle.appendChild(document.createTextNode(`PRs created by ${username}`));
+        console.log('✅ Updated My PRs column title');
+    }
+    
+    console.log('✅ Column titles updated successfully');
+}

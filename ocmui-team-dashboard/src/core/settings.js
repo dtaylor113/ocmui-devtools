@@ -7,6 +7,7 @@
  */
 
 import { appState, saveApiTokens } from './appState.js';
+import { updateTabTitlesWithUsername } from '../utils/ui.js';
 
 /**
  * Initialize the settings modal and attach event listeners
@@ -131,6 +132,9 @@ export function saveSettings() {
     
     // Update UI to reflect new ready state
     updateReadyState();
+    
+    // Update tab titles with the new GitHub username
+    updateTabTitlesWithUsername();
     
     closeSettingsModal();
     

@@ -301,3 +301,117 @@ export function sanitizeHtml(html) {
     
     return sanitized;
 }
+
+/**
+ * Parse GitHub markdown to HTML
+ * Uses the marked library to convert GitHub Flavored Markdown to HTML
+ * @param {string} markdown - Raw markdown text
+ * @returns {string} HTML string
+ */
+export function parseGitHubMarkdown(markdown) {
+    if (!markdown) return '';
+    
+    try {
+        // Import marked dynamically to handle ES modules in browser environment
+        if (typeof window !== 'undefined' && window.marked) {
+            const marked = window.marked;
+            
+            // Configure marked for GitHub Flavored Markdown
+            marked.setOptions({
+                breaks: true,          // Convert line breaks to <br>
+                gfm: true,            // GitHub Flavored Markdown
+                sanitize: false,      // Don't sanitize HTML (we trust GitHub content)
+                smartLists: true,     // Better list handling
+                smartypants: false    // Don't convert quotes/dashes
+            });
+            
+            return marked(markdown);
+        } else {
+            // Fallback: basic markdown-like parsing
+            return parseBasicMarkdown(markdown);
+        }
+    } catch (error) {
+        console.error('❌ GitHub markdown parsing error:', error);
+        return parseBasicMarkdown(markdown);
+    }
+}
+
+// Make parseGitHubMarkdown available globally for reviewer comments popup  
+if (typeof window !== 'undefined') {
+    window.parseGitHubMarkdown = parseGitHubMarkdown;
+}
+
+/**
+ * Basic markdown parser as fallback when marked library is not available
+ * @param {string} markdown - Raw markdown text
+ * @returns {string} HTML string
+ */
+function parseBasicMarkdown(markdown) {
+    if (!markdown) return '';
+    
+    let html = markdown;
+    
+    // Headers
+    html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+    
+    // Bold and italic
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Links
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    
+    // Code blocks
+    html = html.replace(/```(.*?)```/gs, '<pre><code>$1</code></pre>');
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+    // Line breaks
+    html = html.replace(/\r?\n/g, '<br>');
+    
+    return html;
+}
+
+/**
+ * Format GitHub comments for HTML display
+ * @param {Array} comments - Array of GitHub comment objects
+ * @param {boolean} showEmptyState - Whether to show empty state message when no comments
+ * @returns {string} HTML string for comments display
+ */
+export function formatGitHubCommentsHtml(comments, showEmptyState = true) {
+    if (!comments || comments.length === 0) {
+        if (showEmptyState) {
+            return '<div class="github-section"><label><strong>Comments:</strong></label><div class="github-content"><div class="no-comments">No comments yet</div></div></div>';
+        } else {
+            return '';
+        }
+    }
+    
+    // Sort comments by creation date (most recent first)
+    const sortedComments = [...comments].sort((a, b) => 
+        new Date(b.created_at) - new Date(a.created_at)
+    );
+    
+    const commentsHtml = sortedComments.map(comment => {
+        const date = new Date(comment.created_at).toLocaleDateString();
+        const author = comment.user?.login || 'Unknown';
+        const body = parseGitHubMarkdown(comment.body || '');
+        
+        return `
+            <div class="comment">
+                <div class="comment-header">${author} - ${date}</div>
+                <div class="comment-body">${body}</div>
+            </div>
+        `;
+    }).join('');
+    
+    return `
+        <div class="github-section">
+            <label><strong>Comments:</strong></label>
+            <div class="github-content">
+                ${commentsHtml}
+            </div>
+        </div>
+    `;
+}

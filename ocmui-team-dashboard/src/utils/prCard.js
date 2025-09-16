@@ -6,6 +6,9 @@
  */
 
 import { processReviewers } from './reviewerUtils.js';
+import { parseGitHubMarkdown, formatGitHubCommentsHtml } from './formatting.js';
+import { appState } from '../core/appState.js';
+import { generatePRCollapsible } from './collapsibleSection.js';
 
 /**
  * Process check run information for a PR
@@ -87,6 +90,8 @@ export function processChecks(checkRuns) {
  * @param {boolean} options.showLinkIcon - Whether to show separate link icon
  * @param {string} options.clickHandler - Click handler for PR card (if clickableTitle is false)
  * @param {string} options.currentUser - Current user's GitHub username (for highlighting)
+ * @param {boolean} options.showMoreInfo - Whether to include More Info expandable section
+ * @param {boolean} options.initiallyExpanded - Whether More Info section starts expanded
  * @returns {string} HTML string for PR card
  */
 export function generatePRCardHTML(pr, options = {}) {
@@ -94,7 +99,9 @@ export function generatePRCardHTML(pr, options = {}) {
         clickableTitle = true,
         showLinkIcon = false,
         clickHandler = null,
-        currentUser = null
+        currentUser = null,
+        showMoreInfo = false,
+        initiallyExpanded = false
     } = options;
     
     // Extract basic PR info
@@ -115,7 +122,9 @@ export function generatePRCardHTML(pr, options = {}) {
     const reviewerInfo = processReviewers(
         pr.reviews || [], 
         pr.prDetails?.requested_reviewers || pr.requested_reviewers || [], 
-        currentUser
+        currentUser,
+        { repoName, number: prNumber },
+        pr.comments || pr.prDetails?.comments || []
     );
     
     // Process checks information
@@ -149,6 +158,10 @@ export function generatePRCardHTML(pr, options = {}) {
     const filteredLabels = (pr.labels || [])
         .filter(label => !label.name.includes('RedHatInsights/') && !label.name.includes('uhc-portal'));
     
+    // Create unique PR identifier for More Info toggle  
+    // Use base64 encoding to avoid parsing issues with repo names containing dashes
+    const prId = btoa(`${repoName}:${prNumber}`).replace(/[^a-zA-Z0-9]/g, '');
+    
     // Generate card HTML
     const cardClasses = `github-pr-item ${clickHandler ? 'clickable-pr' : ''}`;
     const clickAttributes = clickHandler ? `onclick="${clickHandler}" style="cursor: pointer;"` : '';
@@ -178,9 +191,121 @@ export function generatePRCardHTML(pr, options = {}) {
                     ${reviewerInfo.html}
                 </div>
             ` : ''}
+            ${showMoreInfo ? generatePRCollapsible(prId, initiallyExpanded) : ''}
         </div>
     `;
 }
+
+/**
+ * Fetch PR details including description and comments from GitHub API
+ * @param {string} repoName - Repository name in format "owner/repo"
+ * @param {number} prNumber - PR number
+ * @returns {Promise<Object>} Object containing PR description and comments
+ */
+export async function fetchPRDetails(repoName, prNumber) {
+    const token = appState.apiTokens.github;
+    if (!token || !repoName || !prNumber) {
+        throw new Error('Missing required parameters for PR details fetch');
+    }
+    
+    try {
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        };
+        
+        // Fetch PR details and comments in parallel
+        const [prResponse, commentsResponse] = await Promise.all([
+            fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}`, { headers }),
+            fetch(`https://api.github.com/repos/${repoName}/issues/${prNumber}/comments`, { headers })
+        ]);
+        
+        if (!prResponse.ok || !commentsResponse.ok) {
+            throw new Error(`Failed to fetch PR details: ${prResponse.status}/${commentsResponse.status}`);
+        }
+        
+        const prData = await prResponse.json();
+        const comments = await commentsResponse.json();
+        
+        return {
+            description: prData.body || '',
+            comments: comments || []
+        };
+        
+    } catch (error) {
+        console.error('❌ Error fetching PR details:', error);
+        throw error;
+    }
+}
+
+/**
+ * Toggle the "More Info" collapsible section for a PR (legacy support)
+ * @param {string} prId - Unique PR identifier for the toggle
+ */
+window.togglePRMoreInfo = function(prId) {
+    // Use the shared toggle function
+    window.toggleCollapsibleSection(`pr-${prId}`);
+};
+
+/**
+ * Load PR details (description and comments) into the More Info section
+ * @param {string} prId - Unique PR identifier (without "pr-" prefix) 
+ * @param {HTMLElement} container - Container element to populate with details
+ */
+async function loadPRDetails(prId, container) {
+    try {
+        // Decode the base64 encoded repo:prNumber string
+        const decoded = atob(prId);
+        const [repoName, prNumberStr] = decoded.split(':');
+        const prNumber = parseInt(prNumberStr, 10);
+        
+        if (!repoName || !prNumber) {
+            throw new Error(`Invalid PR ID format: ${prId}`);
+        }
+    
+        console.log(`🔍 Loading PR details for ${repoName}#${prNumber}`);
+        container.innerHTML = '<div class="loading">Loading PR details...</div>';
+        
+        const { description, comments } = await fetchPRDetails(repoName, prNumber);
+        
+        // Note: GitHub PR "description" is the PR body (what shows as the initial comment)
+        // Additional comments are separate from the body
+        const descriptionHtml = parseGitHubMarkdown(description || 'No description provided');
+        const commentsHtml = formatGitHubCommentsHtml(comments, false);
+        
+        container.innerHTML = `
+            <div class="github-section">
+                <label><strong>Description:</strong></label>
+                <div class="github-content">
+                    ${descriptionHtml}
+                </div>
+            </div>
+            ${commentsHtml}
+        `;
+        
+        container.setAttribute('data-loaded', 'true');
+        console.log(`✅ Loaded PR details for ${repoName}#${prNumber}: ${description?.length || 0} chars description, ${comments?.length || 0} comments`);
+        
+    } catch (error) {
+        console.error('❌ Error loading PR details for', repoName, prNumber, ':', error);
+        container.innerHTML = `<div class="error">Failed to load PR details: ${error.message}</div>`;
+    }
+}
+
+// Listen for collapsible section expansion events to load PR details
+document.addEventListener('collapsibleExpanded', function(event) {
+    const { id, content } = event.detail;
+    
+    // Only handle PR collapsibles
+    if (id.startsWith('pr-')) {
+        const prId = id.substring(3); // Remove "pr-" prefix
+        const detailsContainer = content.querySelector('.collapsible-inner');
+        
+        if (detailsContainer && !detailsContainer.hasAttribute('data-loaded')) {
+            loadPRDetails(prId, detailsContainer);
+        }
+    }
+});
 
 /**
  * Generate multiple PR cards

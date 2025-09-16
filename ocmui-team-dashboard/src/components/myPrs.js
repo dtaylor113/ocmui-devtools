@@ -271,8 +271,8 @@ async function enhancePRsWithDetails(prs) {
             const repoName = pr.repository_url.split('/').slice(-2).join('/');
             const prNumber = pr.number;
             
-            // Fetch PR details and reviews first
-            const [prResponse, reviewsResponse] = await Promise.all([
+            // Fetch PR details, reviews, and general comments
+            const [prResponse, reviewsResponse, commentsResponse] = await Promise.all([
                 fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}`, {
                     headers: {
                         'Authorization': `token ${appState.apiTokens.github}`,
@@ -288,16 +288,25 @@ async function enhancePRsWithDetails(prs) {
                         'User-Agent': 'OCMUI-Team-Dashboard'
                     },
                     signal: currentAbortController?.signal
+                }),
+                fetch(`https://api.github.com/repos/${repoName}/issues/${prNumber}/comments`, {
+                    headers: {
+                        'Authorization': `token ${appState.apiTokens.github}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'User-Agent': 'OCMUI-Team-Dashboard'
+                    },
+                    signal: currentAbortController?.signal
                 })
             ]);
             
-            if (!prResponse.ok || !reviewsResponse.ok) {
-                console.warn(`⚠️ Failed to fetch details for PR #${prNumber}: ${prResponse.status}/${reviewsResponse.status}`);
+            if (!prResponse.ok || !reviewsResponse.ok || !commentsResponse.ok) {
+                console.warn(`⚠️ Failed to fetch details for PR #${prNumber}: ${prResponse.status}/${reviewsResponse.status}/${commentsResponse.status}`);
                 continue;
             }
             
             const prDetails = await prResponse.json();
             const reviews = await reviewsResponse.json();
+            const comments = await commentsResponse.json();
             
             // Now fetch check runs using the current head SHA from PR details
             let checkRuns = [];
@@ -333,6 +342,7 @@ async function enhancePRsWithDetails(prs) {
                 // Store detailed data for shared component
                 reviews,
                 prDetails,
+                comments, // Add general PR comments for reviewer detection
                 checkRuns
             };
             
@@ -373,6 +383,8 @@ function displayMyPRs(prs, options = {}) {
     const prsHtml = generatePRCardsHTML(prs, {
         clickableTitle: false,
         showLinkIcon: true,
+        showMoreInfo: true,
+        initiallyExpanded: false,
         clickHandler: 'selectMyPRForJiraLookup(this)',
         currentUser: appState.apiTokens.githubUsername
     });

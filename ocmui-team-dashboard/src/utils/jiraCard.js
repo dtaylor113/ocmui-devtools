@@ -6,6 +6,7 @@
  */
 
 import { parseJiraMarkdown, getBadgeClass } from './formatting.js';
+import { generateJiraCollapsible } from './collapsibleSection.js';
 
 /**
  * Format JIRA comments for HTML display
@@ -98,23 +99,12 @@ export function generateJiraCardHTML(ticket, options = {}) {
                     <p><strong>Created:</strong><span>${ticket.created ? new Date(ticket.created).toLocaleDateString() : 'Unknown'}</span></p>
                 </div>
             </div>
-            ${collapsible ? `
-                <div class="jira-collapsible">
-                    <button class="jira-collapse-toggle" onclick="${toggleFunction}('${ticket.key}')">
-                        <span class="toggle-icon">${initiallyExpanded ? '▼' : '▶'}</span>
-                        <span class="toggle-text">More Info</span>
-                    </button>
-                    <div class="jira-collapse-content ${initiallyExpanded ? 'expanded' : ''}" id="more-info-${ticket.key}">
-                        <div class="jira-section">
-                            <label><strong>Description:</strong></label>
-                            <div class="jira-content">
-                                ${parseJiraMarkdown(ticket.description || 'No description available')}
-                            </div>
-                        </div>
-                        ${commentsHtml}
-                    </div>
-                </div>
-            ` : `
+            ${collapsible ? generateJiraCollapsible(
+                ticket.key,
+                initiallyExpanded,
+                parseJiraMarkdown(ticket.description || 'No description available'),
+                commentsHtml
+            ) : `
                 <div class="jira-section">
                     <label><strong>Description:</strong></label>
                     <div class="jira-content">${parseJiraMarkdown(ticket.description || 'No description available')}</div>

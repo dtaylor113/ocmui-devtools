@@ -8,6 +8,14 @@
 
 import './styles/main.css';
 
+// External libraries
+import { marked } from 'marked';
+
+// Make marked available globally for formatting utilities
+if (typeof window !== 'undefined') {
+    window.marked = marked;
+}
+
 // Core application modules
 import { loadAppState, appState } from './core/appState.js';
 import { initializeSettingsModal, updateReadyState } from './core/settings.js';
@@ -19,7 +27,9 @@ import { initializeReviewsTab } from './components/reviews.js';
 import { initializeMyPrsTab } from './components/myPrs.js';
 
 // UI utilities
-import { initializeTabNavigation, initializeSplitPanes } from './utils/ui.js';
+import { initializeTabNavigation, initializeSplitPanes, updateTabTitlesWithUsername } from './utils/ui.js';
+import './utils/collapsibleSection.js';
+import './utils/reviewerUtils.js'; // Ensure global showReviewerComments function is available
 
 /**
  * Application initialization
@@ -49,6 +59,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update UI based on current state
         updateReadyState();
+        
+        // Update tab titles with GitHub username (if available)
+        updateTabTitlesWithUsername();
         
         console.log('📊 Application state loaded:', {
             currentTab: appState.currentTab,

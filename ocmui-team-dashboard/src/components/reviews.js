@@ -127,8 +127,8 @@ async function filterAndEnhancePRsWithReviewStatus(prs) {
             const repoName = pr.repository_url.split('/').slice(-2).join('/');
             const prNumber = pr.number;
             
-            // Fetch PR details and reviews first
-            const [prResponse, reviewsResponse] = await Promise.all([
+            // Fetch PR details, reviews, and general comments
+            const [prResponse, reviewsResponse, commentsResponse] = await Promise.all([
                 fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}`, {
                     headers: {
                         'Authorization': `token ${appState.apiTokens.github}`,
@@ -142,16 +142,24 @@ async function filterAndEnhancePRsWithReviewStatus(prs) {
                         'Accept': 'application/vnd.github.v3+json',
                         'User-Agent': 'OCMUI-Team-Dashboard'
                     }
+                }),
+                fetch(`https://api.github.com/repos/${repoName}/issues/${prNumber}/comments`, {
+                    headers: {
+                        'Authorization': `token ${appState.apiTokens.github}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'User-Agent': 'OCMUI-Team-Dashboard'
+                    }
                 })
             ]);
             
-            if (!prResponse.ok || !reviewsResponse.ok) {
-                console.warn(`⚠️ Failed to fetch details for PR #${prNumber}: ${prResponse.status}/${reviewsResponse.status}`);
+            if (!prResponse.ok || !reviewsResponse.ok || !commentsResponse.ok) {
+                console.warn(`⚠️ Failed to fetch details for PR #${prNumber}: ${prResponse.status}/${reviewsResponse.status}/${commentsResponse.status}`);
                 continue;
             }
             
             const prDetails = await prResponse.json();
             const reviews = await reviewsResponse.json();
+            const comments = await commentsResponse.json();
             
             // Now fetch check runs using the current head SHA from PR details
             let checkRuns = [];
@@ -233,6 +241,7 @@ async function filterAndEnhancePRsWithReviewStatus(prs) {
                 // Store detailed data for shared component
                 reviews,
                 prDetails,
+                comments, // Add general PR comments for reviewer detection
                 checkRuns
             };
             
@@ -280,6 +289,8 @@ function displayPRsAwaitingReview(prs) {
     const prsHtml = generatePRCardsHTML(prs, {
         clickableTitle: false,
         showLinkIcon: true,
+        showMoreInfo: true,
+        initiallyExpanded: false,
         clickHandler: 'selectPRForJiraLookup(this)',
         currentUser: appState.apiTokens.githubUsername
     });
@@ -583,35 +594,10 @@ function displayLoadedJIRAs(jiraResults, repo, prNumber) {
     
     console.log(`✅ Displayed ${jiraResults.length} JIRA tickets for PR #${prNumber}`);
     
-    // Make toggle function available globally for onclick handlers
-    window.toggleJiraMoreInfo = toggleJiraMoreInfo;
+// Note: toggleJiraMoreInfo function is provided by the shared collapsible component
 }
 
-/**
- * Toggle the "More Info" collapsible section for a JIRA ticket
- * @param {string} jiraKey - JIRA ticket key (e.g., "OCMUI-1234")
- */
-function toggleJiraMoreInfo(jiraKey) {
-    const content = document.getElementById(`more-info-${jiraKey}`);
-    const toggle = document.querySelector(`[onclick="toggleJiraMoreInfo('${jiraKey}')"]`);
-    const icon = toggle?.querySelector('.toggle-icon');
-    
-    if (!content || !toggle || !icon) return;
-    
-    const isExpanded = content.classList.contains('expanded');
-    
-    if (isExpanded) {
-        // Collapse
-        content.classList.remove('expanded');
-        icon.textContent = '▶';
-        toggle.setAttribute('aria-expanded', 'false');
-    } else {
-        // Expand
-        content.classList.add('expanded');
-        icon.textContent = '▼';
-        toggle.setAttribute('aria-expanded', 'true');
-    }
-}
+// toggleJiraMoreInfo function is provided by the shared collapsible component
 
 /**
  * Format JIRA comments for display (same as main JIRA tab)

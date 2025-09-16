@@ -140,16 +140,28 @@ async function fetchDetailedPRInfo(prs, jiraId) {
                 pr.prDetails = await prResponse.json();
             }
             
-            // Get PR reviews
-            const reviewsResponse = await fetch(`${pr.pull_request.url}/reviews`, {
-                headers: {
-                    'Authorization': `Bearer ${appState.apiTokens.github}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
+            // Get PR reviews and general comments
+            const [reviewsResponse, commentsResponse] = await Promise.all([
+                fetch(`${pr.pull_request.url}/reviews`, {
+                    headers: {
+                        'Authorization': `Bearer ${appState.apiTokens.github}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                }),
+                fetch(`${pr.pull_request.url.replace('/pulls/', '/issues/')}/comments`, {
+                    headers: {
+                        'Authorization': `Bearer ${appState.apiTokens.github}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                })
+            ]);
             
             if (reviewsResponse.ok) {
                 pr.reviews = await reviewsResponse.json();
+            }
+            
+            if (commentsResponse.ok) {
+                pr.comments = await commentsResponse.json();
             }
             
             // Get check runs for the latest commit
@@ -206,6 +218,8 @@ function displayGitHubPRsWithDetails(prs, jiraId) {
     const prsHtml = generatePRCardsHTML(prs, {
         clickableTitle: true,
         showLinkIcon: false,
+        showMoreInfo: true,
+        initiallyExpanded: false,
         currentUser: appState.apiTokens.githubUsername
     });
     

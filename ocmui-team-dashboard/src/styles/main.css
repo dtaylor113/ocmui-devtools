@@ -762,15 +762,7 @@
     flex-wrap: wrap;
 }
 
-.reviewer-item {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 6px;
-    border-radius: 12px;
-    font-size: 9px;
-    font-weight: 500;
-    white-space: nowrap;
-}
+/* Removed duplicate .reviewer-item definition - using the enhanced one below */
 
 .reviewer-approved {
     background: rgba(5, 150, 105, 0.2);
@@ -1398,13 +1390,15 @@
 }
 
 .reviewer-item {
+    display: inline-flex;
+    align-items: center;
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: 16px;  /* More rounded */
     font-size: 11px;
     font-weight: 500;
-    display: flex;
-    align-items: center;
     gap: 4px;
+    cursor: default;
+    transition: all 0.2s ease;
 }
 
 .reviewer-approved {
@@ -1447,14 +1441,220 @@
     content: '';
     position: absolute;
     inset: -1px;
-    border-radius: 4px;
+    border-radius: 16px;
     padding: 1px;
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.2));
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
 }
 
-/* JIRA Collapsible Sections */
+.reviewer-item.clickable-reviewer {
+    cursor: pointer !important; /* Override parent cursor */
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 10; /* Ensure it's above parent clickable area */
+}
+
+.reviewer-item.clickable-reviewer:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    scale: 1.05;
+    z-index: 11; /* Even higher on hover */
+}
+
+/* Ensure all reviewer badges are properly interactive */
+.github-pr-reviewers {
+    pointer-events: none; /* Disable pointer events on container */
+}
+
+.github-pr-reviewers .reviewer-item {
+    position: relative;
+    z-index: 15;
+    pointer-events: auto; /* Re-enable for individual badges */
+}
+
+.github-pr-reviewers .reviewer-list {
+    position: relative;
+    z-index: 10;
+    pointer-events: none; /* Keep container non-interactive */
+}
+
+.github-pr-reviewers .reviewer-list .reviewer-item {
+    pointer-events: auto; /* But allow individual reviewer badges to be clickable */
+}
+
+/* Shared Collapsible Sections */
+.collapsible-section {
+    margin-top: 16px;
+}
+
+.collapsible-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    border-radius: 6px 6px 0 0;
+    padding: 8px 12px;
+    color: #3b82f6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.collapsible-toggle:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
+}
+
+.collapsible-toggle .toggle-icon {
+    color: #60a5fa;
+    font-size: 12px;
+    width: 12px;
+    display: inline-block;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.collapsible-toggle .toggle-text {
+    flex: 1;
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0 0 6px 6px;
+}
+
+.collapsible-content.expanded {
+    max-height: 2000px;
+    border: 1px solid #333;
+    border-top: none;
+}
+
+.collapsible-inner {
+    padding: 16px;
+}
+
+.collapsible-inner .section,
+.collapsible-inner .jira-section,
+.collapsible-inner .github-section {
+    margin-bottom: 16px;
+}
+
+.collapsible-inner .section:last-child,
+.collapsible-inner .jira-section:last-child,
+.collapsible-inner .github-section:last-child {
+    margin-bottom: 0;
+}
+
+.collapsible-inner .section label,
+.collapsible-inner .jira-section label,
+.collapsible-inner .github-section label {
+    color: #60a5fa;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.collapsible-inner .content,
+.collapsible-inner .jira-content,
+.collapsible-inner .github-content {
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.collapsible-inner .comment {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 3px solid #3b82f6;
+}
+
+.collapsible-inner .comment:last-child {
+    margin-bottom: 0;
+}
+
+.collapsible-inner .comment-header {
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.collapsible-inner .comment-body {
+    color: #e5e7eb;
+    line-height: 1.5;
+}
+
+.collapsible-inner .comment-body h1,
+.collapsible-inner .comment-body h2,
+.collapsible-inner .comment-body h3 {
+    color: #f3f4f6;
+    margin: 16px 0 8px 0;
+}
+
+.collapsible-inner .comment-body h1:first-child,
+.collapsible-inner .comment-body h2:first-child,
+.collapsible-inner .comment-body h3:first-child {
+    margin-top: 0;
+}
+
+.collapsible-inner .comment-body code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 13px;
+}
+
+.collapsible-inner .comment-body pre {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.collapsible-inner .comment-body pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.collapsible-inner .loading {
+    text-align: center;
+    color: #9ca3af;
+    padding: 20px;
+}
+
+.collapsible-inner .error {
+    color: #ef4444;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.collapsible-inner .placeholder {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+.collapsible-inner .no-comments {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+/* Legacy support - map old classes to new ones */
 .jira-collapsible {
     margin-top: 16px;
 }
@@ -1466,29 +1666,19 @@
     width: 100%;
     background: rgba(59, 130, 246, 0.1);
     border: 1px solid #3b82f6;
-    border-radius: 6px;
-    padding: 10px 12px;
-    color: #93c5fd;
-    font-size: 14px;
-    font-weight: 500;
+    border-radius: 6px 6px 0 0;
+    padding: 8px 12px;
+    color: #3b82f6;
     cursor: pointer;
     transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
     text-align: left;
 }
 
 .jira-collapse-toggle:hover {
-    background: rgba(59, 130, 246, 0.15);
+    background: rgba(59, 130, 246, 0.2);
     border-color: #60a5fa;
-}
-
-.toggle-icon {
-    font-size: 12px;
-    transition: transform 0.2s ease;
-    color: #3b82f6;
-}
-
-.toggle-text {
-    flex: 1;
 }
 
 .jira-collapse-content {
@@ -1506,12 +1696,385 @@
     border-top: none;
 }
 
-.jira-collapse-content .jira-section {
+.pr-collapsible {
+    margin-top: 16px;
+}
+
+.pr-collapse-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    border-radius: 6px 6px 0 0;
+    padding: 8px 12px;
+    color: #3b82f6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.pr-collapse-toggle:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
+}
+
+.pr-collapse-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0 0 6px 6px;
+}
+
+.pr-collapse-content.expanded {
+    max-height: 2000px;
+    padding: 16px;
+    border: 1px solid #333;
+    border-top: none;
+}
+
+.pr-collapse-content .github-section {
     margin-bottom: 16px;
 }
 
-.jira-collapse-content .jira-section:last-child {
+.pr-collapse-content .github-section:last-child {
     margin-bottom: 0;
+}
+
+.pr-collapse-content .github-section label {
+    color: #60a5fa;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.pr-collapse-content .github-content {
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.pr-collapse-content .comment {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 3px solid #3b82f6;
+}
+
+.pr-collapse-content .comment:last-child {
+    margin-bottom: 0;
+}
+
+.pr-collapse-content .comment-header {
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.pr-collapse-content .comment-body {
+    color: #e5e7eb;
+    line-height: 1.5;
+}
+
+.pr-collapse-content .comment-body h1,
+.pr-collapse-content .comment-body h2,
+.pr-collapse-content .comment-body h3 {
+    color: #f3f4f6;
+    margin: 16px 0 8px 0;
+}
+
+.pr-collapse-content .comment-body h1:first-child,
+.pr-collapse-content .comment-body h2:first-child,
+.pr-collapse-content .comment-body h3:first-child {
+    margin-top: 0;
+}
+
+.pr-collapse-content .comment-body code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 13px;
+}
+
+.pr-collapse-content .comment-body pre {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.pr-collapse-content .comment-body pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.pr-collapse-content .loading {
+    text-align: center;
+    color: #9ca3af;
+    padding: 20px;
+}
+
+.pr-collapse-content .error {
+    color: #ef4444;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.pr-collapse-content .placeholder {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+.pr-collapse-content .no-comments {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+.pr-collapse-content .github-section:last-child {
+    margin-bottom: 0;
+}
+
+.pr-collapse-content .github-section label {
+    color: #60a5fa;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.pr-collapse-content .github-content {
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.pr-collapse-content .comment {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 3px solid #3b82f6;
+}
+
+.pr-collapse-content .comment:last-child {
+    margin-bottom: 0;
+}
+
+.pr-collapse-content .comment-header {
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.pr-collapse-content .comment-body {
+    color: #e5e7eb;
+    line-height: 1.5;
+}
+
+.pr-collapse-content .comment-body h1,
+.pr-collapse-content .comment-body h2,
+.pr-collapse-content .comment-body h3 {
+    color: #f3f4f6;
+    margin: 16px 0 8px 0;
+}
+
+.pr-collapse-content .comment-body h1:first-child,
+.pr-collapse-content .comment-body h2:first-child,
+.pr-collapse-content .comment-body h3:first-child {
+    margin-top: 0;
+}
+
+.pr-collapse-content .comment-body code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 13px;
+}
+
+.pr-collapse-content .comment-body pre {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.pr-collapse-content .comment-body pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.pr-collapse-content .loading {
+    text-align: center;
+    color: #9ca3af;
+    padding: 20px;
+}
+
+.pr-collapse-content .error {
+    color: #ef4444;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.pr-collapse-content .placeholder {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+.pr-collapse-content .no-comments {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+/* Reviewer Comments Modal */
+.reviewer-comments-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+}
+
+.reviewer-comments-modal .modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.reviewer-comments-content {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    max-width: 800px;
+    max-height: 80vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.reviewer-comments-modal .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.reviewer-comments-modal .modal-header h3 {
+    color: #f3f4f6;
+    margin: 0;
+    flex: 1;
+}
+
+.reviewer-comments-modal .modal-close {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.reviewer-comments-modal .modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f3f4f6;
+}
+
+.reviewer-comments-modal .modal-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.comments-list {
+    padding: 16px 20px;
+}
+
+.reviewer-comment {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.reviewer-comment:last-child {
+    margin-bottom: 0;
+}
+
+.reviewer-comment .comment-header {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #333;
+}
+
+.reviewer-comment .comment-meta {
+    color: #9ca3af;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.reviewer-comment .comment-body {
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.reviewer-comment .comment-body p:first-child {
+    margin-top: 0;
+}
+
+.reviewer-comment .comment-body p:last-child {
+    margin-bottom: 0;
+}
+
+.reviewer-comments-modal .no-comments {
+    text-align: center;
+    color: #6b7280;
+    padding: 40px 20px;
+    font-style: italic;
+}
+
+.reviewer-comments-modal .error {
+    text-align: center;
+    color: #ef4444;
+    padding: 40px 20px;
+}
+
+.reviewer-comments-modal .loading {
+    text-align: center;
+    color: #9ca3af;
+    padding: 40px 20px;
 }
 
 /* Shared PR Card Component Styles */
@@ -1526,7 +2089,12 @@
     border: 1px solid #333;
     border-radius: 8px;
     padding: 16px;
+    margin-bottom: 16px; /* Add spacing between PR cards */
     transition: all 0.2s ease;
+}
+
+.github-pr-item:last-child {
+    margin-bottom: 0; /* Remove margin from last item */
 }
 
 .github-pr-item:hover {
