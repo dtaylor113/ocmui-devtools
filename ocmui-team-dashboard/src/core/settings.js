@@ -29,7 +29,7 @@ export function openSettingsModal() {
         <div class="modal-backdrop">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>⚙️ Settings</h2>
+                    <h2 style="color: #e5e7eb;">⚙️ Settings</h2>
                     <button class="modal-close" id="settingsClose">&times;</button>
                 </div>
                 <div class="modal-body">

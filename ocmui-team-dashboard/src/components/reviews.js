@@ -724,7 +724,7 @@ function displayLoadedJIRAs(jiraResults, repo, prNumber) {
     const jiraHtml = generateJiraCardsFromResults(jiraResults, {
         collapsible: true,
         wrapInSection: true,
-        toggleFunction: 'toggleJiraMoreInfo'
+        toggleFunction: 'toggleCollapsibleSection'
     });
     
     jiraContainer.innerHTML = `

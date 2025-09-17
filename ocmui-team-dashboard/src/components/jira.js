@@ -557,17 +557,15 @@ function displayJiraTicket(ticket) {
     const jiraDisplay = document.getElementById('jiraTicketDisplay') || document.getElementById('jiraTicketDisplay-new');
     if (!jiraDisplay) return;
     
-    // Generate JIRA card using shared component (collapsible, initially expanded, no section wrapper)
+    // Generate JIRA card using shared component (collapsible, initially collapsed to avoid conflicts, no section wrapper)  
     const ticketHtml = generateJiraCardHTML(ticket, {
         collapsible: true,
         wrapInSection: false,
-        initiallyExpanded: true,
-        toggleFunction: 'toggleJiraMoreInfo'
+        initiallyExpanded: false,  // ← Changed from true to false to test
+        toggleFunction: 'toggleCollapsibleSection'
     });
     
     jiraDisplay.innerHTML = ticketHtml;
-    
-    // Note: toggleJiraMoreInfo function is provided by the shared collapsible component
 }
 
 

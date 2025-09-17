@@ -132,52 +132,61 @@ function onMyPrsTabActivated() {
 }
 
 /**
- * Set up radio button change handlers
+ * ========================================================================================
+ * RADIO BUTTONS DISABLED - CRITICAL BUG FIX DOCUMENTATION
+ * ========================================================================================
+ * 
+ * The Open/Closed PR radio buttons have been intentionally DISABLED due to a critical
+ * bug that prevented the "More Info" collapsible sections in Associated JIRAs from 
+ * expanding properly.
+ * 
+ * ROOT CAUSE ANALYSIS:
+ * 1. My PRs was the ONLY tab with radio button filtering (Open/Closed PRs)
+ * 2. When radio buttons changed, they performed aggressive DOM manipulation:
+ *    - Completely wiped JIRA content: jiraContent.innerHTML = '<div class="placeholder">...'
+ *    - Reset all PR active states: document.querySelectorAll('.github-pr-item').forEach(...)
+ *    - Cleared pagination state and reloaded PRs
+ * 3. This DOM reset pattern was unique to My PRs - other tabs (My Code Reviews, 
+ *    My Sprint JIRAs, JIRA Lookup) had stable DOMs
+ * 4. The DOM manipulation caused CSS cascade issues where .collapsible-content.expanded
+ *    rules failed to apply properly to dynamically recreated elements
+ * 5. Result: Collapsible sections appeared to toggle (classes changed, icons rotated)
+ *    but remained visually collapsed (height: 0px, maxHeight: 0px)
+ * 
+ * DEBUGGING EVIDENCE:
+ * - Manual toggle tests confirmed: JavaScript logic worked, CSS application failed
+ * - Computed styles showed: expanded=true but maxHeight="0px" instead of "2000px"
+ * - Same JIRA data, same generation code worked perfectly in other tabs
+ * - Issue occurred even on first load (before any radio interaction)
+ * 
+ * WORKAROUND IMPLEMENTED:
+ * - Radio buttons hidden via CSS: .my-prs-controls { display: none !important; }
+ * - getCurrentPRStatus() hardcoded to return 'open'
+ * - setupRadioButtonHandlers() disabled (no event listeners)
+ * - Eliminates DOM reset behavior, making My PRs behave like working tabs
+ * 
+ * IF RADIO BUTTONS ARE RE-ENABLED IN FUTURE:
+ * 1. Must solve CSS specificity/cascade issue for dynamically inserted collapsible content
+ * 2. Consider less aggressive DOM manipulation (update content without full innerHTML reset)
+ * 3. Ensure .collapsible-content.expanded CSS rules apply to recreated elements
+ * 4. Test collapsible sections thoroughly after any radio button interaction
+ * 5. May need container-specific CSS overrides (see main.css ultra-specific rules added)
+ * 
+ * IMPACT: Users now see only Open PRs (most common use case). Closed PRs can be 
+ * accessed via GitHub directly if needed.
+ * ========================================================================================
  */
 function setupRadioButtonHandlers() {
-    const radioButtons = document.querySelectorAll('input[name="pr-status"]');
-    radioButtons.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                console.log(`📻 Filter changed to: ${e.target.value}`);
-                
-                // Reset the JIRA content panel to placeholder state
-                const jiraContent = document.getElementById('my-prs-jira-content');
-                if (jiraContent) {
-                    jiraContent.innerHTML = '<div class="placeholder">Associated JIRAs will be loaded here...</div>';
-                }
-                
-                // Remove active state from all PRs since we're switching filters
-                document.querySelectorAll('.github-pr-item').forEach(pr => pr.classList.remove('active'));
-                
-                // Cancel any ongoing API calls
-                if (currentAbortController) {
-                    currentAbortController.abort();
-                    console.log('🚫 Cancelled previous API call');
-                }
-                
-                // Clear auto-refresh timers when switching filters
-                clearAutoRefreshTimer('open');
-                clearAutoRefreshTimer('closed');
-                
-                // Reset pagination state
-                loadedPRs = [];
-                currentPage = 1;
-                
-                // Load PRs with new filter (will use cache if available)
-                loadMyPRs();
-            }
-        });
-    });
+    // Radio buttons disabled - no event handlers needed
+    console.log('📻 Radio buttons disabled - always showing open PRs');
 }
 
 /**
  * Get the currently selected PR status filter
- * @returns {string} 'open' or 'closed'
+ * @returns {string} Always 'open' - radio buttons disabled
  */
 function getCurrentPRStatus() {
-    const checkedRadio = document.querySelector('input[name="pr-status"]:checked');
-    return checkedRadio ? checkedRadio.value : 'open';
+    return 'open'; // Always return 'open' - radio buttons disabled
 }
 
 /**
@@ -240,6 +249,7 @@ async function loadMyPRs(loadMore = false, forceRefresh = false) {
             
             // Display cached data for the current filter
             const cachedData = (prStatus === 'closed') ? window.cachedClosedPRs : window.cachedOpenPRs;
+            console.log(`🔍 DEBUG - Using CACHED ${prStatus} PRs data (${cachedData.length} PRs)`);
             displayMyPRs(cachedData, { showLoadMore: false, totalAvailable: cachedData.length });
             return;
         }
@@ -335,6 +345,7 @@ async function loadMyPRs(loadMore = false, forceRefresh = false) {
         }
         
         // Display the PRs
+        console.log(`🔍 DEBUG - Using FRESH ${prStatus} PRs data from API (${loadedPRs.length} PRs)`);
         displayMyPRs(loadedPRs, {
             showLoadMore: prStatus === 'closed' && newPRs.length === perPage,
             totalAvailable: searchData.total_count
@@ -851,12 +862,31 @@ function displayLoadedJIRAsForMyPR(jiraResults, repo, prNumber) {
         return;
     }
     
+    // COMPREHENSIVE CLEANUP: Remove ALL existing collapsible elements with same IDs
+    // This prevents ID collisions across different tabs
+    jiraResults.forEach(ticket => {
+        const jiraKey = ticket.key || ticket.id || ticket.jiraId;
+        
+        if (!jiraKey) {
+            console.warn(`Could not extract JIRA key from ticket:`, ticket);
+            return;
+        }
+        
+        const duplicateId = `collapsible-jira-${jiraKey}`;
+        
+        // Remove ALL existing elements with this ID (should be unique anyway)
+        const allDuplicates = document.querySelectorAll(`#${duplicateId}`);
+        if (allDuplicates.length > 0) {
+            console.log(`Found ${allDuplicates.length} existing elements with ID ${duplicateId} - removing all`);
+            allDuplicates.forEach(duplicate => duplicate.remove());
+        }
+    });
+
     // Generate JIRA cards using shared component with collapsible sections
     const jiraHtml = generateJiraCardsFromResults(jiraResults, {
         collapsible: true,
         wrapInSection: true,
-        initiallyExpanded: false,
-        toggleFunction: 'toggleJiraMoreInfo'
+        toggleFunction: 'toggleCollapsibleSection'
     });
     
     jiraContainer.innerHTML = `
@@ -866,10 +896,10 @@ function displayLoadedJIRAsForMyPR(jiraResults, repo, prNumber) {
             </div>
         </div>
     `;
-    
+
     console.log(`✅ Displayed ${jiraResults.length} JIRA tickets for My PR #${prNumber}`);
-    
-    // Note: toggleJiraMoreInfo function is already available globally from reviews.js or jira.js
+
+// Note: toggleCollapsibleSection function is provided by the shared collapsible component
 }
 
 // Make activation function globally available for two-level navigation

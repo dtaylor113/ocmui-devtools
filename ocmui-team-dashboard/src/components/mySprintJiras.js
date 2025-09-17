@@ -270,7 +270,7 @@ function displaySprintJIRAs(jiraTickets) {
         collapsible: true,
         wrapInSection: true,
         initiallyExpanded: false,
-        toggleFunction: 'toggleJiraMoreInfo'
+        toggleFunction: 'toggleCollapsibleSection'
     });
     
     jirasContainer.innerHTML = `

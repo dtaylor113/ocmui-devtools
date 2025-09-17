@@ -26,6 +26,7 @@ import { fetchAndDisplayGitHubPRs } from './components/github.js';
 import { initializeReviewsTab } from './components/reviews.js';
 import { initializeMyPrsTab } from './components/myPrs.js';
 import { initializeMySprintJirasTab } from './components/mySprintJiras.js';
+import { openTimeboardModal } from './components/timeboard.js';
 
 // UI utilities
 import { initializeTabNavigation, initializeSplitPanes, updateTabTitlesWithUsername, initializeTwoLevelNavigationState } from './utils/ui.js';
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize core UI components
         initializeTabNavigation();
         initializeSettingsModal();
+        initializeTimeboardButton();
         
         // Initialize feature modules
         initializeJiraTab();
@@ -104,6 +106,24 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupModuleDependencies() {
     // Allow JIRA module to trigger GitHub PR fetching
     setGitHubPRFetcher(fetchAndDisplayGitHubPRs);
+}
+
+/**
+ * Initialize the Team Timezones button
+ * Sets up the click handler for the timeboard modal
+ */
+function initializeTimeboardButton() {
+    const timeboardBtn = document.getElementById('timeboardBtn');
+    if (timeboardBtn) {
+        timeboardBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🕐 Opening Team Timeboard...');
+            openTimeboardModal();
+        });
+        console.log('✅ Team Timeboard button initialized');
+    } else {
+        console.warn('⚠️ Team Timeboard button not found in DOM');
+    }
 }
 
 /**

@@ -55,22 +55,25 @@ export function generateCollapsibleSection(options = {}) {
 window.toggleCollapsibleSection = function(id) {
     const content = document.getElementById(`collapsible-${id}`);
     const toggle = document.querySelector(`[onclick="toggleCollapsibleSection('${id}')"]`);
-    
+
     if (!content || !toggle) {
         console.warn('Toggle elements not found for collapsible section:', id);
         return;
     }
-    
-    const icon = toggle.querySelector('.toggle-icon');
+
     const isExpanded = content.classList.contains('expanded');
-    
+
+    const icon = toggle.querySelector('.toggle-icon');
+
     if (isExpanded) {
+        // COLLAPSING
         content.classList.remove('expanded');
         if (icon) icon.textContent = '▶';
     } else {
+        // EXPANDING  
         content.classList.add('expanded');
         if (icon) icon.textContent = '▼';
-        
+
         // Emit custom event for lazy loading
         const event = new CustomEvent('collapsibleExpanded', {
             detail: { id, content }
@@ -85,9 +88,10 @@ window.toggleCollapsibleSection = function(id) {
  * @param {boolean} initiallyExpanded - Whether section starts expanded
  * @param {string} descriptionHtml - HTML for ticket description
  * @param {string} commentsHtml - HTML for ticket comments
+ * @param {string} toggleFunction - Function name for toggle handler
  * @returns {string} HTML string for JIRA collapsible section
  */
-export function generateJiraCollapsible(ticketKey, initiallyExpanded = false, descriptionHtml = '', commentsHtml = '') {
+export function generateJiraCollapsible(ticketKey, initiallyExpanded = false, descriptionHtml = '', commentsHtml = '', toggleFunction = 'toggleCollapsibleSection') {
     const contentHtml = descriptionHtml || commentsHtml ? `
         <div class="jira-section">
             <label><strong>Description:</strong></label>
@@ -102,7 +106,7 @@ export function generateJiraCollapsible(ticketKey, initiallyExpanded = false, de
         id: `jira-${ticketKey}`,
         title: 'More Info',
         initiallyExpanded,
-        toggleFunction: 'toggleCollapsibleSection',
+        toggleFunction,
         contentHtml,
         placeholderText: 'Click to load JIRA details...'
     });

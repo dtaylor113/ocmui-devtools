@@ -34,13 +34,17 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/index.html',
-      title: 'OCMUI Team Dashboard'
+      title: 'My OCMUI Team Dashboard'
     }),
     new CopyWebpackPlugin({
       patterns: [
         {
           from: './src/assets',
           to: 'assets'
+        },
+        {
+          from: './src/timeboard',
+          to: 'timeboard'
         }
       ]
     }),

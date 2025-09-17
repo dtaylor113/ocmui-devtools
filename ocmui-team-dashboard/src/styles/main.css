@@ -1037,11 +1037,9 @@
     padding: 0 6px;
 }
 
-/* My PRs Tab Controls */
+/* My PRs Tab Controls - DISABLED */
 .my-prs-controls {
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #333;
+    display: none !important; /* Hide radio buttons entirely */
 }
 
 .pr-filter-controls {
@@ -1575,6 +1573,26 @@
     border-top: none;
 }
 
+.collapsible-header {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px 16px;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    border: 1px solid #333;
+    border-bottom: none;
+    transition: background 0.2s;
+}
+
+.collapsible-header:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.toggle-icon {
+    margin-right: 8px;
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+
 .collapsible-inner {
     padding: 16px;
 }
@@ -1584,6 +1602,8 @@
 .collapsible-inner .github-section {
     margin-bottom: 16px;
 }
+
+/* Removed ultra-specific My PRs CSS rules to let generic collapsible rules work */
 
 .collapsible-inner .section:last-child,
 .collapsible-inner .jira-section:last-child,
@@ -2418,4 +2438,444 @@
     padding: 8px;
     border-radius: 4px;
     margin-top: 8px;
+}
+
+/* Loading and Error States for My PRs - MISSING RULES ADDED */
+#my-prs-content .loading,
+#my-prs-jira-content .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px;
+    color: #888;
+}
+
+#my-prs-content .placeholder,
+#my-prs-jira-content .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #666;
+    text-align: center;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#my-prs-content .error,
+#my-prs-jira-content .error {
+    padding: 20px;
+    color: #ef4444;
+    text-align: center;
+}
+
+#my-prs-content .error-message,
+#my-prs-jira-content .error-message {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+#my-prs-content .error-details,
+#my-prs-jira-content .error-details {
+    font-size: 12px;
+    color: #999;
+    font-family: monospace;
+    background: #1a1a1a;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
+/* ================================================
+   TIMEBOARD MODAL STYLES
+   ================================================ */
+
+/* Timeboard Modal Styles */
+.timeboard-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timeboard-modal-content {
+    background: #0f172a;
+    border: 1px solid #374151;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #e5e7eb;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+
+.timeboard-modal-header {
+    background: linear-gradient(135deg, #111827, #0b1220);
+    border-bottom: 1px solid #374151;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.timeboard-modal-header h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.timeboard-close-btn {
+    background: none;
+    border: none;
+    color: #e5e7eb;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.timeboard-close-btn:hover {
+    background: #374151;
+}
+
+.timeboard-controls {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #374151;
+}
+
+.timeboard-controls input[type="search"] {
+    background: #0b1220;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 8px 12px;
+    border-radius: 8px;
+    outline: none;
+    font-size: 12px;
+}
+
+.timeboard-pill {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    border: 1px solid #374151;
+    border-radius: 20px;
+    padding: 6px 12px;
+    background: #0b1220;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.timeboard-pill label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.timeboard-ctrl {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.timeboard-ctrl label {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.timeboard-ctrl select {
+    background: #0b1220;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+.timeboard-manage-btn {
+    background: #2563eb;
+    border: 1px solid #3b82f6;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.timeboard-manage-btn:hover {
+    background: #1d4ed8;
+}
+
+.timeboard-main {
+    padding: 20px;
+    height: 400px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.timeboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.timeboard-table thead th {
+    background: #1f2937;
+    color: #e5e7eb;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid #374151;
+    font-size: 11px;
+}
+
+.timeboard-table tbody td {
+    border-bottom: 1px solid #374151;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #e5e7eb;
+}
+
+.timeboard-table tbody tr:nth-child(odd) {
+    background: #0c1223;
+}
+
+.timeboard-table tbody tr:nth-child(even) {
+    background: #0b1020;
+}
+
+.timeboard-table .muted {
+    color: #94a3b8;
+}
+
+.timeboard-table .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.timeboard-table .warn {
+    color: #fca5a5;
+}
+
+.timeboard-note {
+    padding-top: 12px;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+/* Timeboard Sub-modal (Manage Members) */
+.timeboard-sub-modal {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.timeboard-sub-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #0f172a;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80%;
+    overflow: hidden;
+}
+
+.timeboard-sub-modal-header {
+    background: #1f2937;
+    padding: 12px 16px;
+    border-bottom: 1px solid #374151;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.timeboard-sub-modal-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.timeboard-sub-modal-body {
+    padding: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.timeboard-member-form {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.timeboard-form-group {
+    display: grid;
+    gap: 4px;
+}
+
+.timeboard-form-group label {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.timeboard-form-group input,
+.timeboard-form-group select {
+    background: #0b1220;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.timeboard-form-group input:focus,
+.timeboard-form-group select:focus {
+    outline: none;
+    border-color: #2563eb;
+}
+
+.timeboard-btn-group {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.timeboard-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid #374151;
+    transition: all 0.2s ease;
+}
+
+.timeboard-btn-primary {
+    background: #2563eb;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.timeboard-btn-primary:hover {
+    background: #1d4ed8;
+}
+
+.timeboard-btn-secondary {
+    background: #1f2937;
+    color: #e5e7eb;
+}
+
+.timeboard-btn-secondary:hover {
+    background: #374151;
+}
+
+.timeboard-btn-danger {
+    background: #dc2626;
+    color: white;
+    border-color: #ef4444;
+}
+
+.timeboard-btn-danger:hover {
+    background: #b91c1c;
+}
+
+.timeboard-members-list {
+    border: 1px solid #374151;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.timeboard-members-list .member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #374151;
+    font-size: 12px;
+}
+
+.timeboard-members-list .member-item:last-child {
+    border-bottom: none;
+}
+
+.timeboard-members-list .member-info {
+    flex: 1;
+}
+
+.timeboard-members-list .member-name {
+    font-weight: 600;
+}
+
+.timeboard-members-list .member-details {
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.timeboard-members-list .member-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.timeboard-btn-small {
+    padding: 4px 8px;
+    font-size: 10px;
+}
+
+/* Custom scrollbar for timeboard */
+.timeboard-main::-webkit-scrollbar,
+.timeboard-sub-modal-body::-webkit-scrollbar,
+.timeboard-members-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.timeboard-main::-webkit-scrollbar-track,
+.timeboard-sub-modal-body::-webkit-scrollbar-track,
+.timeboard-members-list::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+.timeboard-main::-webkit-scrollbar-thumb,
+.timeboard-sub-modal-body::-webkit-scrollbar-thumb,
+.timeboard-members-list::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 4px;
+}
+
+.timeboard-main::-webkit-scrollbar-thumb:hover,
+.timeboard-sub-modal-body::-webkit-scrollbar-thumb:hover,
+.timeboard-members-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
