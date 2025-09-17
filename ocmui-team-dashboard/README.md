@@ -2,6 +2,8 @@
 
 A unified web dashboard that combines **GitHub PR management** with **JIRA ticket tracking** to streamline developer workflows. Get everything you need in one place: your PRs, code reviews, sprint tickets, and JIRA associations.
 
+![OCMUI Team Dashboard](src/assets/OCMUI_Team_Dashboard_screenshot.png)
+
 ## 🚀 Quick Start
 
 ### 1. Clone, Install, Start
