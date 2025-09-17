@@ -58,6 +58,9 @@ export function initializeReviewsTab() {
     // Navigation activation is handled by triggerComponentActivation in ui.js
     // Removed legacy data-tab event listener as it's no longer needed
     
+    // Make activation function available globally for navigation system
+    window.onReviewsTabActivated = onReviewsTabActivated;
+    
     console.log('✅ Reviews tab initialized');
 }
 
@@ -82,7 +85,7 @@ function onReviewsTabActivated() {
     
     // Check if we have required API tokens
     if (!appState.apiTokens.github || !appState.apiTokens.githubUsername) {
-        showErrorState(elementIds.prsContentId, 
+        showErrorState('reviews-prs-content', 
             'GitHub credentials required', 
             'Please configure your GitHub token and username in Settings');
         return;
@@ -149,7 +152,7 @@ async function loadPRsAwaitingReview(forceRefresh = false) {
     }
     
     if (!prsContainer) {
-        console.error('❌ Reviews PRs container not found:', elementIds.prsContentId);
+        console.error('❌ Reviews PRs container not found: reviews-prs-content');
         return;
     }
     

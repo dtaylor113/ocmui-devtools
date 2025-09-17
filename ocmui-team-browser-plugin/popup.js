@@ -499,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="github-pr-section">
                     <button class="github-pr-toggle expanded" id="githubPRToggle">
                         <span class="arrow">🔽</span>
-                        <img src="githubIcon.png" alt="GitHub" class="github-icon">
+                        <img src="githubIcon.jpg" alt="GitHub" class="github-icon">
                         <span>Related GitHub PRs</span>
                     </button>
                     <div class="github-pr-collapsible-content expanded" id="githubPRCollapsibleContent">

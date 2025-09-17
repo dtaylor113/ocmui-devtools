@@ -739,9 +739,11 @@ function triggerComponentActivation(primaryTabName, secondaryTabName) {
                 console.log('🎯 Triggered My Sprint JIRAs activation');
             }
         } else if (secondaryTabName === 'jira-lookup') {
-            // For JIRA Lookup, we don't need to trigger anything special
-            // as it's always ready to accept input
-            console.log('📧 JIRA Lookup activated (ready for input)');
+            // Call the JIRA Lookup activation function directly
+            if (window.onJiraLookupTabActivated) {
+                window.onJiraLookupTabActivated();
+                console.log('📧 Triggered JIRA Lookup activation');
+            }
         }
     }
 }

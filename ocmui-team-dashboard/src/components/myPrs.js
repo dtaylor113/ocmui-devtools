@@ -123,12 +123,16 @@ function onMyPrsTabActivated() {
     // Reset the JIRA panel title to default
     resetMyPrsJiraPanelTitle();
     
-    // Load PRs if we have a GitHub username
-    if (appState.apiTokens.githubUsername) {
-        loadMyPRs();
-    } else {
-        showErrorState('my-prs-content', 'GitHub username not configured', 'Please set your GitHub username in Settings');
+    // Check if we have required API tokens
+    if (!appState.apiTokens.github || !appState.apiTokens.githubUsername) {
+        showErrorState('my-prs-content', 
+            'GitHub credentials required', 
+            'Please configure your GitHub token and username in Settings');
+        return;
     }
+    
+    // Load PRs if we have credentials
+    loadMyPRs();
 }
 
 /**

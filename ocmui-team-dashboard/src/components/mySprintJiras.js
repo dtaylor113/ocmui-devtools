@@ -54,6 +54,9 @@ export function initializeMySprintJirasTab() {
     // Navigation activation is handled by triggerComponentActivation in ui.js
     // No additional setup needed here since the component is data-driven
     
+    // Make activation function available globally for navigation system
+    window.onMySprintJirasTabActivated = onMySprintJirasTabActivated;
+    
     console.log('✅ My Sprint JIRAs tab initialized');
 }
 
@@ -360,6 +363,25 @@ function updateGitHubPanelTitle(jiraId) {
     if (titleElement) {
         titleElement.textContent = `PRs associated with ${jiraId}`;
     }
+    
+    // Add helper text specifically for My Sprint JIRAs view
+    const titleContainer = document.querySelector('#my-sprint-jiras-github-title');
+    if (titleContainer) {
+        // Remove existing helper text if present
+        const existingHelper = titleContainer.parentElement.querySelector('.pr-helper-text');
+        if (existingHelper) {
+            existingHelper.remove();
+        }
+        
+        // Create and add new helper text
+        const helperText = document.createElement('div');
+        helperText.className = 'pr-helper-text';
+        helperText.style.cssText = 'color: #888; font-size: 13px; margin-top: 4px; margin-bottom: 12px; font-style: italic;';
+        helperText.textContent = '* you can click on certain Reviewers badges to see comments';
+        
+        // Insert after the title element
+        titleContainer.parentElement.insertBefore(helperText, titleContainer.nextSibling);
+    }
 }
 
 /**
@@ -369,6 +391,15 @@ function resetGitHubPanelTitle() {
     const titleElement = document.querySelector('#my-sprint-jiras-github-title .title-text');
     if (titleElement) {
         titleElement.textContent = 'Associated PRs';
+    }
+    
+    // Remove helper text when resetting to default
+    const titleContainer = document.querySelector('#my-sprint-jiras-github-title');
+    if (titleContainer) {
+        const existingHelper = titleContainer.parentElement.querySelector('.pr-helper-text');
+        if (existingHelper) {
+            existingHelper.remove();
+        }
     }
 }
 

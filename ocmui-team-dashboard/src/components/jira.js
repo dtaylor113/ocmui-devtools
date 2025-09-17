@@ -8,7 +8,7 @@
 
 import { appState, getDefaultJiraPrefix } from '../core/appState.js';
 import { parseJiraMarkdown, getBadgeClass } from '../utils/formatting.js';
-import { showLoadingState } from '../utils/ui.js';
+import { showLoadingState, showErrorState } from '../utils/ui.js';
 import { generateJiraCardHTML } from '../utils/jiraCard.js';
 
 /**
@@ -21,6 +21,9 @@ export function initializeJiraTab() {
     
     // Initialize new structure if it exists (will use same IDs when active)
     initializeJiraForContainer('new-jira-column', 'new-jira-content');
+    
+    // Make activation function available globally for navigation system
+    window.onJiraLookupTabActivated = onJiraLookupTabActivated;
 }
 
 /**
@@ -137,6 +140,35 @@ function setupJiraHistoryDropdown() {
 function initializeJiraData() {
     updateJiraHistoryList();
     updateJiraPrefixDropdown();
+}
+
+/**
+ * Handle when the JIRA Lookup tab is activated
+ * Checks for required credentials and shows appropriate UI state
+ */
+export function onJiraLookupTabActivated() {
+    console.log('📧 JIRA Lookup tab activated');
+    
+    // Check if we have required JIRA credentials
+    if (!appState.apiTokens.jira || !appState.apiTokens.jiraUsername) {
+        // Use the standard showErrorState function for consistency
+        showErrorState('jira-content', 
+            'JIRA credentials required', 
+            'Please configure your JIRA token and username (email) in Settings');
+        return;
+    }
+    
+    // If credentials are available, show the normal interface
+    const jiraContent = document.getElementById('jira-content');
+    if (jiraContent && jiraContent.querySelector('.error')) {
+        // Remove error state and restore normal interface
+        jiraContent.innerHTML = `
+            <div class="jira-content-spacer"></div>
+            <div id="jiraTicketDisplay" class="jira-ticket-display">
+                <div class="placeholder">Enter a JIRA ID to view ticket details</div>
+            </div>
+        `;
+    }
 }
 
 /**
