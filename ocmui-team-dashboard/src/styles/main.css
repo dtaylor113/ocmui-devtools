@@ -1568,7 +1568,7 @@
 }
 
 .collapsible-content.expanded {
-    max-height: 2000px;
+    max-height: 5000px; /* Increased from 2000px to accommodate long PR descriptions */
     border: 1px solid #333;
     border-top: none;
 }
@@ -1625,6 +1625,9 @@
 .collapsible-inner .github-content {
     color: #e5e7eb;
     line-height: 1.6;
+    max-height: 400px; /* Add scrolling for very long individual content blocks */
+    overflow-y: auto;
+    word-wrap: break-word; /* Handle long words/URLs */
 }
 
 .collapsible-inner .comment {
@@ -1748,7 +1751,7 @@
 }
 
 .jira-collapse-content.expanded {
-    max-height: 2000px;
+    max-height: 5000px; /* Increased from 2000px to accommodate long JIRA content */
     padding: 16px;
     border: 1px solid #333;
     border-top: none;
@@ -1788,7 +1791,7 @@
 }
 
 .pr-collapse-content.expanded {
-    max-height: 2000px;
+    max-height: 5000px; /* Increased from 2000px to accommodate long PR descriptions and comments */
     padding: 16px;
     border: 1px solid #333;
     border-top: none;
@@ -1812,6 +1815,9 @@
 .pr-collapse-content .github-content {
     color: #e5e7eb;
     line-height: 1.6;
+    max-height: 400px; /* Add scrolling for very long PR descriptions */
+    overflow-y: auto;
+    word-wrap: break-word; /* Handle long words/URLs */
 }
 
 .pr-collapse-content .comment {
@@ -1913,6 +1919,9 @@
 .pr-collapse-content .github-content {
     color: #e5e7eb;
     line-height: 1.6;
+    max-height: 400px; /* Add scrolling for very long PR descriptions */
+    overflow-y: auto;
+    word-wrap: break-word; /* Handle long words/URLs */
 }
 
 .pr-collapse-content .comment {
