@@ -1,0 +1,2881 @@
+/* Custom Scrollbars - Narrower and More Subtle */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+    border: 1px solid #333;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+::-webkit-scrollbar-corner {
+    background: #1a1a1a;
+}
+
+/* Firefox scrollbar styling */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #444 #1a1a1a;
+}
+
+/* Settings Modal Styles */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; }
+.modal-backdrop { width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; }
+.modal-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 500px; max-width: 90vw; max-height: 80vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #333; }
+.modal-header h2 { color: #e74c3c; font-size: 18px; font-weight: 600; margin: 0; }
+.modal-close { background: none; border: none; color: #888; font-size: 24px; cursor: pointer; padding: 4px; border-radius: 4px; line-height: 1; }
+.modal-close:hover { color: white; background-color: #333; }
+.modal-body { padding: 24px; }
+.modal-footer { display: flex; gap: 12px; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid #333; }
+
+/* Form Styles */
+.form-group { margin-bottom: 24px; }
+.form-group label { display: block; font-size: 14px; font-weight: 500; color: #ccc; margin-bottom: 8px; }
+.form-group input { width: 100%; background: #0b1220; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; font-size: 14px; }
+.form-group input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+.form-group input::placeholder { color: #666; }
+.input-row { display: flex; gap: 8px; align-items: center; }
+.input-row input { flex: 1; }
+.test-btn { background: #333; border: 1px solid #555; color: white; padding: 12px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s ease; min-width: 60px; white-space: nowrap; }
+.test-btn:hover { background: #444; }
+.help-text { margin-top: 6px; font-size: 12px; color: #666; }
+.help-text a { color: #3b82f6; text-decoration: none; }
+.help-text a:hover { text-decoration: underline; }
+.help-text small { display: block; margin-top: 4px; color: #888; }
+
+/* Button Styles */
+.btn { padding: 10px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.2s ease; border: none; }
+.btn-primary { background: #3b82f6; color: white; }
+.btn-primary:hover { background: #2563eb; }
+.btn-secondary { background: #333; border: 1px solid #555; color: white; }
+.btn-secondary:hover { background: #444; }
+
+/* Test Button States */
+.test-btn.test-success {
+    background: #10b981 !important;
+    color: white !important;
+    border-color: #10b981 !important;
+}
+
+.test-btn.test-failure {
+    background: #ef4444 !important;
+    color: white !important;
+    border-color: #ef4444 !important;
+}
+
+/* JIRA Tab Styles */
+.jira-input-section { margin-bottom: 20px; }
+
+.jira-inputs-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+/* Updated JIRA input group layout */
+.jira-input-group {
+    display: flex;
+    gap: 6px;
+    width: 220px;
+    align-items: flex-start;
+}
+
+.jira-input-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+/* JIRA Prefix Section */
+.jira-prefix-section {
+    position: relative;
+    width: 95px;
+}
+
+.jira-prefix-input {
+    width: 100%;
+    background: #222;
+    border: 1px solid #444;
+    color: #f59e0b;
+    padding: 6px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.jira-prefix-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.jira-prefix-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 6px;
+    max-height: 120px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 2px;
+}
+
+.prefix-item {
+    padding: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: monospace;
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.prefix-item:hover {
+    background: #333;
+    color: #fbbf24;
+}
+
+.prefix-placeholder {
+    padding: 8px;
+    color: #666;
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* JIRA Number Section */
+.jira-number-section {
+    width: 80px;
+}
+
+.jira-number-input {
+    width: 100%;
+    background: #222;
+    border: 1px solid #444;
+    color: white;
+    padding: 6px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.jira-number-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* JIRA History Section - Second line with recent JIRAs dropdown */
+.jira-history-section {
+    margin-top: 8px;
+    margin-bottom: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* JIRA Content Spacer - Creates visual gap between controls and JIRA card */
+.jira-content-spacer {
+    height: 12px;
+}
+
+.jira-history-section label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 0;
+    margin-left: 0;
+    white-space: nowrap;
+}
+
+.jira-dropdown-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+.jira-history-button {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+    width: 100%;
+    min-width: 200px;
+}
+
+.jira-history-button:hover {
+    border-color: #555;
+    background: #222;
+}
+
+.selected-jira {
+    color: #ccc;
+    font-size: 12px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown-arrow {
+    color: #888;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.jira-history-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 2px;
+}
+
+.history-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #333;
+    font-size: 12px;
+    color: #ccc;
+    line-height: 1.4;
+    transition: background-color 0.2s ease;
+}
+
+.history-item:hover {
+    background-color: #333;
+    color: white;
+}
+
+.history-item.selected {
+    background-color: #2563eb;
+    color: white;
+}
+
+.history-item.selected .history-jira-id {
+    color: #fbbf24;
+}
+
+.history-item.selected .history-summary {
+    color: #e5e7eb;
+}
+
+.history-item.selected:hover {
+    background-color: #1d4ed8;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.history-jira-id {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.history-summary {
+    color: #888;
+    font-size: 11px;
+}
+
+.history-placeholder {
+    color: #666 !important;
+    cursor: default !important;
+    font-style: italic;
+    text-align: center;
+    padding: 20px 12px;
+}
+
+.history-placeholder:hover {
+    background-color: transparent !important;
+}
+.input-group { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.input-group label { min-width: 80px; font-size: 14px; font-weight: 500; color: #fff; }
+.input-group input { flex: 1; max-width: 200px; padding: 10px 12px; font-size: 14px; border: 1px solid #444; border-radius: 6px; background-color: #222; color: white; }
+.input-group input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+.placeholder { color: #666; text-align: center; padding: 40px; font-style: italic; }
+.loading { 
+    color: #3b82f6; 
+    text-align: center; 
+    padding: 40px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.loading::before {
+    content: '⧗';
+    font-size: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.error { color: #ef4444; text-align: center; padding: 40px; }
+
+/* JIRA Ticket Display */
+.jira-ticket {
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #333;
+}
+
+.jira-header {
+    margin-bottom: 12px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 8px;
+}
+
+.jira-header h3 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+.jira-header h3 a {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+
+
+
+/* Two-column grid for details */
+.jira-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.detail-left,
+.detail-right {
+    /* Left and right columns */
+}
+
+.jira-details-grid p {
+    margin: 2px 0;
+    font-size: 14px;
+    color: #ccc;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.jira-details-grid p strong {
+    min-width: 70px;
+    flex-shrink: 0;
+    text-align: left;
+}
+
+.jira-details-grid p span {
+    flex: 1;
+    text-align: left;
+}
+
+/* Badge styles */
+.badge {
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1px;
+    display: inline-block;
+    line-height: 1.1;
+    min-width: fit-content;
+    white-space: nowrap;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Issue Type badges */
+.badge-type {
+    color: white;
+}
+
+
+.badge-type.story {
+    background: #14b8a6;
+}
+
+.badge-type.feature {
+    background: #22c55e;
+}
+
+.badge-type.bug {
+    background: #ef4444;
+}
+
+.badge-type.task {
+    background: #3b82f6;
+}
+
+.badge-type.outcome {
+    background: #6b7280;
+}
+
+/* Priority badges */
+.badge-priority {
+    color: white;
+}
+
+.badge-priority-blocker {
+    background: #dc2626;
+}
+
+.badge-priority-critical {
+    background: #f97316;
+}
+
+.badge-priority-major {
+    background: #f59e0b;
+}
+
+.badge-priority-normal {
+    background: #3b82f6;
+}
+
+.badge-priority-minor {
+    background: #0ea5e9;
+}
+
+.badge-priority-trivial {
+    background: #64748b;
+}
+
+/* Status badges */
+.badge-status {
+    color: white;
+}
+
+.badge-status.todo {
+    background: #6b7280;
+}
+
+.badge-status.inprogress {
+    background: #3b82f6;
+}
+
+.badge-status.codereview {
+    background: #8b5cf6;
+}
+
+.badge-status.review {
+    background: #7c3aed;
+}
+
+.badge-status.closed {
+    background: #22c55e;
+}
+
+/* JIRA sections */
+.jira-section {
+    margin-bottom: 12px;
+}
+
+.jira-section label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.jira-content {
+    background: #0f0f0f;
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    border-left: 3px solid #f59e0b;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.jira-content a {
+    color: #3b82f6;
+    text-decoration: underline;
+}
+
+.jira-content strong {
+    color: #fff;
+}
+
+.jira-content em {
+    color: #fbbf24;
+    font-style: italic;
+}
+
+.jira-content h1, .jira-content h2, .jira-content h3, .jira-content h4, .jira-content h5, .jira-content h6 {
+    color: #fff;
+    font-weight: 600;
+    margin: 16px 0 8px 0;
+}
+
+.jira-content h1 { font-size: 18px; }
+.jira-content h2 { font-size: 16px; }
+.jira-content h3 { font-size: 15px; }
+.jira-content h4 { font-size: 14px; }
+.jira-content h5 { font-size: 13px; }
+.jira-content h6 { font-size: 12px; }
+
+.jira-content ul, .jira-content ol {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.jira-content li {
+    margin: 4px 0;
+    color: #ccc;
+}
+
+.jira-content code {
+    background: #1f2937;
+    color: #fbbf24;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 11px;
+}
+
+.jira-content pre {
+    background: #1f2937;
+    color: #ccc;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 10px 0;
+}
+
+.jira-content pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+}
+
+.jira-content u {
+    text-decoration: underline;
+    color: #ccc;
+}
+
+.jira-content del {
+    text-decoration: line-through;
+    color: #666;
+}
+
+/* Comments */
+.comment {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+
+.comment:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.comment-header {
+    color: #3b82f6;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.comment-body {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.no-comments {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Enhanced dropdown styles */
+.dropdown-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #333;
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.4;
+}
+
+
+/* GitHub PR Styles */
+.github-pr-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.github-pr-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #374151;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.github-pr-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.github-pr-title-link {
+    color: #9ca3af;
+    text-decoration: underline;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1.3;
+    flex: 1;
+    margin-right: 12px;
+}
+
+.github-pr-title-link:hover {
+    text-decoration: underline;
+    color: #6b7280;
+}
+
+.github-pr-status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.github-pr-status {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.pr-status-open {
+    background: #059669;
+    color: white;
+}
+
+.pr-status-closed {
+    background: #dc2626;
+    color: white;
+}
+
+.pr-status-merged {
+    background: #7c3aed;
+    color: white;
+}
+
+.github-pr-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.github-pr-author {
+    color: #60a5fa;
+    font-weight: 500;
+}
+
+.github-pr-date {
+    font-family: monospace;
+}
+
+.github-pr-badges {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.pr-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.pr-badge-checks-pass {
+    background: rgba(5, 150, 105, 0.2);
+    color: #10b981;
+    border: 1px solid #10b981;
+}
+
+.pr-badge-checks-fail {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+}
+
+.pr-badge-checks-pending {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border: 1px solid #fbbf24;
+}
+
+.pr-badge-needs-rebase {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+}
+
+.github-pr-reviewers {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.reviewer-list {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* Removed duplicate .reviewer-item definition - using the enhanced one below */
+
+.reviewer-approved {
+    background: rgba(5, 150, 105, 0.2);
+    color: #10b981;
+    border: 1px solid #10b981;
+}
+
+.reviewer-changes-requested {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+}
+
+.reviewer-review-requested {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border: 1px solid #fbbf24;
+}
+
+.reviewer-commented {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+}
+
+.reviewer-dismissed {
+    background: rgba(107, 114, 128, 0.2);
+    color: #6b7280;
+    border: 1px solid #6b7280;
+}
+
+/* Split.js Resizable Layout */
+.split-container {
+    display: flex;
+    height: calc(100vh - 200px);
+    width: 100%;
+}
+
+.split-pane {
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Split.js gutter (drag handle) styling - Critical for dragging */
+.gutter {
+    background-color: #333;
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.gutter:hover {
+    background-color: #3b82f6;
+}
+
+.gutter.gutter-horizontal {
+    cursor: col-resize;
+    width: 8px;
+    background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 30" fill="%23666"><rect x="0" y="0" width="1" height="30"/><rect x="2" y="0" width="1" height="30"/><rect x="4" y="0" width="1" height="30"/></svg>');
+    pointer-events: auto;
+    user-select: none;
+    z-index: 10;
+}
+
+.gutter.gutter-horizontal:hover {
+    background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 30" fill="%233b82f6"><rect x="0" y="0" width="1" height="30"/><rect x="2" y="0" width="1" height="30"/><rect x="4" y="0" width="1" height="30"/></svg>');
+}
+
+.gutter.gutter-horizontal:active {
+    background-color: #1d4ed8;
+}
+
+#jira-column,
+#github-column {
+    min-width: 300px;
+    padding: 0 12px;
+    box-sizing: border-box;
+}
+
+.split-pane h3 {
+    flex-shrink: 0;
+    margin: 0 0 20px 0;
+}
+
+.split-pane > div[id$="-content"] {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.jira-textarea {
+    width: 100%;
+    background: #0f0f0f;
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 12px;
+    border-radius: 6px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    resize: vertical;
+    border-left: 3px solid #f59e0b;
+}
+
+.jira-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+@media (max-width: 768px) {
+    .jira-details-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+/* Settings Alert */
+.settings-alert {
+    color: #ef4444;
+    font-size: 18px;
+    margin-left: 8px;
+    animation: redGradientPulse 3s infinite;
+    text-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+}
+
+@keyframes redGradientPulse {
+    0% { 
+        color: #7f1d1d; /* Very dark red */
+        text-shadow: 0 0 2px rgba(127, 29, 29, 0.8);
+    }
+    20% { 
+        color: #991b1b; /* Dark red */
+        text-shadow: 0 0 4px rgba(153, 27, 27, 0.8);
+    }
+    40% { 
+        color: #dc2626; /* Medium red */
+        text-shadow: 0 0 6px rgba(220, 38, 38, 0.8);
+    }
+    60% { 
+        color: #ef4444; /* Bright red */
+        text-shadow: 0 0 8px rgba(239, 68, 68, 0.9);
+    }
+    80% { 
+        color: #f87171; /* Light red */
+        text-shadow: 0 0 10px rgba(248, 113, 113, 1);
+    }
+    100% { 
+        color: #7f1d1d; /* Back to dark red */
+        text-shadow: 0 0 2px rgba(127, 29, 29, 0.8);
+    }
+}
+
+/* Settings Button Red Border when Alert Active */
+.header-button.settings-alert-active {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+    animation: redBorderPulse 3s infinite;
+}
+
+@keyframes redBorderPulse {
+    0%, 100% { 
+        border-color: #7f1d1d;
+        box-shadow: 0 0 4px rgba(127, 29, 29, 0.4);
+    }
+    50% { 
+        border-color: #f87171;
+        box-shadow: 0 0 12px rgba(248, 113, 113, 0.6);
+    }
+}
+
+/* Column Title Styles */
+.column-title {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    gap: 16px;
+}
+
+/* JIRA-specific column title layout (overrides default for JIRA column) */
+#jira-column .column-title {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+/* JIRA Title Row - First line with title and search controls */
+.jira-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+}
+
+.title-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.title-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.column-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.github-title .column-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.jira-title {
+    color: #f59e0b; /* Amber/Orange for JIRA */
+}
+
+.github-title {
+    color: #10b981; /* Emerald/Green for GitHub */
+}
+
+.github-title .title-left {
+    justify-content: flex-start;
+}
+
+/* Reviews Tab Split Container Padding */
+#reviews-split-container .gutter {
+    margin: 0 8px !important;
+}
+
+#reviews-split-container .split-pane {
+    padding: 0 8px;
+}
+
+/* My PRs Tab Split Container Padding */
+#my-prs-split-container .gutter {
+    margin: 0 6px !important;
+}
+
+#my-prs-split-container .split-pane {
+    padding: 0 6px;
+}
+
+/* My Sprint JIRAs Tab Split Container Padding */
+#my-sprint-jiras-split-container .gutter {
+    margin: 0 6px !important;
+}
+
+#my-sprint-jiras-split-container .split-pane {
+    padding: 0 6px;
+}
+
+/* My PRs Tab Controls - DISABLED */
+.my-prs-controls {
+    display: none !important; /* Hide radio buttons entirely */
+}
+
+.pr-filter-controls {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+}
+
+.radio-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ccc;
+    transition: color 0.2s ease;
+}
+
+.radio-group:hover {
+    color: #fff;
+}
+
+.radio-group input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #555;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    appearance: none;
+    transition: all 0.2s ease;
+}
+
+.radio-group input[type="radio"]:checked {
+    border-color: #3b82f6;
+    background: #3b82f6;
+}
+
+.radio-group input[type="radio"]:checked::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.radio-group input[type="radio"]:checked + span {
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+.radio-group input[type="radio"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.radio-group input[type="radio"]:disabled + span {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Load More Button Styles */
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+    margin-top: 16px;
+    border-top: 1px solid #333;
+}
+
+.load-more-btn {
+    background: #1a1a1a;
+    border: 2px solid #3b82f6;
+    color: #3b82f6;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+}
+
+.load-more-btn:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #60a5fa;
+    color: #60a5fa;
+}
+
+.load-more-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.load-more-btn.error {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.load-more-btn.error:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #f87171;
+    color: #f87171;
+}
+
+.load-more-text {
+    white-space: nowrap;
+}
+
+.load-more-spinner {
+    display: none;
+    align-items: center;
+    gap: 8px;
+}
+
+.load-more-spinner .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #555;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Reviews Tab Styles */
+.prs-list {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.prs-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.prs-header h3 {
+    color: #10b981;
+    font-size: 18px;
+    margin: 0;
+}
+
+.prs-items {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.pr-item {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pr-item:hover {
+    border-color: #555;
+    background: #222;
+}
+
+.pr-item.active {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.pr-header {
+    margin-bottom: 8px;
+}
+
+.pr-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.pr-link {
+    text-decoration: none;
+    color: inherit;
+    flex: 1;
+    transition: color 0.2s ease;
+}
+
+.pr-link:hover {
+    color: #10b981;
+}
+
+.pr-link h4 {
+    color: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.pr-title h4 {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    flex: 1;
+    line-height: 1.3;
+}
+
+.pr-external-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid #3b82f6;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #93c5fd;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.pr-external-link:hover {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: #60a5fa;
+    color: #dbeafe;
+    transform: translateY(-1px);
+}
+
+.pr-number {
+    background: #333;
+    color: #10b981;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.review-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-waiting {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+    border: 1px solid #4b5563;
+}
+
+.status-changes-requested {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+}
+
+.status-approved {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid #10b981;
+}
+
+.status-commented {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid #3b82f6;
+}
+
+.pr-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #888;
+    flex-wrap: wrap;
+}
+
+.pr-repo {
+    color: #f59e0b;
+    font-weight: 500;
+}
+
+.review-count {
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.pr-labels {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.pr-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.pr-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pr-badge-checks-pass {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid #10b981;
+}
+
+.pr-badge-checks-fail {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+}
+
+.pr-badge-checks-pending {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid #f59e0b;
+}
+
+.pr-badge-needs-rebase {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c4b5fd;
+    border: 1px solid #8b5cf6;
+}
+
+.pr-badge-draft {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid #3b82f6;
+    font-weight: 600;
+    margin-right: 6px;
+}
+
+.label {
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #000;
+    background: #666;
+}
+
+.pr-reviewers {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.reviewers-label {
+    font-size: 12px;
+    color: #888;
+    font-weight: 500;
+}
+
+.reviewer-list {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.reviewer-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 16px;  /* More rounded */
+    font-size: 11px;
+    font-weight: 500;
+    gap: 4px;
+    cursor: default;
+    transition: all 0.2s ease;
+}
+
+.reviewer-approved {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid #10b981;
+}
+
+.reviewer-changes-requested {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+}
+
+.reviewer-commented {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid #3b82f6;
+}
+
+.reviewer-pending {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+    border: 1px solid #4b5563;
+}
+
+.reviewer-dismissed {
+    background: rgba(107, 114, 128, 0.2);
+    color: #6b7280;
+    border: 1px solid #374151;
+}
+
+.reviewer-item.current-user {
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+    position: relative;
+}
+
+.reviewer-item.current-user::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.2));
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+}
+
+.reviewer-item.clickable-reviewer {
+    cursor: pointer !important; /* Override parent cursor */
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 10; /* Ensure it's above parent clickable area */
+}
+
+.reviewer-item.clickable-reviewer:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    scale: 1.05;
+    z-index: 11; /* Even higher on hover */
+}
+
+/* Ensure all reviewer badges are properly interactive */
+.github-pr-reviewers {
+    pointer-events: none; /* Disable pointer events on container */
+}
+
+.github-pr-reviewers .reviewer-item {
+    position: relative;
+    z-index: 15;
+    pointer-events: auto; /* Re-enable for individual badges */
+}
+
+.github-pr-reviewers .reviewer-list {
+    position: relative;
+    z-index: 10;
+    pointer-events: none; /* Keep container non-interactive */
+}
+
+.github-pr-reviewers .reviewer-list .reviewer-item {
+    pointer-events: auto; /* But allow individual reviewer badges to be clickable */
+}
+
+/* Shared Collapsible Sections */
+.collapsible-section {
+    margin-top: 16px;
+}
+
+.collapsible-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    border-radius: 6px 6px 0 0;
+    padding: 8px 12px;
+    color: #3b82f6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.collapsible-toggle:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
+}
+
+.collapsible-toggle .toggle-icon {
+    color: #60a5fa;
+    font-size: 12px;
+    width: 12px;
+    display: inline-block;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.collapsible-toggle .toggle-text {
+    flex: 1;
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0 0 6px 6px;
+}
+
+.collapsible-content.expanded {
+    max-height: 2000px;
+    border: 1px solid #333;
+    border-top: none;
+}
+
+.collapsible-header {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px 16px;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    border: 1px solid #333;
+    border-bottom: none;
+    transition: background 0.2s;
+}
+
+.collapsible-header:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.toggle-icon {
+    margin-right: 8px;
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+
+.collapsible-inner {
+    padding: 16px;
+}
+
+.collapsible-inner .section,
+.collapsible-inner .jira-section,
+.collapsible-inner .github-section {
+    margin-bottom: 16px;
+}
+
+/* Removed ultra-specific My PRs CSS rules to let generic collapsible rules work */
+
+.collapsible-inner .section:last-child,
+.collapsible-inner .jira-section:last-child,
+.collapsible-inner .github-section:last-child {
+    margin-bottom: 0;
+}
+
+.collapsible-inner .section label,
+.collapsible-inner .jira-section label,
+.collapsible-inner .github-section label {
+    color: #60a5fa;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.collapsible-inner .content,
+.collapsible-inner .jira-content,
+.collapsible-inner .github-content {
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.collapsible-inner .comment {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 3px solid #3b82f6;
+}
+
+.collapsible-inner .comment:last-child {
+    margin-bottom: 0;
+}
+
+.collapsible-inner .comment-header {
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.collapsible-inner .comment-body {
+    color: #e5e7eb;
+    line-height: 1.5;
+}
+
+.collapsible-inner .comment-body h1,
+.collapsible-inner .comment-body h2,
+.collapsible-inner .comment-body h3 {
+    color: #f3f4f6;
+    margin: 16px 0 8px 0;
+}
+
+.collapsible-inner .comment-body h1:first-child,
+.collapsible-inner .comment-body h2:first-child,
+.collapsible-inner .comment-body h3:first-child {
+    margin-top: 0;
+}
+
+.collapsible-inner .comment-body code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 13px;
+}
+
+.collapsible-inner .comment-body pre {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.collapsible-inner .comment-body pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.collapsible-inner .loading {
+    text-align: center;
+    color: #9ca3af;
+    padding: 20px;
+}
+
+.collapsible-inner .error {
+    color: #ef4444;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.collapsible-inner .placeholder {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+.collapsible-inner .no-comments {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+/* Legacy support - map old classes to new ones */
+.jira-collapsible {
+    margin-top: 16px;
+}
+
+.jira-collapse-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    border-radius: 6px 6px 0 0;
+    padding: 8px 12px;
+    color: #3b82f6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.jira-collapse-toggle:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
+}
+
+.jira-collapse-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0 0 6px 6px;
+}
+
+.jira-collapse-content.expanded {
+    max-height: 2000px;
+    padding: 16px;
+    border: 1px solid #333;
+    border-top: none;
+}
+
+.pr-collapsible {
+    margin-top: 16px;
+}
+
+.pr-collapse-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+    border-radius: 6px 6px 0 0;
+    padding: 8px 12px;
+    color: #3b82f6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.pr-collapse-toggle:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
+}
+
+.pr-collapse-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0 0 6px 6px;
+}
+
+.pr-collapse-content.expanded {
+    max-height: 2000px;
+    padding: 16px;
+    border: 1px solid #333;
+    border-top: none;
+}
+
+.pr-collapse-content .github-section {
+    margin-bottom: 16px;
+}
+
+.pr-collapse-content .github-section:last-child {
+    margin-bottom: 0;
+}
+
+.pr-collapse-content .github-section label {
+    color: #60a5fa;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.pr-collapse-content .github-content {
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.pr-collapse-content .comment {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 3px solid #3b82f6;
+}
+
+.pr-collapse-content .comment:last-child {
+    margin-bottom: 0;
+}
+
+.pr-collapse-content .comment-header {
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.pr-collapse-content .comment-body {
+    color: #e5e7eb;
+    line-height: 1.5;
+}
+
+.pr-collapse-content .comment-body h1,
+.pr-collapse-content .comment-body h2,
+.pr-collapse-content .comment-body h3 {
+    color: #f3f4f6;
+    margin: 16px 0 8px 0;
+}
+
+.pr-collapse-content .comment-body h1:first-child,
+.pr-collapse-content .comment-body h2:first-child,
+.pr-collapse-content .comment-body h3:first-child {
+    margin-top: 0;
+}
+
+.pr-collapse-content .comment-body code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 13px;
+}
+
+.pr-collapse-content .comment-body pre {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.pr-collapse-content .comment-body pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.pr-collapse-content .loading {
+    text-align: center;
+    color: #9ca3af;
+    padding: 20px;
+}
+
+.pr-collapse-content .error {
+    color: #ef4444;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.pr-collapse-content .placeholder {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+.pr-collapse-content .no-comments {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+.pr-collapse-content .github-section:last-child {
+    margin-bottom: 0;
+}
+
+.pr-collapse-content .github-section label {
+    color: #60a5fa;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.pr-collapse-content .github-content {
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.pr-collapse-content .comment {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 3px solid #3b82f6;
+}
+
+.pr-collapse-content .comment:last-child {
+    margin-bottom: 0;
+}
+
+.pr-collapse-content .comment-header {
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.pr-collapse-content .comment-body {
+    color: #e5e7eb;
+    line-height: 1.5;
+}
+
+.pr-collapse-content .comment-body h1,
+.pr-collapse-content .comment-body h2,
+.pr-collapse-content .comment-body h3 {
+    color: #f3f4f6;
+    margin: 16px 0 8px 0;
+}
+
+.pr-collapse-content .comment-body h1:first-child,
+.pr-collapse-content .comment-body h2:first-child,
+.pr-collapse-content .comment-body h3:first-child {
+    margin-top: 0;
+}
+
+.pr-collapse-content .comment-body code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 13px;
+}
+
+.pr-collapse-content .comment-body pre {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.pr-collapse-content .comment-body pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.pr-collapse-content .loading {
+    text-align: center;
+    color: #9ca3af;
+    padding: 20px;
+}
+
+.pr-collapse-content .error {
+    color: #ef4444;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.pr-collapse-content .placeholder {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+.pr-collapse-content .no-comments {
+    color: #6b7280;
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+}
+
+/* Reviewer Comments Modal */
+.reviewer-comments-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+}
+
+.reviewer-comments-modal .modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.reviewer-comments-content {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    max-width: 800px;
+    max-height: 80vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.reviewer-comments-modal .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.reviewer-comments-modal .modal-header h3 {
+    color: #f3f4f6;
+    margin: 0;
+    flex: 1;
+}
+
+.reviewer-comments-modal .modal-close {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.reviewer-comments-modal .modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f3f4f6;
+}
+
+.reviewer-comments-modal .modal-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.comments-list {
+    padding: 16px 20px;
+}
+
+.reviewer-comment {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.reviewer-comment:last-child {
+    margin-bottom: 0;
+}
+
+.reviewer-comment .comment-header {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #333;
+}
+
+.reviewer-comment .comment-meta {
+    color: #9ca3af;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.reviewer-comment .comment-body {
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.reviewer-comment .comment-body p:first-child {
+    margin-top: 0;
+}
+
+.reviewer-comment .comment-body p:last-child {
+    margin-bottom: 0;
+}
+
+.reviewer-comments-modal .no-comments {
+    text-align: center;
+    color: #6b7280;
+    padding: 40px 20px;
+    font-style: italic;
+}
+
+.reviewer-comments-modal .error {
+    text-align: center;
+    color: #ef4444;
+    padding: 40px 20px;
+}
+
+.reviewer-comments-modal .loading {
+    text-align: center;
+    color: #9ca3af;
+    padding: 40px 20px;
+}
+
+/* Shared PR Card Component Styles */
+.github-prs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.github-pr-item {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px; /* Add spacing between PR cards */
+    transition: all 0.2s ease;
+}
+
+.github-pr-item:last-child {
+    margin-bottom: 0; /* Remove margin from last item */
+}
+
+.github-pr-item:hover {
+    border-color: #555;
+    background: #222;
+}
+
+.github-pr-item.active {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.github-pr-item.clickable-pr {
+    cursor: pointer;
+}
+
+.github-pr-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 12px;
+}
+
+.github-pr-title-link {
+    color: #fff;
+    text-decoration: underline;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.3;
+    flex: 1;
+}
+
+.github-pr-title-link:hover {
+    color: #10b981;
+}
+
+.github-pr-title-text {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.3;
+    flex: 1;
+}
+
+.github-pr-status-row {
+    display: flex;
+    align-items: center;
+}
+
+.github-pr-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.pr-status-open {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid #22c55e;
+}
+
+.pr-status-closed {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+}
+
+.pr-status-merged {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c4b5fd;
+    border: 1px solid #8b5cf6;
+}
+
+.github-pr-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.github-pr-meta-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.github-pr-meta-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.github-pr-author {
+    color: #f59e0b;
+    font-weight: 500;
+}
+
+.github-pr-date {
+    color: #888;
+}
+
+.github-pr-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.github-pr-reviewers {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #888;
+}
+
+/* Associated JIRAs Styles */
+.associated-jiras {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.jiras-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.jiras-header h3 {
+    color: #f59e0b;
+    font-size: 18px;
+    margin: 0 0 4px 0;
+}
+
+.pr-info {
+    color: #888;
+    font-size: 12px;
+    margin: 0;
+}
+
+.jiras-sections {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* JIRA ticket sections in Reviews tab */
+.jira-ticket-section {
+    margin-bottom: 20px;
+}
+
+.jira-ticket-section:last-child {
+    margin-bottom: 0;
+}
+
+.jira-ticket-section .jira-header {
+    margin-bottom: 0;
+}
+
+.jira-ticket-section .jira-header h3 {
+    margin-bottom: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+.jira-ticket-section .jira-header h3 a {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+/* Legacy JIRA sections (for old Load Details buttons - now unused) */
+.jira-section {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+/* Legacy JIRA header styles - keeping for backward compatibility */
+.legacy-jira-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #222;
+    border-bottom: 1px solid #333;
+}
+
+.jira-header h4 {
+    color: #f59e0b;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+.load-jira-btn {
+    background: #333;
+    border: 1px solid #555;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.load-jira-btn:hover {
+    background: #444;
+    border-color: #666;
+}
+
+.jira-content {
+    padding: 16px;
+}
+
+.jira-details {
+    color: #ccc;
+    line-height: 1.5;
+}
+
+.jira-details p {
+    margin: 0 0 8px 0;
+}
+
+/* Loading and Error States for Reviews */
+.reviews-prs-content .loading,
+.reviews-jira-content .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px;
+    color: #888;
+}
+
+.reviews-prs-content .placeholder,
+.reviews-jira-content .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #666;
+    text-align: center;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reviews-prs-content .error,
+.reviews-jira-content .error {
+    padding: 20px;
+    color: #ef4444;
+    text-align: center;
+}
+
+.reviews-prs-content .error-message,
+.reviews-jira-content .error-message {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.reviews-prs-content .error-details,
+.reviews-jira-content .error-details {
+    font-size: 12px;
+    color: #999;
+    font-family: monospace;
+    background: #1a1a1a;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
+/* Loading and Error States for My PRs - MISSING RULES ADDED */
+#my-prs-content .loading,
+#my-prs-jira-content .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px;
+    color: #888;
+}
+
+#my-prs-content .placeholder,
+#my-prs-jira-content .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #666;
+    text-align: center;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#my-prs-content .error,
+#my-prs-jira-content .error {
+    padding: 20px;
+    color: #ef4444;
+    text-align: center;
+}
+
+#my-prs-content .error-message,
+#my-prs-jira-content .error-message {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+#my-prs-content .error-details,
+#my-prs-jira-content .error-details {
+    font-size: 12px;
+    color: #999;
+    font-family: monospace;
+    background: #1a1a1a;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
+/* ================================================
+   TIMEBOARD MODAL STYLES
+   ================================================ */
+
+/* Timeboard Modal Styles */
+.timeboard-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timeboard-modal-content {
+    background: #0f172a;
+    border: 1px solid #374151;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #e5e7eb;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+
+.timeboard-modal-header {
+    background: linear-gradient(135deg, #111827, #0b1220);
+    border-bottom: 1px solid #374151;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.timeboard-modal-header h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.timeboard-close-btn {
+    background: none;
+    border: none;
+    color: #e5e7eb;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.timeboard-close-btn:hover {
+    background: #374151;
+}
+
+.timeboard-controls {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #374151;
+}
+
+.timeboard-controls input[type="search"] {
+    background: #0b1220;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 8px 12px;
+    border-radius: 8px;
+    outline: none;
+    font-size: 12px;
+}
+
+.timeboard-pill {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    border: 1px solid #374151;
+    border-radius: 20px;
+    padding: 6px 12px;
+    background: #0b1220;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.timeboard-pill label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.timeboard-ctrl {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.timeboard-ctrl label {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.timeboard-ctrl select {
+    background: #0b1220;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+.timeboard-manage-btn {
+    background: #2563eb;
+    border: 1px solid #3b82f6;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.timeboard-manage-btn:hover {
+    background: #1d4ed8;
+}
+
+.timeboard-main {
+    padding: 20px;
+    height: 400px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.timeboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.timeboard-table thead th {
+    background: #1f2937;
+    color: #e5e7eb;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid #374151;
+    font-size: 11px;
+}
+
+.timeboard-table tbody td {
+    border-bottom: 1px solid #374151;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #e5e7eb;
+}
+
+.timeboard-table tbody tr:nth-child(odd) {
+    background: #0c1223;
+}
+
+.timeboard-table tbody tr:nth-child(even) {
+    background: #0b1020;
+}
+
+.timeboard-table .muted {
+    color: #94a3b8;
+}
+
+.timeboard-table .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.timeboard-table .warn {
+    color: #fca5a5;
+}
+
+.timeboard-note {
+    padding-top: 12px;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+/* Timeboard Sub-modal (Manage Members) */
+.timeboard-sub-modal {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.timeboard-sub-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #0f172a;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80%;
+    overflow: hidden;
+}
+
+.timeboard-sub-modal-header {
+    background: #1f2937;
+    padding: 12px 16px;
+    border-bottom: 1px solid #374151;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.timeboard-sub-modal-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.timeboard-sub-modal-body {
+    padding: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.timeboard-member-form {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.timeboard-form-group {
+    display: grid;
+    gap: 4px;
+}
+
+.timeboard-form-group label {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.timeboard-form-group input,
+.timeboard-form-group select {
+    background: #0b1220;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.timeboard-form-group input:focus,
+.timeboard-form-group select:focus {
+    outline: none;
+    border-color: #2563eb;
+}
+
+.timeboard-btn-group {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.timeboard-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid #374151;
+    transition: all 0.2s ease;
+}
+
+.timeboard-btn-primary {
+    background: #2563eb;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.timeboard-btn-primary:hover {
+    background: #1d4ed8;
+}
+
+.timeboard-btn-secondary {
+    background: #1f2937;
+    color: #e5e7eb;
+}
+
+.timeboard-btn-secondary:hover {
+    background: #374151;
+}
+
+.timeboard-btn-danger {
+    background: #dc2626;
+    color: white;
+    border-color: #ef4444;
+}
+
+.timeboard-btn-danger:hover {
+    background: #b91c1c;
+}
+
+.timeboard-members-list {
+    border: 1px solid #374151;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.timeboard-members-list .member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #374151;
+    font-size: 12px;
+}
+
+.timeboard-members-list .member-item:last-child {
+    border-bottom: none;
+}
+
+.timeboard-members-list .member-info {
+    flex: 1;
+}
+
+.timeboard-members-list .member-name {
+    font-weight: 600;
+}
+
+.timeboard-members-list .member-details {
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.timeboard-members-list .member-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.timeboard-btn-small {
+    padding: 4px 8px;
+    font-size: 10px;
+}
+
+/* Custom scrollbar for timeboard */
+.timeboard-main::-webkit-scrollbar,
+.timeboard-sub-modal-body::-webkit-scrollbar,
+.timeboard-members-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.timeboard-main::-webkit-scrollbar-track,
+.timeboard-sub-modal-body::-webkit-scrollbar-track,
+.timeboard-members-list::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+.timeboard-main::-webkit-scrollbar-thumb,
+.timeboard-sub-modal-body::-webkit-scrollbar-thumb,
+.timeboard-members-list::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 4px;
+}
+
+.timeboard-main::-webkit-scrollbar-thumb:hover,
+.timeboard-sub-modal-body::-webkit-scrollbar-thumb:hover,
+.timeboard-members-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}

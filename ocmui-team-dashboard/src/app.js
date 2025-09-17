@@ -1,0 +1,170 @@
+/**
+ * OCMUI Team Dashboard - Main Application
+ * 
+ * This is the main application orchestrator that initializes all modules
+ * and coordinates the overall application flow. The heavy lifting is done
+ * by specialized modules in core/, components/, and utils/ directories.
+ */
+
+import './styles/main.css';
+
+// External libraries
+import { marked } from 'marked';
+
+// Make marked available globally for formatting utilities
+if (typeof window !== 'undefined') {
+    window.marked = marked;
+}
+
+// Core application modules
+import { loadAppState, appState } from './core/appState.js';
+import { initializeSettingsModal, updateReadyState } from './core/settings.js';
+
+// Feature components
+import { initializeJiraTab, setGitHubPRFetcher } from './components/jira.js';
+import { fetchAndDisplayGitHubPRs } from './components/github.js';
+import { initializeReviewsTab } from './components/reviews.js';
+import { initializeMyPrsTab } from './components/myPrs.js';
+import { initializeMySprintJirasTab } from './components/mySprintJiras.js';
+import { openTimeboardModal } from './components/timeboard.js';
+
+// UI utilities
+import { initializeTabNavigation, initializeSplitPanes, updateTabTitlesWithUsername, initializeTwoLevelNavigationState } from './utils/ui.js';
+import './utils/collapsibleSection.js';
+import './utils/reviewerUtils.js'; // Ensure global showReviewerComments function is available
+
+/**
+ * Application initialization
+ * Called when DOM is fully loaded, sets up all application features
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 OCMUI Team Dashboard initializing...');
+    
+    try {
+        // Initialize application state from localStorage
+        loadAppState();
+        
+        // Initialize core UI components
+        initializeTabNavigation();
+        initializeSettingsModal();
+        initializeTimeboardButton();
+        
+        // Initialize feature modules
+        initializeJiraTab();
+        initializeReviewsTab();
+        initializeMyPrsTab();
+        initializeMySprintJirasTab();
+        
+        // Set up module cross-dependencies
+        setupModuleDependencies();
+        
+        // Initialize advanced UI features
+        initializeSplitPanes();
+        
+        // Update UI based on current state
+        updateReadyState();
+        
+        // Update tab titles with GitHub username (if available)
+        updateTabTitlesWithUsername();
+        
+        // NEW: Initialize two-level navigation state
+        initializeTwoLevelNavigationState();
+        
+        console.log('📊 Application state loaded:', {
+            currentTab: appState.currentTab,
+            hasGitHubToken: !!appState.apiTokens.github,
+            hasJiraToken: !!appState.apiTokens.jira,
+            hasGitHubUsername: !!appState.apiTokens.githubUsername,
+            jiraHistoryCount: appState.jiraHistory.length,
+            jiraPrefixCount: appState.jiraPrefixes.length
+        });
+        
+        console.log('✅ OCMUI Team Dashboard ready!');
+        
+    } catch (error) {
+        console.error('❌ Application initialization failed:', error);
+        
+        // Show error state to user
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.innerHTML = `
+                <div class="initialization-error">
+                    <h2>⚠️ Application Error</h2>
+                    <p>The dashboard failed to initialize properly.</p>
+                    <p>Please refresh the page or check the console for details.</p>
+                    <button onclick="location.reload()" class="btn btn-primary">Refresh Page</button>
+                </div>
+            `;
+        }
+    }
+});
+
+/**
+ * Set up cross-module dependencies
+ * Some modules need to call functions from other modules, this sets up those connections
+ */
+function setupModuleDependencies() {
+    // Allow JIRA module to trigger GitHub PR fetching
+    setGitHubPRFetcher(fetchAndDisplayGitHubPRs);
+}
+
+/**
+ * Initialize the Team Timezones button
+ * Sets up the click handler for the timeboard modal
+ */
+function initializeTimeboardButton() {
+    const timeboardBtn = document.getElementById('timeboardBtn');
+    if (timeboardBtn) {
+        timeboardBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🕐 Opening Team Timeboard...');
+            openTimeboardModal();
+        });
+        console.log('✅ Team Timeboard button initialized');
+    } else {
+        console.warn('⚠️ Team Timeboard button not found in DOM');
+    }
+}
+
+/**
+ * Global error handler for unhandled errors
+ * Provides fallback error handling and user feedback
+ */
+window.addEventListener('error', function(event) {
+    console.error('🚨 Unhandled error:', event.error);
+    
+    // Log error details for debugging
+    console.error('Error details:', {
+        message: event.message,
+        filename: event.filename,
+        line: event.lineno,
+        column: event.colno,
+        stack: event.error?.stack
+    });
+});
+
+/**
+ * Global handler for unhandled promise rejections
+ * Provides fallback handling for async errors
+ */
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('🚨 Unhandled promise rejection:', event.reason);
+});
+
+/**
+ * Export app state for debugging in browser console
+ * Allows developers to inspect application state during development
+ */
+if (typeof window !== 'undefined') {
+    window.OCMUIDebug = {
+        appState,
+        version: '1.0.0',
+        modules: {
+            core: ['appState', 'settings'],
+            components: ['jira', 'github'], 
+            utils: ['formatting', 'ui']
+        }
+    };
+    
+    console.log('🐛 Debug interface available at: window.OCMUIDebug');
+}
