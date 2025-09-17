@@ -12,12 +12,20 @@ then
 fi
 
 # Navigate to the ocmui-team-dashboard directory
-# Assuming this script is run from the ocmui-devtools root
-if [ ! -d "ocmui-team-dashboard" ]; then
-    echo "❌ 'ocmui-team-dashboard' directory not found. Please ensure you are in the 'ocmui-devtools' root directory."
+# Handle different starting locations
+if [ -d "ocmui-team-dashboard" ]; then
+    # Running from ocmui-devtools root - go into dashboard directory
+    cd ocmui-team-dashboard
+elif [ -f "package.json" ] && [ -d "src" ]; then
+    # Already in ocmui-team-dashboard directory - stay here
+    echo "📍 Already in ocmui-team-dashboard directory"
+else
+    echo "❌ Cannot find ocmui-team-dashboard directory."
+    echo "Please run this script from either:"
+    echo "  - ocmui-devtools/ root directory: ./setup.sh"
+    echo "  - ocmui-team-dashboard/ subdirectory: ../setup.sh"
     exit 1
 fi
-cd ocmui-team-dashboard
 
 echo "📦 Installing dependencies with Yarn..."
 yarn install
