@@ -104,7 +104,8 @@ export function generateJiraCardHTML(ticket, options = {}) {
                 initiallyExpanded,
                 parseJiraMarkdown(ticket.description || 'No description available'),
                 commentsHtml,
-                toggleFunction
+                toggleFunction,
+                options.context || ''
             ) : `
                 <div class="jira-section">
                     <label><strong>Description:</strong></label>

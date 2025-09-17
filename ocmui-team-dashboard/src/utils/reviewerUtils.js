@@ -73,13 +73,7 @@ export function processReviewers(reviews, requestedReviewers, currentUser = null
     const safeRequestedReviewers = Array.isArray(requestedReviewers) ? requestedReviewers : [];
     const safePrComments = Array.isArray(prComments) ? prComments : [];
     
-    // Debug what we're receiving
-    console.log(`🔍 ProcessReviewers called with:`, {
-        reviewsCount: safeReviews.length,
-        requestedReviewersCount: safeRequestedReviewers.length,
-        prCommentsCount: safePrComments.length,
-        prInfo: prInfo ? `${prInfo.repoName}#${prInfo.number}` : 'null'
-    });
+    // Process reviewers and comments
     
     // Process completed reviews and track review comments
     safeReviews.forEach(review => {
@@ -156,11 +150,7 @@ export function processReviewers(reviews, requestedReviewers, currentUser = null
         }
     });
     
-    console.log('🔍 Final reviewer comment map:', Array.from(reviewerComments.keys()).map(reviewer => ({
-        reviewer,
-        commentCount: reviewerComments.get(reviewer).length,
-        hasComments: reviewerMap.get(reviewer)?.hasComments
-    })));
+    // Generate reviewer badges with comment information
     
     // Add requested reviewers who haven't reviewed yet
     safeRequestedReviewers.forEach(reviewer => {
@@ -205,16 +195,7 @@ export function processReviewers(reviews, requestedReviewers, currentUser = null
         const needsCommentIcon = hasComments && info.state === 'review_requested';
         const commentIcon = needsCommentIcon ? ' 💬' : '';
         
-        // Debug logging
-        if (hasComments) {
-            console.log(`🔍 Reviewer ${username} has comments:`, {
-                hasComments, 
-                prInfo: prInfo ? `${prInfo.repoName}#${prInfo.number}` : 'null',
-                clickHandler: clickHandler || 'NO HANDLER',
-                commentIcon: commentIcon,
-                clickableClass: clickableClass
-            });
-        }
+        // Generate reviewer badge HTML
         
         const generatedHtml = `<span class="reviewer-item ${stateClass} ${isCurrentUser ? 'current-user' : ''} ${clickableClass}" 
                       title="${username}: ${stateText}${hasComments ? ' (Click to view comments)' : ''}${isCurrentUser ? ' (You)' : ''}"
@@ -223,9 +204,7 @@ export function processReviewers(reviews, requestedReviewers, currentUser = null
                 </span>`;
         
         // Debug HTML output for reviewers with comments
-        if (hasComments) {
-            console.log(`🔍 Generated HTML for ${username}:`, generatedHtml);
-        }
+        // HTML generated for reviewer with comments
         
         return generatedHtml;
     }).join('');

@@ -63,6 +63,8 @@ window.toggleCollapsibleSection = function(id) {
 
     const isExpanded = content.classList.contains('expanded');
 
+    // Toggle collapsible content
+
     const icon = toggle.querySelector('.toggle-icon');
 
     if (isExpanded) {
@@ -91,7 +93,7 @@ window.toggleCollapsibleSection = function(id) {
  * @param {string} toggleFunction - Function name for toggle handler
  * @returns {string} HTML string for JIRA collapsible section
  */
-export function generateJiraCollapsible(ticketKey, initiallyExpanded = false, descriptionHtml = '', commentsHtml = '', toggleFunction = 'toggleCollapsibleSection') {
+export function generateJiraCollapsible(ticketKey, initiallyExpanded = false, descriptionHtml = '', commentsHtml = '', toggleFunction = 'toggleCollapsibleSection', context = '') {
     const contentHtml = descriptionHtml || commentsHtml ? `
         <div class="jira-section">
             <label><strong>Description:</strong></label>
@@ -102,8 +104,11 @@ export function generateJiraCollapsible(ticketKey, initiallyExpanded = false, de
         ${commentsHtml}
     ` : '';
     
+    // Generate unique ID per context to prevent collisions across tabs
+    const uniqueId = context ? `jira-${context}-${ticketKey}` : `jira-${ticketKey}`;
+    
     return generateCollapsibleSection({
-        id: `jira-${ticketKey}`,
+        id: uniqueId,
         title: 'More Info',
         initiallyExpanded,
         toggleFunction,

@@ -862,31 +862,14 @@ function displayLoadedJIRAsForMyPR(jiraResults, repo, prNumber) {
         return;
     }
     
-    // COMPREHENSIVE CLEANUP: Remove ALL existing collapsible elements with same IDs
-    // This prevents ID collisions across different tabs
-    jiraResults.forEach(ticket => {
-        const jiraKey = ticket.key || ticket.id || ticket.jiraId;
-        
-        if (!jiraKey) {
-            console.warn(`Could not extract JIRA key from ticket:`, ticket);
-            return;
-        }
-        
-        const duplicateId = `collapsible-jira-${jiraKey}`;
-        
-        // Remove ALL existing elements with this ID (should be unique anyway)
-        const allDuplicates = document.querySelectorAll(`#${duplicateId}`);
-        if (allDuplicates.length > 0) {
-            console.log(`Found ${allDuplicates.length} existing elements with ID ${duplicateId} - removing all`);
-            allDuplicates.forEach(duplicate => duplicate.remove());
-        }
-    });
+    // No cleanup needed - IDs are now unique per tab context
 
     // Generate JIRA cards using shared component with collapsible sections
     const jiraHtml = generateJiraCardsFromResults(jiraResults, {
         collapsible: true,
         wrapInSection: true,
-        toggleFunction: 'toggleCollapsibleSection'
+        toggleFunction: 'toggleCollapsibleSection',
+        context: 'my-prs'
     });
     
     jiraContainer.innerHTML = `
