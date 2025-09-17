@@ -8,11 +8,13 @@ A unified web dashboard that combines **GitHub PR management** with **JIRA ticke
 
 ### 1. Clone, Install, Start
 ```bash
-git clone https://github.com/dtaylor/ocmui-devtools.git
-cd ./ocmui-devtools/ocmui-team-dashboard
+git clone https://github.com/dtaylor113/ocmui-devtools.git
+cd ocmui-devtools
+git checkout main  # Ensure you're on the correct branch
+cd ocmui-team-dashboard
 
-# Run the automated setup
-./setup.sh
+# Run the automated setup (from parent directory)
+../setup.sh
 
 ....OR....
 
