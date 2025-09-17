@@ -2,26 +2,27 @@
 
 A unified web dashboard that combines **GitHub PR management** with **JIRA ticket tracking** to streamline developer workflows. Get everything you need in one place: your PRs, code reviews, sprint tickets, and JIRA associations.
 
+![OCMUI Team Dashboard](src/assets/OCMUI_Team_Dashboard_screenshot.png)
+
 ## 🚀 Quick Start
 
-### 1. Clone & Install
+### 1. Clone, Install, Start
 ```bash
 git clone https://github.com/dtaylor/ocmui-devtools.git
-cd ocmui-devtools/ocmui-team-dashboard
+cd ./ocmui-devtools/ocmui-team-dashboard
 
 # Run the automated setup
 ./setup.sh
 
 ....OR....
 
-# Run manual setup steps
+# Run manual setup and start
 yarn install
-```
-
-### 2. Start the Dashboard  
-```bash
 yarn start
 ```
+
+### 2. The Dashboard  
+
 Opens at `http://localhost:3017`
 
 ### 3. First-Time Setup
