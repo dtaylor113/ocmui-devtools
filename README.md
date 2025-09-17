@@ -1,40 +1,117 @@
-## Overview
-_ocmui-devtools_ is a repository for any useful code/tools for the RedHat OCMUI Dev Team.
+# OCMUI DevTools
 
-The **S**peed **O**f **L**ight **S**ource **C**ode **E**xplorer allows you to simply hover over a ocmui webpage 
-and the corresponding source code is shown instantly in a bottom panel. 
+A collection of development tools and utilities for the OCMUI team.
 
-![sol-sc-explorer-screenshot](sol-sc-explorer/images/sol-sc-explorer.png)
+## 🏗️ **Monorepo Structure**
 
-In addition, clicking on the plug-in icon reveals a popup where you can also instantly load 
-a OCMUI JIRA ticket or Gitlab MR by id.  It also remembers the last 10 ids you used in each 
-dropdown!
+Each sub-directory contains an independent project that can be built and run separately:
 
-<img src="sol-sc-explorer/images/sol-sc-explore-dlg.png" alt="plug-in-popup" width="400" />
+```
+ocmui-devtools/
+├── ocmui-team-dashboard/     # Web-based team dashboard
+├── ocmui-team-browser-plugin/  # Chrome extension
+├── sol-sc-explorer/          # Solana smart contract explorer
+└── README.md                 # This file
+```
 
+## 🚀 **Quick Start - Any Project**
 
-## Setup
+```bash
+# Navigate to any sub-project
+cd ocmui-devtools/[project-name]
 
-1. Clone this repo!
+# Install dependencies
+yarn install
 
-### Chrome Browser
+# Start the project
+yarn start
+```
 
-1. Enter URL: chrome://extensions/.  Click on "Load Unpacked"
+---
 
-2. Select the plugin directory: **.../ocmui-devtools/sol-sc-explorer**
+## 📋 **Projects**
 
-* You might want to keep this open in a seperate tab as you can disable and remove the plugin from _chrome://extensions/_.
+### 🌐 [OCMUI Team Dashboard](./ocmui-team-dashboard/)
+**Web-based dashboard for JIRA/GitHub integration and team productivity tools**
 
-### FireFox Browser
+```bash
+cd ocmui-team-dashboard
+yarn install
+yarn start          # Production server on localhost:3017
+yarn start:dev      # Development server with hot-reload
+```
 
-1. Enter URL: [about:debugging#/runtime/this-firefox](about:debugging#/runtime/this-firefox).  Click on "Load Temporary Add-on..."
-2. Select the manifest file in the plugin directory: **.../ocmui-devtools/sol-sc-explorer/manifest.json**
+**Features:**
+- JIRA ticket integration
+- GitHub PR correlation
+- Team timezone management
+- Settings with API token management
 
-You should see:
+---
 
-* You might want to keep this open in a seperate tab as you can disable and remove the plugin from _about:debugging#/runtime/this-firefox_.
+### 🔌 [OCMUI Team Browser Plugin](./ocmui-team-browser-plugin/)
+**Chrome Extension V3 for JIRA and GitHub integration**
 
-## Usage
-- Once the sol-sc-explorer plugin is loaded you can navigate to any webpage under `https://prod.foo.redhat.com:1337/openshift/` (that OCM UI builds) and hover over any html element in the browser to instantly see it's related React source code.
-- Press L key to toogle focus selection on/off. This allows you to lock selection and move mouse to bottom source code panel without triggering other source code lookups.
-- You can resize the bottom panel by dragging it's top border.
+```bash
+cd ocmui-team-browser-plugin
+# Load as unpacked extension in Chrome
+```
+
+**Features:**
+- JIRA ticket popup display
+- GitHub PR correlation
+- Chrome extension popup interface
+- Team timezone quick access
+
+---
+
+### ⛓️ [Sol Smart Contract Explorer](./sol-sc-explorer/)
+**Solana smart contract exploration tool**
+
+```bash
+cd sol-sc-explorer
+yarn install
+yarn start
+```
+
+---
+
+## 🛠️ **Development Workflow**
+
+### Working on Individual Projects
+```bash
+# Work on dashboard
+cd ocmui-team-dashboard
+yarn start:dev
+
+# Work on extension  
+cd ocmui-team-browser-plugin
+# Load in Chrome Developer Mode
+
+# Work on explorer
+cd sol-sc-explorer
+yarn start
+```
+
+### Adding New Tools
+1. Create new directory: `my-new-tool/`
+2. Initialize with `yarn init`
+3. Add build scripts: `yarn start`, `yarn build`, etc.
+4. Update this README
+
+## 📝 **Notes**
+
+- **Independent Projects**: Each sub-directory is completely self-contained
+- **Shared Repository**: All tools share the same Git repository for easier management
+- **Individual Packages**: Each project has its own `package.json` and dependencies
+- **Monorepo Benefits**: Unified versioning, shared tooling, easier cross-project changes
+
+---
+
+## 🤝 **Contributing**
+
+1. Navigate to the specific project directory
+2. Follow that project's development setup
+3. Each project may have different tech stacks and requirements
+
+**Happy coding!** 🚀

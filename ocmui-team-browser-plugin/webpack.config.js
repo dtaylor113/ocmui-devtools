@@ -49,7 +49,7 @@ module.exports = (env, argv) => {
           { from: './manifest.json', to: 'manifest.json' },
           { from: './popup.html', to: 'popup.html' },
           { from: './icon*.png', to: '[name][ext]' },
-          { from: './githubIcon.png', to: 'githubIcon.png' },
+          { from: './githubIcon.jpg', to: 'githubIcon.jpg' },
           { from: './jiraLogo.png', to: 'jiraLogo.png' },
           { from: './timeboard', to: 'timeboard' },
         ],
