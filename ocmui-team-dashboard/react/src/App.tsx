@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { QueryProvider } from './contexts/QueryProvider';
+import { SettingsProvider } from './contexts/SettingsContext';
 import Header from './components/Header';
 import NavigationTabs from './components/NavigationTabs';
 import SplitPanel from './components/SplitPanel';
+import SettingsModal from './components/SettingsModal';
 import jiraLogo from './assets/jiraLogo.png';
 import githubIcon from './assets/githubIcon.png';
 import './styles/App.css';
@@ -32,9 +35,9 @@ const tabConfig = {
       { id: 'my-prs', label: 'My PRs' }
     ]
   }
-} as const;
+};
 
-function App() {
+export default function App() {
   const [appState, setAppState] = useState<AppState>({
     primaryTab: 'jira',
     secondaryTab: 'my-sprint-jiras'
@@ -57,23 +60,27 @@ function App() {
   };
 
   return (
-    <div className="app">
-      <Header />
-      
-      <NavigationTabs
-        tabConfig={tabConfig}
-        primaryTab={appState.primaryTab}
-        secondaryTab={appState.secondaryTab}
-        onPrimaryTabChange={handlePrimaryTabChange}
-        onSecondaryTabChange={handleSecondaryTabChange}
-      />
-      
-      <SplitPanel
-        primaryTab={appState.primaryTab}
-        secondaryTab={appState.secondaryTab}
-      />
-    </div>
+    <QueryProvider>
+      <SettingsProvider>
+        <div className="app">
+          <Header />
+          
+          <NavigationTabs
+            tabConfig={tabConfig}
+            primaryTab={appState.primaryTab}
+            secondaryTab={appState.secondaryTab}
+            onPrimaryTabChange={handlePrimaryTabChange}
+            onSecondaryTabChange={handleSecondaryTabChange}
+          />
+          
+          <SplitPanel
+            primaryTab={appState.primaryTab}
+            secondaryTab={appState.secondaryTab}
+          />
+          
+          <SettingsModal />
+        </div>
+      </SettingsProvider>
+    </QueryProvider>
   );
 }
-
-export default App;

@@ -1,7 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import type { PrimaryTab, SecondaryTab } from '../App';
 import jiraLogo from '../assets/jiraLogo.png';
-import githubIcon from '../assets/githubIcon.png';
+import JiraPanel from './JiraPanel';
+import PRPanel from './PRPanel';
+import AssociatedPRsPanel from './AssociatedPRsPanel';
 
 interface SplitPanelProps {
   primaryTab: PrimaryTab;
@@ -11,10 +13,12 @@ interface SplitPanelProps {
 const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => {
   const [leftWidth, setLeftWidth] = useState(50); // Percentage
   const [isDragging, setIsDragging] = useState(false);
+  const [prStatus, setPrStatus] = useState<'open' | 'closed'>('open');
+  const [selectedTicket, setSelectedTicket] = useState<string | undefined>();
 
-  // Debug: Check if icons are loading
-  console.log('SplitPanel - jiraLogo:', jiraLogo);
-  console.log('SplitPanel - githubIcon:', githubIcon);
+  const handleTicketSelect = (ticketKey: string) => {
+    setSelectedTicket(ticketKey);
+  };
 
   const handleMouseDown = useCallback(() => {
     setIsDragging(true);
@@ -39,22 +43,7 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
   // Get content for current tab combination
   const getLeftPanelContent = () => {
     if (primaryTab === 'jira' && secondaryTab === 'my-sprint-jiras') {
-      return (
-        <div className="panel-content">
-          <div className="panel-header">
-            <h3><img src={jiraLogo} alt="JIRA" className="panel-icon" /> My Sprint JIRAs</h3>
-            <span className="last-updated">Last Updated: 1s ago</span>
-          </div>
-          <div className="content-placeholder">
-            <p><img src={jiraLogo} alt="JIRA" className="inline-icon" /> JIRA tickets assigned to you in active sprints will appear here</p>
-            <div className="placeholder-box">
-              <div className="placeholder-item">OCMUI-2460: ROSA and OSD wizards...</div>
-              <div className="placeholder-item">OCMUI-3196: Consolidate all access.redhat.com links...</div>
-              <div className="placeholder-item">OCMUI-3744: Move support and doc links...</div>
-            </div>
-          </div>
-        </div>
-      );
+      return <JiraPanel onTicketSelect={handleTicketSelect} />;
     }
 
     if (primaryTab === 'jira' && secondaryTab === 'jira-lookup') {
@@ -76,33 +65,16 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
     }
 
     if (primaryTab === 'github' && secondaryTab === 'my-code-reviews') {
-      return (
-        <div className="panel-content">
-          <div className="panel-header">
-            <h3><img src={githubIcon} alt="GitHub" className="panel-icon" /> My Code Reviews</h3>
-            <span className="last-updated">Last Updated: 1s ago</span>
-          </div>
-          <div className="content-placeholder">
-            <p>PRs awaiting your review will appear here</p>
-          </div>
-        </div>
-      );
+      return <PRPanel tabType="my-code-reviews" />;
     }
 
     if (primaryTab === 'github' && secondaryTab === 'my-prs') {
       return (
-        <div className="panel-content">
-          <div className="panel-header">
-            <h3><img src={githubIcon} alt="GitHub" className="panel-icon" /> My PRs</h3>
-            <div className="pr-status-toggle">
-              <label><input type="radio" name="pr-status" value="open" defaultChecked /> Open</label>
-              <label><input type="radio" name="pr-status" value="closed" /> Closed</label>
-            </div>
-          </div>
-          <div className="content-placeholder">
-            <p>Your pull requests will appear here</p>
-          </div>
-        </div>
+        <PRPanel 
+          tabType="my-prs" 
+          prStatus={prStatus} 
+          onPrStatusChange={setPrStatus} 
+        />
       );
     }
 
@@ -111,16 +83,7 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
 
   const getRightPanelContent = () => {
     if (primaryTab === 'jira') {
-      return (
-        <div className="panel-content">
-          <div className="panel-header">
-            <h3><img src={githubIcon} alt="GitHub" className="panel-icon" /> Associated PRs</h3>
-          </div>
-          <div className="content-placeholder">
-            <p>Click on a JIRA ticket to see related PRs</p>
-          </div>
-        </div>
-      );
+      return <AssociatedPRsPanel selectedTicket={selectedTicket} />;
     }
 
     if (primaryTab === 'github') {
