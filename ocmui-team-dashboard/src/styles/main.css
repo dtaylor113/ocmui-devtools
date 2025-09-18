@@ -29,6 +29,29 @@
     scrollbar-color: #444 #1a1a1a;
 }
 
+/* Enhanced scrollbar styling for collapsible content */
+.collapsible-inner .github-content::-webkit-scrollbar,
+.collapsible-inner .jira-content::-webkit-scrollbar,
+.pr-collapse-content .github-content::-webkit-scrollbar,
+.jira-collapse-content .jira-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.collapsible-inner .github-content::-webkit-scrollbar-thumb,
+.collapsible-inner .jira-content::-webkit-scrollbar-thumb,
+.pr-collapse-content .github-content::-webkit-scrollbar-thumb,
+.jira-collapse-content .jira-content::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.6);
+    border-radius: 3px;
+}
+
+.collapsible-inner .github-content::-webkit-scrollbar-thumb:hover,
+.collapsible-inner .jira-content::-webkit-scrollbar-thumb:hover,
+.pr-collapse-content .github-content::-webkit-scrollbar-thumb:hover,
+.jira-collapse-content .jira-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.8);
+}
+
 /* Settings Modal Styles */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; }
 .modal-backdrop { width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; }
@@ -1037,6 +1060,39 @@
     padding: 0 6px;
 }
 
+/* My Sprint JIRAs GitHub content area - better overflow handling */
+#my-sprint-jiras-github-content {
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+#my-sprint-jiras-github-content .github-pr-item {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Reviews tab PR content area - better overflow handling */
+#reviews-prs-content {
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* My PRs content area - better overflow handling */  
+#my-prs-content {
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* General GitHub content areas - better overflow handling */
+#github-content {
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
 /* My PRs Tab Controls - DISABLED */
 .my-prs-controls {
     display: none !important; /* Hide radio buttons entirely */
@@ -1625,9 +1681,10 @@
 .collapsible-inner .github-content {
     color: #e5e7eb;
     line-height: 1.6;
-    max-height: 400px; /* Add scrolling for very long individual content blocks */
+    max-height: 300px; /* Reasonable height with scrollbars for long content */
     overflow-y: auto;
     word-wrap: break-word; /* Handle long words/URLs */
+    padding-right: 8px; /* Space for scrollbar */
 }
 
 .collapsible-inner .comment {
@@ -1815,9 +1872,10 @@
 .pr-collapse-content .github-content {
     color: #e5e7eb;
     line-height: 1.6;
-    max-height: 400px; /* Add scrolling for very long PR descriptions */
+    max-height: 300px; /* Reasonable height with scrollbars for long PR descriptions */
     overflow-y: auto;
     word-wrap: break-word; /* Handle long words/URLs */
+    padding-right: 8px; /* Space for scrollbar */
 }
 
 .pr-collapse-content .comment {
@@ -1919,9 +1977,10 @@
 .pr-collapse-content .github-content {
     color: #e5e7eb;
     line-height: 1.6;
-    max-height: 400px; /* Add scrolling for very long PR descriptions */
+    max-height: 300px; /* Reasonable height with scrollbars for long PR descriptions */
     overflow-y: auto;
     word-wrap: break-word; /* Handle long words/URLs */
+    padding-right: 8px; /* Space for scrollbar */
 }
 
 .pr-collapse-content .comment {
@@ -2149,6 +2208,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    max-width: 100%; /* Ensure container doesn't exceed parent */
+    overflow-x: hidden; /* Hide horizontal overflow */
+    word-wrap: break-word; /* Handle long content */
 }
 
 .github-pr-item {
@@ -2158,6 +2220,9 @@
     padding: 16px;
     margin-bottom: 16px; /* Add spacing between PR cards */
     transition: all 0.2s ease;
+    word-wrap: break-word; /* Handle long words/URLs */
+    overflow-wrap: break-word;
+    max-width: 100%; /* Ensure cards don't exceed container width */
 }
 
 .github-pr-item:last-child {
@@ -2193,6 +2258,9 @@
     font-weight: 500;
     line-height: 1.3;
     flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal; /* Allow title text to wrap */
 }
 
 .github-pr-title-link:hover {
@@ -2205,6 +2273,9 @@
     font-weight: 500;
     line-height: 1.3;
     flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal; /* Allow title text to wrap */
 }
 
 .github-pr-status-row {
