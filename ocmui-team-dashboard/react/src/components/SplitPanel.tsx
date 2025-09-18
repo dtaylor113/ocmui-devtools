@@ -1,9 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import type { PrimaryTab, SecondaryTab } from '../App';
-import jiraLogo from '../assets/jiraLogo.png';
 import JiraPanel from './JiraPanel';
 import PRPanel from './PRPanel';
 import AssociatedPRsPanel from './AssociatedPRsPanel';
+import EmptyState from './EmptyState';
+import JiraLookupPlaceholderPanel from './JiraLookupPlaceholderPanel';
+import AssociatedJirasPlaceholderPanel from './AssociatedJirasPlaceholderPanel';
 
 interface SplitPanelProps {
   primaryTab: PrimaryTab;
@@ -47,21 +49,7 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
     }
 
     if (primaryTab === 'jira' && secondaryTab === 'jira-lookup') {
-      return (
-        <div className="panel-content">
-          <div className="panel-header">
-            <h3><img src={jiraLogo} alt="JIRA" className="panel-icon" /> JIRA Lookup</h3>
-          </div>
-          <div className="content-placeholder">
-            <p>Enter a JIRA ID to view ticket details</p>
-            <input 
-              type="text" 
-              placeholder="e.g. OCMUI-1234" 
-              className="jira-search-input"
-            />
-          </div>
-        </div>
-      );
+      return <JiraLookupPlaceholderPanel />;
     }
 
     if (primaryTab === 'github' && secondaryTab === 'my-code-reviews') {
@@ -78,7 +66,7 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
       );
     }
 
-    return <div className="content-placeholder">Select a tab to view content</div>;
+    return <EmptyState message="Select a tab to view content" />;
   };
 
   const getRightPanelContent = () => {
@@ -87,19 +75,10 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
     }
 
     if (primaryTab === 'github') {
-      return (
-        <div className="panel-content">
-          <div className="panel-header">
-            <h3><img src={jiraLogo} alt="JIRA" className="panel-icon" /> Associated JIRAs</h3>
-          </div>
-          <div className="content-placeholder">
-            <p>Click on a PR to see related JIRA tickets</p>
-          </div>
-        </div>
-      );
+      return <AssociatedJirasPlaceholderPanel />;
     }
 
-    return <div className="content-placeholder">Right panel content</div>;
+    return <EmptyState message="Right panel content" />;
   };
 
   return (

@@ -387,7 +387,7 @@ html, body {
 .jira-card-metadata {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .jira-metadata-row {
