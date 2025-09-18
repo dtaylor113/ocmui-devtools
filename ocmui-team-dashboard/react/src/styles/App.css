@@ -1,0 +1,410 @@
+/* ===== RESET & BASE STYLES ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: #0a0a0a;
+  color: #e5e7eb;
+  line-height: 1.6;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+.app {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+}
+
+/* ===== HEADER STYLES ===== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  min-height: 60px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.logo-text {
+  color: #e74c3c;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+}
+
+.settings-btn,
+.timeboard-btn {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.settings-btn:hover,
+.timeboard-btn:hover {
+  background: #3a3a3a;
+  border-color: #555;
+}
+
+/* ===== NAVIGATION STYLES ===== */
+.navigation {
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+}
+
+.primary-tabs {
+  display: flex;
+  padding: 0 24px;
+  background: #1a1a1a;
+}
+
+.primary-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.primary-tab:hover {
+  color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.primary-tab.active {
+  color: #e74c3c;
+  border-bottom-color: #e74c3c;
+}
+
+.tab-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  background: transparent;
+  border-radius: 3px;
+}
+
+/* Make GitHub icons larger in primary tabs */
+.tab-icon[src*="githubIcon"] {
+  width: 38px;
+  height: 38px;
+}
+
+.secondary-tabs {
+  display: flex;
+  padding: 0 24px;
+  background: #0f0f0f;
+  border-bottom: 1px solid #333;
+}
+
+.secondary-tab {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.secondary-tab:hover {
+  color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.secondary-tab.active {
+  color: #60a5fa;
+  border-bottom-color: #60a5fa;
+}
+
+/* ===== SPLIT PANEL STYLES ===== */
+.split-panel {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 140px);
+  background: #0a0a0a;
+  position: relative;
+}
+
+.split-panel.dragging {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.panel {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  margin: 8px 4px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.left-panel {
+  margin-left: 8px;
+}
+
+.right-panel {
+  margin-right: 8px;
+}
+
+.panel-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #0a0a0a;
+  border-bottom: 1px solid #333;
+  min-height: 60px;
+}
+
+.panel-header h3 {
+  color: #e5e7eb;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  background: transparent;
+  border-radius: 3px;
+}
+
+/* Make GitHub icons larger in panel headers */
+.panel-icon[src*="githubIcon"] {
+  width: 35px;
+  height: 35px;
+}
+
+.inline-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 8px;
+  background: transparent;
+  border-radius: 3px;
+}
+
+.last-updated {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.pr-status-toggle {
+  display: flex;
+  gap: 16px;
+}
+
+.pr-status-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #9ca3af;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pr-status-toggle input[type="radio"] {
+  accent-color: #e74c3c;
+}
+
+/* ===== CONTENT PLACEHOLDER ===== */
+.content-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 20px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.content-placeholder p {
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.placeholder-box {
+  background: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.placeholder-item {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  color: #e5e7eb;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.placeholder-item:hover {
+  background: #3a3a3a;
+  border-color: #555;
+}
+
+.placeholder-item:last-child {
+  margin-bottom: 0;
+}
+
+.jira-search-input {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 12px 16px;
+  color: #e5e7eb;
+  font-size: 16px;
+  width: 100%;
+  max-width: 300px;
+  margin-top: 10px;
+}
+
+.jira-search-input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+.jira-search-input::placeholder {
+  color: #6b7280;
+}
+
+/* ===== RESIZE HANDLE ===== */
+.resize-handle {
+  width: 8px;
+  background: transparent;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+
+.resize-handle:hover .resize-handle-line,
+.split-panel.dragging .resize-handle-line {
+  background: #60a5fa;
+  width: 3px;
+}
+
+.resize-handle-line {
+  width: 1px;
+  height: 60px;
+  background: #444;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+/* ===== SCROLLBARS ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .header {
+    padding: 12px 16px;
+  }
+  
+  .logo-text {
+    font-size: 18px;
+  }
+  
+  .primary-tabs,
+  .secondary-tabs {
+    padding: 0 16px;
+  }
+  
+  .primary-tab {
+    padding: 12px 16px;
+  }
+  
+  .secondary-tab {
+    padding: 10px 16px;
+  }
+}
