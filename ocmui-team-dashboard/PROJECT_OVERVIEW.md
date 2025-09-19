@@ -265,15 +265,102 @@ const html = convertAdfToHtml(adfDocument);
 
 ---
 
+## 🖼️ Image Handling Implementation
+
+### **Current Status**: ✅ **IMPLEMENTED** - Smart Image Handling System
+
+A sophisticated **image handling system** has been implemented to provide the best possible user experience given platform security constraints.
+
+### **System Architecture**:
+
+#### **Backend Image Caching Infrastructure** ✅:
+```
+ocmui-team-dashboard/
+├── images/
+│   ├── github/          # Hash-named cached GitHub images
+│   └── jira/           # Hash-named cached JIRA images  
+├── server/
+│   └── index.js        # Image caching endpoints
+└── react/src/utils/
+    └── formatting.ts   # Smart image processing logic
+```
+
+#### **Smart GitHub Image Processing** ✅:
+- **`user-attachments/assets` URLs**: Converted to styled clickable links (🖼️ icon)
+  - *Reason*: These are placeholder URLs that always return 404
+  - *Result*: Clean fallback that opens image in GitHub web interface
+- **Real GitHub Images** (avatars, public images): Cached and displayed inline
+  - *Process*: Server-side download → Local storage → Direct display
+  - *Examples*: `avatars.githubusercontent.com`, `github.githubassets.com`
+- **Smart Detection**: Automatically identifies image type and applies appropriate handling
+
+#### **JIRA Image Handling** ✅:
+- **Direct Display**: Uses JIRA attachment URLs for immediate image rendering
+- **Full Resolution**: Prioritizes `attachment.url` over thumbnails  
+- **No Caching Needed**: JIRA authentication works reliably for direct display
+- **Fallback Links**: For filename-only references, links to JIRA ticket
+
+#### **Technical Implementation**:
+
+**Frontend Components**:
+- `PRMoreInfo.tsx`: Uses async `parseGitHubMarkdownWithCaching()` with smart image processing
+- `JiraMoreInfo.tsx`: Uses sync `parseJiraMarkdownSync()` with direct image display
+- Progressive loading states during GitHub image processing
+
+**Backend Endpoints**:
+- `POST /api/cache-github-image`: Downloads and caches GitHub images
+- `POST /api/cache-jira-image`: Downloads and caches JIRA images (when needed)
+- `GET /images/*`: Static serving of cached images
+
+**Smart Processing Logic**:
+```typescript
+// Different handling per image type
+if (imageUrl.includes('user-attachments/assets')) {
+  // Placeholder → Clickable link
+} else if (imageUrl.includes('avatars.githubusercontent.com')) {
+  // Real image → Cache and display
+} else {
+  // External → Attempt cache, fallback gracefully
+}
+```
+
+### **Current Implementation Status**:
+
+#### **✅ Successfully Working**:
+- **Real GitHub Images**: Cached and displayed inline (avatars, public assets)
+- **JIRA Images**: Direct display using full-size attachment URLs
+- **Smart Fallbacks**: Placeholder URLs converted to styled clickable links
+- **Hash-based Caching**: Prevents filename conflicts and enables permanent storage
+
+#### **🔗 Clickable Link Fallbacks**:
+- **GitHub Placeholder URLs** (`user-attachments/assets`): Clean 🖼️ buttons
+- **Failed Downloads**: Graceful fallback to external links
+- **Visual Consistency**: GitHub-styled buttons that integrate with app design
+
+#### **🏗️ Technical Architecture**:
+- **Backend Caching**: `/api/cache-github-image` and `/api/cache-jira-image` endpoints
+- **Static Serving**: Express static middleware for cached images
+- **Smart Processing**: `processGitHubImagesSmartly()` function with type detection
+- **Error Handling**: Progressive enhancement with multiple fallback layers
+
+### **Known Limitations & Design Decisions**:
+- **GitHub PR Images**: Most appear as clickable links due to platform security (expected behavior)
+- **JWT Token Management**: GitHub's temporary tokens cannot be generated via API
+- **Placeholder URL Detection**: Smart system identifies and handles different URL types appropriately
+- **Performance Optimization**: Real images cached permanently, placeholders handled efficiently
+
+---
+
 ## 📊 Migration Progress Tracking
 
-### **Completion Status**: ~60% Complete
+### **Completion Status**: ~65% Complete
 
 | Component Category | Progress | Details |
 |-------------------|----------|---------|
 | **Core Infrastructure** | ✅ 100% | Settings, navigation, layouts, API setup |
-| **JIRA Integration** | ✅ 90% | Sprint JIRAs complete, Lookup missing |
-| **GitHub Integration** | 🔸 30% | API ready, UI panels missing |
+| **JIRA Integration** | ✅ 95% | Sprint JIRAs complete with image handling, Lookup missing |
+| **GitHub Integration** | 🔸 40% | API ready, basic UI with image handling, panels missing |
+| **Image Handling** | ✅ 100% | Smart system: real images cached inline, placeholders as clickable links |
 | **Cross-Platform Features** | ❌ 0% | Associated content linking |
 
 ### **Immediate Next Steps**:
@@ -308,6 +395,78 @@ const html = convertAdfToHtml(adfDocument);
 1. **Port 3017 Conflicts**: Backend server must be running for React app APIs
 2. **GitHub Rate Limits**: 30 requests/minute for search API - handled with caching
 3. **JIRA Authentication**: Requires Red Hat JIRA personal access tokens
-4. **CSS Specificity**: Some collapsible sections had selection effects (now fixed)
+4. **GitHub PR Image Placeholders**: Most PR images show as styled clickable links due to GitHub's security model (placeholder URLs + JWT restrictions) - this is the optimal solution given API constraints
+5. **Image Caching Storage**: Cached images accumulate in `/images/` directory (cleanup system available as future enhancement)
 
-This overview should provide complete context for any AI/LLM working on this project. The React migration is well-architected and partially complete, with clear patterns for finishing the remaining features.
+---
+
+## 🎯 Next Steps & Project Goals
+
+### **Phase 1: Complete Core Features** (High Priority)
+
+#### **1. JIRA Lookup UI Implementation** 🔥 **CRITICAL**
+- **Status**: Missing entirely - core functionality gap
+- **Implementation**: Create search interface matching plain JS app (`src/components/jira.js`)
+- **Components Needed**: 
+  - Search input with typeahead/autocomplete
+  - Results display with ticket summaries
+  - Integration with existing `useJiraTicket` hook
+- **Priority**: **HIGHEST** - essential missing feature
+
+#### **2. GitHub Integration Completion** 🔸 **IMPORTANT**  
+- **My Code Reviews Panel**: Port from `src/components/reviews.js`
+- **My PRs Panel**: Port from `src/components/myPrs.js` 
+- **Status**: APIs ready, UI components missing
+- **Complexity**: Medium - follow existing patterns
+
+#### **3. Cross-Platform Association Features** 🔗 **MEDIUM**
+- **JIRA ↔ PR Linking**: Smart detection and bidirectional associations
+- **Associated Content Panels**: Show related items across platforms
+- **Status**: 0% complete, requires analysis of existing plain JS implementation
+
+### **Phase 2: System Optimization** (Medium Priority)
+
+#### **4. Image System Enhancements** 📸 **NICE TO HAVE**
+- **Cleanup System**: Automatic removal of old cached images  
+- **Storage Management**: Size limits and cache eviction policies
+- **Performance**: Lazy loading for large image sets
+- **Analytics**: Track cache hit rates and storage usage
+
+#### **5. Performance & UX Improvements** ⚡ **ONGOING**
+- **Loading States**: Enhanced skeleton loaders and progressive rendering
+- **Error Handling**: More graceful error boundaries and retry mechanisms  
+- **Mobile Optimization**: Responsive design improvements
+- **Accessibility**: ARIA labels and keyboard navigation
+
+### **Phase 3: Advanced Features** (Lower Priority)
+
+#### **6. Developer Experience** 🛠️ **FUTURE**
+- **Testing Suite**: Unit and integration tests for React components
+- **Documentation**: Component documentation and usage examples
+- **CI/CD Pipeline**: Automated testing and deployment
+- **Code Quality**: ESLint rules and automated code formatting
+
+#### **7. Feature Enhancements** 🚀 **FUTURE**
+- **Search & Filtering**: Advanced filtering across JIRA and GitHub content
+- **Notifications**: Real-time updates for PR/JIRA changes
+- **Customization**: User preferences for layouts and data display
+- **Export Features**: Data export and reporting capabilities
+
+### **Immediate Action Items**
+
+1. **Start with JIRA Lookup** - Most critical missing piece
+2. **Reference existing plain JS implementation** in `/src/components/jira.js`
+3. **Follow established patterns** from other React components
+4. **Test incrementally** using the shared backend server
+5. **Maintain TypeScript typing** and React Query patterns
+
+### **Technical Debt & Maintenance**
+
+- **Image Cache Management**: Implement cleanup for long-term stability
+- **API Rate Limit Optimization**: Improve caching strategies
+- **Component Refactoring**: DRY principle improvements where beneficial
+- **Bundle Size Optimization**: Code splitting for better performance
+
+---
+
+**This overview provides complete context for any AI/LLM working on this project. The React migration has solid foundations with sophisticated image handling, and clear priorities for completing the remaining features.**

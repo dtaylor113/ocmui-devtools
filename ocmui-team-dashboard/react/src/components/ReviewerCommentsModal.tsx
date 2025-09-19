@@ -43,19 +43,21 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
           'Accept': 'application/vnd.github.v3+json'
         };
 
-        // Fetch both reviews and comments in parallel (same as old JS app)
-        const [reviewsResponse, commentsResponse] = await Promise.all([
+        // Fetch reviews, general comments, and inline review comments in parallel
+        const [reviewsResponse, commentsResponse, reviewCommentsResponse] = await Promise.all([
           fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/reviews`, { headers }),
-          fetch(`https://api.github.com/repos/${repoName}/issues/${prNumber}/comments`, { headers })
+          fetch(`https://api.github.com/repos/${repoName}/issues/${prNumber}/comments`, { headers }),
+          fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/comments`, { headers }) // Inline review comments
         ]);
 
-        if (!reviewsResponse.ok || !commentsResponse.ok) {
-          throw new Error(`GitHub API error: reviews=${reviewsResponse.status}, comments=${commentsResponse.status}`);
+        if (!reviewsResponse.ok || !commentsResponse.ok || !reviewCommentsResponse.ok) {
+          throw new Error(`GitHub API error: reviews=${reviewsResponse.status}, comments=${commentsResponse.status}, reviewComments=${reviewCommentsResponse.status}`);
         }
 
-        const [reviews, generalComments] = await Promise.all([
+        const [reviews, generalComments, reviewComments] = await Promise.all([
           reviewsResponse.json(),
-          commentsResponse.json()
+          commentsResponse.json(),
+          reviewCommentsResponse.json()
         ]);
 
         // Combine review comments and general comments for this reviewer
@@ -85,6 +87,20 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
             });
           });
 
+        // Add inline review comments (threaded comments on specific code lines)
+        reviewComments
+          .filter((comment: any) => comment.user?.login === reviewer && comment.body && comment.body.trim())
+          .forEach((comment: any) => {
+            // Add context about which file/line this comment is on
+            const contextInfo = comment.path ? ` (${comment.path}:${comment.line || comment.original_line})` : '';
+            allComments.push({
+              body: comment.body + (contextInfo ? `\n\n*On file: \`${comment.path}\`*` : ''),
+              submitted_at: comment.created_at,
+              state: 'inline_comment', // Mark as inline review comment
+              type: 'comment'
+            });
+          });
+
         // Sort by date (newest first)
         allComments.sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime());
 
@@ -106,6 +122,7 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
       'approved': '✅',
       'changes_requested': '❌',
       'commented': '💬',
+      'inline_comment': '📝',
       'review_requested': '📝',
       'dismissed': '⏸️'
     };
@@ -117,6 +134,7 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
       'approved': 'Approved',
       'changes_requested': 'Changes Requested',
       'commented': 'Comment',
+      'inline_comment': 'Code Review Comment',
       'review_requested': 'Review Requested',
       'dismissed': 'Dismissed'
     };

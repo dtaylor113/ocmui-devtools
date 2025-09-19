@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { GitHubReviewer } from '../hooks/useApiQueries';
 import ReviewerCommentsModal from './ReviewerCommentsModal';
+import MoreInfoSection from './MoreInfoSection';
+import PRMoreInfo from './PRMoreInfo';
 
 // Use the GitHubPR interface from useApiQueries (via props)
 interface GitHubPR {
@@ -9,6 +11,7 @@ interface GitHubPR {
   title: string;
   state: string;
   url: string;
+  html_url: string;  // Web page URL for GitHub PR
   created_at: string;
   updated_at: string;
   user?: {
@@ -125,7 +128,7 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
       {/* PR Title as clickable link */}
       <div className="pr-card-title-section">
         <a 
-          href={pr.url} 
+          href={pr.html_url} 
           target="_blank" 
           rel="noopener noreferrer"
           className="pr-card-title-link"
@@ -147,34 +150,39 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
         <span className="pr-badge pr-checks">
           CHECKS: PASSED
         </span>
+        {/* Author and date info */}
+        <span className="pr-card-author-info">
+          By {pr.user?.login || 'Unknown user'} • Created: {formatDate(pr.created_at)}
+        </span>
       </div>
       
-      {/* Author and date info */}
-      <div className="pr-card-author-info">
-        <span>By {pr.user?.login || 'Unknown user'} • Created: {formatDate(pr.created_at)}</span>
-      </div>
-      
-      {/* Reviewers section - placeholder for now */}
+      {/* Reviewers section */}
       <div className="pr-card-reviewers">
         <span className="pr-reviewers-label">Reviewers:</span>
-        <p className="pr-reviewers-help">* you can click on certain Reviewers badges to see comments</p>
-        <div className="pr-reviewers-badges">
-          {pr.reviewers && pr.reviewers.length > 0 ? (
-            pr.reviewers.map((reviewer) => (
-              <span 
-                key={reviewer.username}
-                className={`reviewer-badge ${getReviewerBadgeClass(reviewer)} ${reviewer.hasComments ? 'clickable-reviewer' : ''}`} 
-                onClick={reviewer.hasComments ? (e) => handleReviewerClick(e, reviewer.username) : undefined}
-                title={`${reviewer.username}${reviewer.isCurrentUser ? ' (You)' : ''}: ${getReviewerStateText(reviewer.state)}${reviewer.hasComments ? ' - Click to view comments' : ''}`}
-              >
-                {getReviewerStateIcon(reviewer.state)} {reviewer.username}{reviewer.isCurrentUser ? ' (You)' : ''}
-              </span>
-            ))
-          ) : (
-            <span className="reviewer-badge reviewer-none">No reviewers assigned</span>
-          )}
-        </div>
+        {pr.reviewers && pr.reviewers.length > 0 ? (
+          pr.reviewers.map((reviewer) => (
+            <span 
+              key={reviewer.username}
+              className={`reviewer-badge ${getReviewerBadgeClass(reviewer)} ${reviewer.hasComments ? 'clickable-reviewer' : ''}`} 
+              onClick={reviewer.hasComments ? (e) => handleReviewerClick(e, reviewer.username) : undefined}
+              title={`${reviewer.username}${reviewer.isCurrentUser ? ' (You)' : ''}: ${getReviewerStateText(reviewer.state)}${reviewer.hasComments ? ' - Click to view comments' : ''}`}
+            >
+              {getReviewerStateIcon(reviewer.state)} {reviewer.username}{reviewer.isCurrentUser ? ' (You)' : ''}
+            </span>
+          ))
+        ) : (
+          <span className="reviewer-badge reviewer-none">No reviewers assigned</span>
+        )}
       </div>
+      
+      {/* Description Section */}
+      <MoreInfoSection 
+        title="Description"
+        isExpandedByDefault={false}
+        className="pr-more-info"
+      >
+        <PRMoreInfo repoName={getRepoName()} prNumber={pr.number} />
+      </MoreInfoSection>
       
       {/* Reviewer Comments Modal */}
       {selectedReviewer && (

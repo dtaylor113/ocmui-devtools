@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSettings } from '../contexts/SettingsContext';
+import type { GitHubComment } from '../utils/formatting';
 
 // Query keys for different data types
 export const queryKeys = {
@@ -7,6 +8,7 @@ export const queryKeys = {
   jiraTicket: (jiraId: string) => ['jira', 'ticket', jiraId] as const,
   myCodeReviews: ['github', 'code-reviews'] as const,
   myPRs: (status: 'open' | 'closed') => ['github', 'my-prs', status] as const,
+  prConversation: (repoName: string, prNumber: number) => ['github', 'pr-conversation', repoName, prNumber] as const,
 };
 
 // Types for our API responses
@@ -38,6 +40,7 @@ interface GitHubPR {
   title: string;
   state: string;
   url: string;
+  html_url: string;  // Web page URL for GitHub PR
   created_at: string;
   updated_at: string;
   user: {
@@ -73,6 +76,11 @@ interface MyPRsResponse {
   success: boolean;
   pullRequests: GitHubPR[];
   total: number;
+}
+
+interface PRConversationResponse {
+  description: string;
+  comments: GitHubComment[];
 }
 
 // API fetch functions
@@ -375,6 +383,84 @@ export const enhancePRsWithReviewers = async (prs: GitHubPR[], githubToken: stri
   return enhanced;
 };
 
+const fetchPRConversation = async (repoName: string, prNumber: number, githubToken: string): Promise<PRConversationResponse> => {
+  console.log(`🔍 fetchPRConversation starting for ${repoName}#${prNumber}`);
+  
+  const headers = {
+    'Authorization': `Bearer ${githubToken}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'User-Agent': 'OCMUI-Team-Dashboard'
+  };
+  
+  try {
+    // Fetch ALL comment types: PR details, reviews, general comments, and inline review comments
+    const [prResponse, reviewsResponse, commentsResponse, reviewCommentsResponse] = await Promise.all([
+      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}`, { headers }),
+      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/reviews`, { headers }), // ✅ ADDED: PR reviews
+      fetch(`https://api.github.com/repos/${repoName}/issues/${prNumber}/comments`, { headers }),
+      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/comments`, { headers }) // Inline review comments
+    ]);
+    
+    if (!prResponse.ok || !reviewsResponse.ok || !commentsResponse.ok || !reviewCommentsResponse.ok) {
+      throw new Error(`Failed to fetch PR conversation: ${prResponse.status}/${reviewsResponse.status}/${commentsResponse.status}/${reviewCommentsResponse.status}`);
+    }
+    
+    const prData = await prResponse.json();
+    const reviews = await reviewsResponse.json();
+    const generalComments = await commentsResponse.json();
+    const reviewComments = await reviewCommentsResponse.json();
+    
+    // Combine ALL comment types: reviews, general comments, and inline review comments
+    const allComments = [
+      // 1. PR Reviews (high-level review comments like "Changes requested", "Approved")
+      ...reviews
+        .filter((review: any) => review.body && review.body.trim()) // Only reviews with actual content
+        .map((review: any) => ({
+          ...review,
+          comment_type: 'review',
+          created_at: review.submitted_at, // Reviews use submitted_at instead of created_at
+          body: `**${review.state.toUpperCase()} Review by @${review.user?.login}**\n\n${review.body}`,
+          user: review.user,
+          id: `review-${review.id}` // Prefix to avoid ID conflicts
+        })),
+      
+      // 2. General PR comments (main conversation thread)
+      ...generalComments.map((comment: any) => ({
+        ...comment,
+        comment_type: 'general',
+        body: `**@${comment.user?.login}** commented:\n\n${comment.body}`
+      })),
+      
+      // 3. Inline review comments (specific code line comments)
+      ...reviewComments.map((comment: any) => ({
+        ...comment,
+        comment_type: 'inline',
+        // Enhanced context for inline comments
+        body: `**@${comment.user?.login}** commented on code:\n\n${comment.body}` + 
+              (comment.path ? `\n\n*📄 File: \`${comment.path}\`${comment.line ? ` (Line ${comment.line})` : ''}*` : '')
+      }))
+    ];
+    
+    // Sort ALL comments chronologically by creation/submission date
+    allComments.sort((a: any, b: any) => {
+      const dateA = new Date(a.created_at || a.submitted_at).getTime();
+      const dateB = new Date(b.created_at || b.submitted_at).getTime();
+      return dateA - dateB; // Oldest first for chronological conversation flow
+    });
+    
+    console.log(`✅ fetchPRConversation completed for ${repoName}#${prNumber}: ${prData.body?.length || 0} chars description, ${allComments?.length || 0} total comments (${reviews.filter((r: any) => r.body?.trim()).length} reviews + ${generalComments?.length || 0} general + ${reviewComments?.length || 0} inline)`);
+    
+    return {
+      description: prData.body || '',
+      comments: allComments || []
+    };
+    
+  } catch (error) {
+    console.error(`❌ Error fetching PR conversation for ${repoName}#${prNumber}:`, error);
+    throw error;
+  }
+};
+
 // Custom hooks for each query
 export const useMySprintJiras = () => {
   const { apiTokens, isConfigured } = useSettings();
@@ -434,6 +520,24 @@ export const useMyPRs = (status: 'open' | 'closed' = 'open') => {
     queryFn: () => fetchMyPRs(apiTokens.githubUsername, apiTokens.github, status),
     enabled: isConfigured && !!apiTokens.githubUsername && !!apiTokens.github,
     refetchInterval: 4 * 60 * 1000, // Every 4 minutes
+  });
+};
+
+export const usePRConversation = (repoName: string, prNumber: number) => {
+  const { apiTokens } = useSettings();
+  
+  console.log(`🔍 usePRConversation hook called:`, {
+    repoName,
+    prNumber,
+    hasGithubToken: !!apiTokens.github,
+    enabled: !!repoName && !!prNumber && !!apiTokens.github
+  });
+
+  return useQuery({
+    queryKey: queryKeys.prConversation(repoName, prNumber),
+    queryFn: () => fetchPRConversation(repoName, prNumber, apiTokens.github),
+    enabled: !!repoName && !!prNumber && !!apiTokens.github,
+    staleTime: 5 * 60 * 1000, // 5 minutes for PR conversation data
   });
 };
 

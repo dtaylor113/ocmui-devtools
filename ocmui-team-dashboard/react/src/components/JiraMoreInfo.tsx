@@ -1,11 +1,19 @@
 import React from 'react';
 import { useJiraTicket } from '../hooks/useApiQueries';
-import { parseJiraMarkdown } from '../utils/formatting';
+import { parseJiraMarkdownSync } from '../utils/formatting';
 
 interface JiraComment {
   author: string;
   body: string;
   created: string;
+}
+
+interface JiraAttachment {
+  url: string;
+  thumbnail: string;
+  filename: string;
+  mimeType: string;
+  size: number;
 }
 
 interface JiraTicketDetail {
@@ -19,6 +27,7 @@ interface JiraTicketDetail {
   reporter: string;
   created: string;
   comments: JiraComment[];
+  attachments: Record<string, JiraAttachment>; // Map filename to attachment details
 }
 
 interface JiraMoreInfoProps {
@@ -72,29 +81,18 @@ const JiraMoreInfo: React.FC<JiraMoreInfoProps> = ({ jiraKey }) => {
 
   return (
     <div className="more-info-container">
-      {/* Description Section */}
-      <div className="more-info-section">
-        <h4 className="more-info-section-title">Description</h4>
-        <div className="scrollable-content description-content">
+      {/* Description content without title */}
+      <div className="scrollable-content description-content">
           {ticket.description ? (
-            (() => {
-              const parsedHtml = parseJiraMarkdown(ticket.description);
-              // Debug list processing
-              if (ticket.description.includes('# ')) {
-                console.log('📋 Original description with lists:', ticket.description.substring(0, 400));
-                console.log('🔄 Parsed HTML result:', parsedHtml.substring(0, 400));
-              }
-              return (
-                <div 
-                  className="markdown-container jira-description"
-                  dangerouslySetInnerHTML={{ __html: parsedHtml }}
-                />
-              );
-            })()
+            <div 
+              className="markdown-container jira-description"
+              dangerouslySetInnerHTML={{ 
+                __html: parseJiraMarkdownSync(ticket.description, jiraKey, ticket.attachments)
+              }}
+            />
           ) : (
             <div className="no-content">No description provided</div>
           )}
-        </div>
       </div>
 
       {/* Comments Section */}
@@ -112,12 +110,7 @@ const JiraMoreInfo: React.FC<JiraMoreInfoProps> = ({ jiraKey }) => {
                   <div 
                     className="markdown-container comment-body"
                     dangerouslySetInnerHTML={{ 
-                      __html: (() => {
-                        const parsedHtml = parseJiraMarkdown(comment.body || '');
-                        // Debug: Rendering comment with markdown-container 
-                        console.log('💬 Rendering JIRA comment with markdown-container class');
-                        return parsedHtml;
-                      })()
+                      __html: parseJiraMarkdownSync(comment.body || '', jiraKey, ticket.attachments)
                     }}
                   />
                 </div>

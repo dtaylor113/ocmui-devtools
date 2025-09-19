@@ -1,5 +1,5 @@
 import React from 'react';
-import CollapsibleSection from './CollapsibleSection';
+import MoreInfoSection from './MoreInfoSection';
 import JiraMoreInfo from './JiraMoreInfo';
 
 interface JiraTicket {
@@ -141,14 +141,14 @@ const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDe
         </div>
       </div>
 
-      {/* More Info Section */}
-      <CollapsibleSection 
-        title="More Info."
+      {/* Description Section */}
+      <MoreInfoSection 
+        title="Description"
         isExpandedByDefault={expandMoreInfoByDefault}
         className="jira-more-info"
       >
         <JiraMoreInfo jiraKey={ticket.key} />
-      </CollapsibleSection>
+      </MoreInfoSection>
     </div>
   );
 };

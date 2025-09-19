@@ -10,6 +10,7 @@ interface GitHubPR {
   title: string;
   state: string;
   url: string;
+  html_url: string;  // Web page URL for GitHub PR
   created_at: string;
   updated_at: string;
   user?: {
@@ -96,6 +97,7 @@ const AssociatedPRsPanel: React.FC<AssociatedPRsPanelProps> = ({ selectedTicket 
           <img src={githubIcon} alt="GitHub" className="panel-icon" /> 
           {selectedTicket ? `PRs associated with ${selectedTicket}` : 'Associated PRs'}
         </h3>
+        <p className="pr-reviewers-help">* you can click on certain Reviewers badges to see comments</p>
       </div>
       
       <div className="panel-body">

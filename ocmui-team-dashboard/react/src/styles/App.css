@@ -170,6 +170,8 @@ html, body {
   height: calc(100vh - 140px);
   background: #0a0a0a;
   position: relative;
+  /* Ensure content has breathing room at bottom */
+  margin-bottom: 20px;
 }
 
 .split-panel.dragging {
@@ -585,16 +587,24 @@ html, body {
   color: #9ca3af;
 }
 
+/* Remove margin when author info is inside badges container (inline layout) */
+.pr-card-badges .pr-card-author-info {
+  margin-bottom: 0;
+}
+
 .pr-card-reviewers {
   margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .pr-reviewers-label {
-  display: block;
   font-size: 13px;
   color: #9ca3af;
-  margin-bottom: 4px;
   font-weight: 600;
+  flex-shrink: 0;  /* Prevent label from shrinking */
 }
 
 .pr-reviewers-help {
@@ -604,11 +614,7 @@ html, body {
   font-style: italic;
 }
 
-.pr-reviewers-badges {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
+/* .pr-reviewers-badges - No longer used, badges are now inline with label */
 
 .reviewer-badge {
   font-size: 12px;
@@ -764,7 +770,13 @@ html, body {
   overflow-y: auto;
   flex: 1;
   min-height: 200px;
-  max-height: calc(80vh - 80px);
+  max-height: calc(80vh - 100px); /* Increased space for header */
+}
+
+.reviewer-comments-modal .comments-list {
+  max-height: calc(80vh - 120px); /* Ensure scrollable container */
+  overflow-y: auto;
+  padding: 16px;
 }
 
 .comments-list {
@@ -937,9 +949,14 @@ html, body {
   background: rgba(15, 15, 15, 0.8);
   border: 1px solid #333;
   border-radius: 6px;
-  max-height: 200px;
   overflow-y: auto;
   padding: 12px;
+  padding-bottom: 20px; /* Extra bottom padding for better scrolling visibility */
+}
+
+/* Apply max-height only when NOT combined with description-content (which has its own resize behavior) */
+.scrollable-content:not(.description-content) {
+  max-height: 200px;
 }
 
 .scrollable-content::-webkit-scrollbar {
@@ -967,21 +984,15 @@ html, body {
   padding: 20px;
 }
 
-/* Description Content */
+/* Description Content - Fixed 20 lines with scrollbars */
 .description-content {
-  max-height: 262px; /* Increased by ~5 lines (112px) */
-  resize: vertical; /* Allow user to resize vertically by dragging corner */
-  overflow: auto;
+  height: 20em; /* 20 lines of text (1em per line) */
+  max-height: 20em; /* Fixed height, no resizing */
+  overflow-y: auto; /* Scroll when content overflows */
+  resize: none; /* Remove all resize functionality */
 }
 
 /* Legacy classes maintained for backward compatibility - styles now handled by .markdown-container */
-.jira-description {
-  /* Styles moved to .markdown-container system above */
-}
-
-.jira-description p {
-  /* Styles moved to .markdown-container system above */
-}
 
 /* =================================================================
    MARKDOWN CONTAINER SYSTEM
@@ -1012,11 +1023,6 @@ html, body {
 /* Debug styling removed - colors are now working */
 
 /* HIGH-SPECIFICITY FIX: Force all colored spans to use their inline colors */
-div.markdown-container.jira-description span[style*="color"],
-div.markdown-container.comment-body span[style*="color"],
-div.markdown-container span[style*="color"] {
-  /* Extract and use the actual color from the style attribute - but we need specific colors */
-}
 
 /* Color overrides removed - using official Atlassian library which handles colors correctly */
 
@@ -1078,8 +1084,15 @@ div.markdown-container span[style*="color"] {
   border-radius: 6px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 13px;
-  color: #f85149;
+  color: #79c0ff;  /* GitHub-style blue code color */
   border: 1px solid rgba(110, 118, 129, 0.2);
+}
+
+/* Specific styling for PR description inline code */
+.pr-description code {
+  background: rgba(240, 246, 252, 0.08);
+  color: #79c0ff;
+  border: 1px solid rgba(240, 246, 252, 0.15);
 }
 
 .markdown-container pre {
@@ -1203,6 +1216,219 @@ div.markdown-container span[style*="color"] {
    ================================================================= */
 /* No specific color overrides needed - inline styles work by default within isolated container */
 
+/* ===== GITHUB COMMENT STYLES ===== */
+.github-comment {
+  border-bottom: 1px solid #333;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.github-comment:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.github-comment .comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.github-comment .comment-author {
+  color: #60a5fa;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.github-comment .comment-date {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.github-comment .comment-body {
+  color: #e5e7eb;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+/* ===== ENHANCED CONVERSATION TIMELINE STYLES ===== */
+
+.conversation-timeline {
+  position: relative;
+}
+
+/* Different comment type styling */
+.github-comment.comment-review {
+  border-left: 3px solid #60a5fa;
+  background: rgba(96, 165, 250, 0.05);
+  margin-bottom: 16px;
+}
+
+.github-comment.comment-inline {
+  border-left: 3px solid #fbbf24;
+  background: rgba(251, 191, 36, 0.05);
+  margin-left: 16px; /* Indent inline comments slightly */
+}
+
+.github-comment.comment-general {
+  border-left: 3px solid #6b7280;
+  background: rgba(107, 114, 128, 0.05);
+}
+
+/* Review state indicators */
+.review-state {
+  margin-left: 8px;
+  font-size: 14px;
+}
+
+.review-state-approved {
+  color: #10b981;
+}
+
+.review-state-changes-requested {
+  color: #ef4444;
+}
+
+.review-state-commented {
+  color: #60a5fa;
+}
+
+/* Inline comment indicator */
+.inline-comment-indicator {
+  margin-left: 8px;
+  color: #fbbf24;
+  font-size: 12px;
+}
+
+/* Enhanced comment meta styling */
+.comment-meta {
+  display: flex;
+  align-items: center;
+}
+
+/* ===== JIRA IMAGE STYLES ===== */
+
+.jira-image-container {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.jira-image-container.jira-image-left {
+  text-align: left;
+}
+
+.jira-image-container.jira-image-right {
+  text-align: right;
+}
+
+.jira-image-container.jira-image-center {
+  text-align: center;
+}
+
+.jira-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: #1a1a1a;
+  border: 1px solid #333;
+}
+
+.jira-thumbnail {
+  max-width: 150px;
+  max-height: 150px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.jira-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+/* Handle JIRA image loading states */
+.jira-image[src*="secure/attachment"] {
+  /* JIRA images now working properly - clean styling */
+  border: none;
+  background: transparent;
+}
+
+.jira-image:not([src]),
+.jira-image[src=""] {
+  /* Placeholder for missing images */
+  display: inline-block;
+  width: 200px;
+  height: 100px;
+  background: rgba(107, 114, 128, 0.2);
+  border: 2px dashed #6b7280;
+  border-radius: 4px;
+  position: relative;
+}
+
+.jira-image:not([src])::after,
+.jira-image[src=""]::after {
+  content: "🖼️ JIRA Image";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* ===== GITHUB IMAGE LINK STYLES ===== */
+
+.github-image-link {
+  display: inline-block;
+  margin: 4px 8px 4px 0;
+  padding: 4px 8px;
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #58a6ff !important;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.github-image-link:hover {
+  background-color: #21262d;
+  border-color: #58a6ff;
+  text-decoration: none;
+}
+
+.github-image-link:visited {
+  color: #bc8cff !important;
+}
+
+/* ===== GLOBAL BOTTOM SPACING FIXES ===== */
+
+/* Ensure last child elements in main containers have bottom spacing */
+.panel-body > *:last-child,
+.more-info-container > *:last-child,
+.comments-list > *:last-child {
+  margin-bottom: 16px !important;
+}
+
+/* Extra bottom spacing for scrollable areas to prevent cutoff */
+.panel-body,
+.scrollable-content,
+.conversation-timeline {
+  scroll-padding-bottom: 20px; /* Smooth scrolling with padding */
+}
+
+/* Apply same markdown styling to GitHub content */
+.pr-description {
+  color: #c9d1d9;
+  line-height: 1.5;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  word-wrap: break-word;
+}
+
 /* Removed - now handled by .markdown-container */
 
 .jira-description h1,
@@ -1242,7 +1468,7 @@ div.markdown-container span[style*="color"] {
   border-radius: 6px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 13px;
-  color: #f85149;
+  color: #79c0ff;  /* GitHub-style blue code color - matches PR description */
   border: 1px solid rgba(110, 118, 129, 0.2);
 }
 
@@ -1390,7 +1616,7 @@ div.markdown-container span[style*="color"] {
   border-radius: 6px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 13px;
-  color: #f85149;
+  color: #79c0ff;  /* GitHub-style blue code color - consistent across all code */
   border: 1px solid rgba(110, 118, 129, 0.2);
 }
 
@@ -1565,12 +1791,14 @@ div.markdown-container span[style*="color"] {
 .panel-body {
   flex: 1;
   padding: 20px;
+  padding-bottom: 40px; /* Extra bottom padding to prevent content cutoff */
   overflow-y: auto;
 }
 
 .jira-cards-container {
   display: flex;
   flex-direction: column;
+  padding-bottom: 20px; /* Extra space at bottom of card container */
 }
 
 .sprint-info {
