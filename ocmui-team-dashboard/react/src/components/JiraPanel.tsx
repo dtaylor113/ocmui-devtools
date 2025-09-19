@@ -6,9 +6,10 @@ import jiraLogo from '../assets/jiraLogo.png';
 
 interface JiraPanelProps {
   onTicketSelect?: (ticketKey: string) => void;
+  selectedTicket?: string;
 }
 
-const JiraPanel: React.FC<JiraPanelProps> = ({ onTicketSelect }) => {
+const JiraPanel: React.FC<JiraPanelProps> = ({ onTicketSelect, selectedTicket }) => {
   const { isConfigured } = useSettings();
   const sprintJirasQuery = useMySprintJiras();
   const { data, isLoading, error } = sprintJirasQuery;
@@ -47,6 +48,7 @@ const JiraPanel: React.FC<JiraPanelProps> = ({ onTicketSelect }) => {
                 key={ticket.key}
                 ticket={ticket}
                 onClick={handleTicketClick}
+                isSelected={selectedTicket === ticket.key}
               />
             ))}
             {data.sprintName && (

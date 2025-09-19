@@ -327,7 +327,7 @@ html, body {
 /* ===== JIRA CARD STYLES ===== */
 .jira-card {
   background: rgba(26, 26, 26, 0.8);
-  border: 1px solid #444;
+  border: 2px solid #444;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 12px;
@@ -335,11 +335,9 @@ html, body {
   cursor: pointer;
 }
 
-.jira-card:hover {
-  background: #3a3a3a;
-  border-color: #555;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+.jira-card:hover,
+.jira-card.selected {
+  border-color: #1e40af;
 }
 
 .jira-card:last-child {
@@ -422,15 +420,16 @@ html, body {
 /* ===== PR CARD STYLES ===== */
 .pr-card {
   background: rgba(26, 26, 26, 0.8);
-  border: 1px solid #444;
+  border: 2px solid #444;
   border-radius: 6px;
   padding: 16px;
   margin-bottom: 12px;
   cursor: pointer;
 }
 
-.pr-card:hover {
-  border: 2px solid #1e40af;
+.pr-card:hover,
+.pr-card.selected {
+  border-color: #16a34a;
 }
 
 .pr-card:last-child {
@@ -837,6 +836,723 @@ html, body {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   opacity: 0.9;
+}
+
+/* ===== COLLAPSIBLE SECTION STYLES ===== */
+.collapsible-section {
+  margin-top: 16px;
+  border-top: 1px solid #333;
+}
+
+.collapsible-section-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #e5e7eb;
+  padding: 12px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  /* Prevent text selection but allow hover */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.collapsible-section-header:hover {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.collapsible-section-header:focus {
+  outline: none;
+}
+
+.collapsible-section-header:active {
+  /* Remove persistent active/pressed state */
+  color: #e5e7eb;
+  background: none;
+  border-color: transparent;
+}
+
+.collapsible-section-title {
+  flex: 1;
+  text-align: left;
+}
+
+.collapsible-section-arrow {
+  color: #9ca3af;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.collapsible-section-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.collapsible-section-arrow.collapsed {
+  transform: rotate(0deg);
+}
+
+.collapsible-section-content {
+  padding-bottom: 16px;
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== MORE INFO CONTAINER STYLES ===== */
+.more-info-container {
+  margin-top: 8px;
+}
+
+.more-info-section {
+  margin-bottom: 20px;
+}
+
+.more-info-section:last-child {
+  margin-bottom: 0;
+}
+
+.more-info-section-title {
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.scrollable-content {
+  background: rgba(15, 15, 15, 0.8);
+  border: 1px solid #333;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.scrollable-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.no-content {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Description Content */
+.description-content {
+  max-height: 262px; /* Increased by ~5 lines (112px) */
+  resize: vertical; /* Allow user to resize vertically by dragging corner */
+  overflow: auto;
+}
+
+/* Legacy classes maintained for backward compatibility - styles now handled by .markdown-container */
+.jira-description {
+  /* Styles moved to .markdown-container system above */
+}
+
+.jira-description p {
+  /* Styles moved to .markdown-container system above */
+}
+
+/* =================================================================
+   MARKDOWN CONTAINER SYSTEM
+   Isolated CSS scope for rendering JIRA and GitHub markdown content
+   Prevents style bleeding and provides clean containment
+   ================================================================= */
+
+.markdown-container {
+  /* Simple approach: just ensure inline styles work */
+  color: #c9d1d9;
+  line-height: 1.5;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  word-wrap: break-word;
+}
+
+/* CRITICAL: Force inline color styles to work with maximum specificity */
+.markdown-container span[style*="color"] {
+  /* Use the exact color from the style attribute */
+  color: inherit !important;
+}
+
+.markdown-container span[style*="color:#de350b"] {
+  color: #de350b !important;
+}
+
+/* Debug styling removed - colors are now working */
+
+/* HIGH-SPECIFICITY FIX: Force all colored spans to use their inline colors */
+div.markdown-container.jira-description span[style*="color"],
+div.markdown-container.comment-body span[style*="color"],
+div.markdown-container span[style*="color"] {
+  /* Extract and use the actual color from the style attribute - but we need specific colors */
+}
+
+/* Color overrides removed - using official Atlassian library which handles colors correctly */
+
+/* =================================================================
+   MARKDOWN TYPOGRAPHY - SCOPED TO CONTAINER ONLY
+   ================================================================= */
+
+.markdown-container p {
+  margin: 12px 0;
+  color: #c9d1d9;
+}
+
+.markdown-container p:first-child {
+  margin-top: 0;
+}
+
+.markdown-container p:last-child {
+  margin-bottom: 0;
+}
+
+/* Headers */
+.markdown-container h1,
+.markdown-container h2,
+.markdown-container h3,
+.markdown-container h4,
+.markdown-container h5,
+.markdown-container h6 {
+  color: #f0f6fc;
+  margin: 20px 0 12px 0;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.markdown-container h1 {
+  font-size: 20px;
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 8px;
+}
+
+.markdown-container h2 {
+  font-size: 18px;
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 6px;
+}
+
+.markdown-container h3 { font-size: 16px; }
+.markdown-container h4 { font-size: 15px; }
+.markdown-container h5 { font-size: 14px; }
+.markdown-container h6 { 
+  font-size: 13px; 
+  color: #8b949e;
+  font-weight: 600;
+}
+
+/* Code */
+.markdown-container code {
+  background: rgba(110, 118, 129, 0.15);
+  padding: 2px 5px;
+  border-radius: 6px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  color: #f85149;
+  border: 1px solid rgba(110, 118, 129, 0.2);
+}
+
+.markdown-container pre {
+  background: rgba(110, 118, 129, 0.1);
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 16px 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.markdown-container pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  color: #c9d1d9;
+}
+
+/* Lists */
+.markdown-container ul,
+.markdown-container ol {
+  margin: 12px 0;
+  padding-left: 24px;
+  color: #c9d1d9;
+}
+
+.markdown-container ul {
+  list-style-type: disc;
+}
+
+.markdown-container ol {
+  list-style-type: decimal;
+}
+
+.markdown-container li {
+  display: list-item;
+  margin: 6px 0;
+  line-height: 1.5;
+  color: #c9d1d9;
+}
+
+.markdown-container ul li::marker {
+  color: #8b949e;
+}
+
+.markdown-container ol li::marker {
+  color: #8b949e;
+}
+
+/* Quotes */
+.markdown-container blockquote {
+  border-left: 4px solid #58a6ff;
+  padding: 8px 0 8px 16px;
+  margin: 16px 0;
+  color: #8b949e;
+  font-style: normal;
+  background: rgba(88, 166, 255, 0.05);
+  border-radius: 0 6px 6px 0;
+}
+
+/* Links */
+.markdown-container a {
+  color: #58a6ff;
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.markdown-container a:hover {
+  color: #79c0ff;
+  text-decoration: none;
+  border-bottom-color: #58a6ff;
+}
+
+/* Text formatting */
+.markdown-container strong {
+  font-weight: 700;
+  color: #f0f6fc;
+}
+
+.markdown-container em {
+  font-style: italic;
+  color: #c9d1d9;
+  font-weight: 400;
+}
+
+/* =================================================================
+   JIRA-SPECIFIC ELEMENTS - SCOPED TO CONTAINER
+   ================================================================= */
+
+.markdown-container .jira-panel {
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid #58a6ff;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 16px 0;
+  color: #c9d1d9;
+}
+
+.markdown-container .jira-noformat {
+  background: rgba(110, 118, 129, 0.1);
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 16px 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #c9d1d9;
+  white-space: pre-wrap;
+}
+
+/* =================================================================
+   CRITICAL: INLINE STYLES TAKE PRECEDENCE 
+   This is the key - no overrides, just let inline styles work naturally
+   ================================================================= */
+/* No specific color overrides needed - inline styles work by default within isolated container */
+
+/* Removed - now handled by .markdown-container */
+
+.jira-description h1,
+.jira-description h2,
+.jira-description h3,
+.jira-description h4,
+.jira-description h5,
+.jira-description h6 {
+  color: #f0f6fc;
+  margin: 20px 0 12px 0;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.jira-description h1 { 
+  font-size: 20px; 
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 8px;
+}
+.jira-description h2 { 
+  font-size: 18px;
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 6px;
+}
+.jira-description h3 { font-size: 16px; }
+.jira-description h4 { font-size: 15px; }
+.jira-description h5 { font-size: 14px; }
+.jira-description h6 { 
+  font-size: 13px; 
+  color: #8b949e;
+  font-weight: 600;
+}
+
+.jira-description code {
+  background: rgba(110, 118, 129, 0.15);
+  padding: 2px 5px;
+  border-radius: 6px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  color: #f85149;
+  border: 1px solid rgba(110, 118, 129, 0.2);
+}
+
+.jira-description pre {
+  background: rgba(110, 118, 129, 0.1);
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 16px 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.jira-description pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  color: #c9d1d9;
+}
+
+.jira-description ul, .jira-description ol {
+  margin: 12px 0;
+  padding-left: 24px;
+  color: #c9d1d9;
+}
+
+.jira-description li {
+  margin: 6px 0;
+  line-height: 1.5;
+  color: #c9d1d9;
+}
+
+.jira-description ol {
+  list-style-type: decimal;
+  counter-reset: none;
+}
+
+.jira-description ol li {
+  display: list-item;
+  margin-bottom: 6px;
+}
+
+.jira-description ul li::marker {
+  color: #8b949e;
+}
+
+.jira-description ol li::marker {
+  color: #8b949e;
+}
+
+.jira-description blockquote {
+  border-left: 4px solid #58a6ff;
+  padding: 8px 0 8px 16px;
+  margin: 16px 0;
+  color: #8b949e;
+  font-style: normal;
+  background: rgba(88, 166, 255, 0.05);
+  border-radius: 0 6px 6px 0;
+}
+
+.jira-description a {
+  color: #58a6ff;
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.jira-description a:hover {
+  color: #79c0ff;
+  text-decoration: none;
+  border-bottom-color: #58a6ff;
+}
+
+.jira-description strong {
+  font-weight: 700;
+  color: #f0f6fc;
+}
+
+.jira-description em {
+  font-style: italic;
+  color: #c9d1d9;
+  font-weight: 400;
+}
+
+/* Comments Content */
+.comments-content {
+  max-height: 250px;
+}
+
+/* Apply the same JIRA formatting to comment bodies */
+.comment-body {
+  color: #c9d1d9;
+  line-height: 1.5;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  word-wrap: break-word;
+}
+
+.comment-body p {
+  margin: 12px 0;
+  color: #c9d1d9;
+}
+
+.comment-body p:first-child {
+  margin-top: 0;
+}
+
+.comment-body p:last-child {
+  margin-bottom: 0;
+}
+
+.comment-body a {
+  color: #58a6ff;
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.comment-body a:hover {
+  color: #79c0ff;
+  text-decoration: none;
+  border-bottom-color: #58a6ff;
+}
+
+.comment-body strong {
+  font-weight: 700;
+  color: #f0f6fc;
+}
+
+.comment-body em {
+  font-style: italic;
+  color: #c9d1d9;
+  font-weight: 400;
+}
+
+.comment-body code {
+  background: rgba(110, 118, 129, 0.15);
+  padding: 2px 5px;
+  border-radius: 6px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  color: #f85149;
+  border: 1px solid rgba(110, 118, 129, 0.2);
+}
+
+/* JIRA-specific formatting elements */
+.jira-panel {
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid #58a6ff;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 16px 0;
+  color: #c9d1d9;
+}
+
+.jira-noformat {
+  background: rgba(110, 118, 129, 0.1);
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 16px 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #c9d1d9;
+  white-space: pre-wrap;
+}
+
+/* Apply JIRA panel styling to comment bodies too */
+.comment-body .jira-panel {
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid #58a6ff;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 16px 0;
+  color: #c9d1d9;
+}
+
+.comment-body .jira-noformat {
+  background: rgba(110, 118, 129, 0.1);
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 16px 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #c9d1d9;
+  white-space: pre-wrap;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jira-comment {
+  border-bottom: 1px solid #333;
+  padding-bottom: 12px;
+}
+
+.jira-comment:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.comment-author {
+  color: #60a5fa;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.comment-date {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.comment-body {
+  color: #e5e7eb;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.comment-body p:first-child {
+  margin-top: 0;
+}
+
+.comment-body p:last-child {
+  margin-bottom: 0;
+}
+
+.comment-body h1,
+.comment-body h2,
+.comment-body h3,
+.comment-body h4,
+.comment-body h5,
+.comment-body h6 {
+  color: #60a5fa;
+  margin: 8px 0 4px 0;
+  font-weight: 600;
+}
+
+.comment-body h1 { font-size: 16px; }
+.comment-body h2 { font-size: 15px; }
+.comment-body h3 { font-size: 14px; }
+.comment-body h4 { font-size: 13px; }
+.comment-body h5 { font-size: 12px; }
+.comment-body h6 { font-size: 11px; }
+
+.comment-body code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 3px;
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+}
+
+.comment-body pre {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 6px;
+  overflow-x: auto;
+  margin: 6px 0;
+}
+
+.comment-body pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.comment-body ul, .comment-body ol {
+  margin: 6px 0;
+  padding-left: 16px;
+}
+
+.comment-body li {
+  margin: 2px 0;
+}
+
+.comment-body blockquote {
+  border-left: 2px solid #60a5fa;
+  padding-left: 8px;
+  margin: 6px 0;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.comment-body a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.comment-body a:hover {
+  text-decoration: underline;
 }
 
 .panel-subtitle {

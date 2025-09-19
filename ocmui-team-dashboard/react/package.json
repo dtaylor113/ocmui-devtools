@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@atlaskit/adf-utils": "^19.23.1",
+    "@atlaskit/editor-wikimarkup-transformer": "^11.18.2",
     "@tanstack/react-query": "^5.89.0",
     "@vitejs/plugin-react": "^4.7.0",
     "marked": "^4.3.0",

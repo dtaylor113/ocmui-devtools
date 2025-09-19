@@ -45,7 +45,7 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
   // Get content for current tab combination
   const getLeftPanelContent = () => {
     if (primaryTab === 'jira' && secondaryTab === 'my-sprint-jiras') {
-      return <JiraPanel onTicketSelect={handleTicketSelect} />;
+      return <JiraPanel onTicketSelect={handleTicketSelect} selectedTicket={selectedTicket} />;
     }
 
     if (primaryTab === 'jira' && secondaryTab === 'jira-lookup') {

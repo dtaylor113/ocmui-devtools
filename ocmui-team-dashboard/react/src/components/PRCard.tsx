@@ -29,9 +29,10 @@ interface GitHubPR {
 interface PRCardProps {
   pr: GitHubPR;
   onClick?: (pr: GitHubPR) => void;
+  isSelected?: boolean;
 }
 
-const PRCard: React.FC<PRCardProps> = ({ pr, onClick }) => {
+const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
   const [selectedReviewer, setSelectedReviewer] = useState<string | null>(null);
 
   const handleClick = () => {
@@ -120,7 +121,7 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick }) => {
   };
 
   return (
-    <div className="pr-card" onClick={handleClick}>
+    <div className={`pr-card ${isSelected ? 'selected' : ''}`} onClick={handleClick}>
       {/* PR Title as clickable link */}
       <div className="pr-card-title-section">
         <a 

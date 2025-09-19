@@ -1,4 +1,6 @@
 import React from 'react';
+import CollapsibleSection from './CollapsibleSection';
+import JiraMoreInfo from './JiraMoreInfo';
 
 interface JiraTicket {
   key: string;
@@ -17,9 +19,11 @@ interface JiraTicket {
 interface JiraCardProps {
   ticket: JiraTicket;
   onClick?: (ticket: JiraTicket) => void;
+  expandMoreInfoByDefault?: boolean;
+  isSelected?: boolean;
 }
 
-const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick }) => {
+const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDefault = false, isSelected = false }) => {
   const handleClick = () => {
     if (onClick) {
       onClick(ticket);
@@ -76,7 +80,7 @@ const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick }) => {
 
   return (
     <div 
-      className="jira-card" 
+      className={`jira-card ${isSelected ? 'selected' : ''}`}
       onClick={handleClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -136,6 +140,15 @@ const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick }) => {
           </div>
         </div>
       </div>
+
+      {/* More Info Section */}
+      <CollapsibleSection 
+        title="More Info."
+        isExpandedByDefault={expandMoreInfoByDefault}
+        className="jira-more-info"
+      >
+        <JiraMoreInfo jiraKey={ticket.key} />
+      </CollapsibleSection>
     </div>
   );
 };
