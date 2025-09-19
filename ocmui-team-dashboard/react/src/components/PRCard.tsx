@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
+import type { GitHubReviewer } from '../hooks/useApiQueries';
+import ReviewerCommentsModal from './ReviewerCommentsModal';
 
+// Use the GitHubPR interface from useApiQueries (via props)
 interface GitHubPR {
   id: number;
   number: number;
@@ -8,22 +11,19 @@ interface GitHubPR {
   url: string;
   created_at: string;
   updated_at: string;
-  user: {
+  user?: {
     login: string;
     avatar_url: string;
   };
-  head: {
+  head?: {
     ref: string;
   };
-  base: {
+  base?: {
     ref: string;
   };
-  draft?: boolean;
-  mergeable_state?: string;
-  labels?: Array<{
-    name: string;
-    color: string;
-  }>;
+  // Enhanced data from detailed PR fetch
+  reviewers?: GitHubReviewer[];
+  repository_url?: string;
 }
 
 interface PRCardProps {
@@ -32,15 +32,31 @@ interface PRCardProps {
 }
 
 const PRCard: React.FC<PRCardProps> = ({ pr, onClick }) => {
+  const [selectedReviewer, setSelectedReviewer] = useState<string | null>(null);
+
   const handleClick = () => {
     if (onClick) {
       onClick(pr);
     }
   };
 
-  const handleLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    window.open(pr.url, '_blank');
+  const handleReviewerClick = (e: React.MouseEvent, reviewer: string) => {
+    e.stopPropagation(); // Prevent PR card click
+    setSelectedReviewer(reviewer);
+  };
+
+  const closeReviewerModal = () => {
+    setSelectedReviewer(null);
+  };
+
+  // Extract repository name from URL
+  const getRepoName = (): string => {
+    // URLs are in format: https://api.github.com/repos/owner/repo/issues/123
+    const repoMatch = pr.repository_url?.match(/github\.com\/repos\/([^/]+)\/([^/]+)/);
+    if (repoMatch) return `${repoMatch[1]}/${repoMatch[2]}`;
+    
+    const urlMatch = pr.url?.match(/github\.com\/repos\/([^/]+)\/([^/]+)/);
+    return urlMatch ? `${urlMatch[1]}/${urlMatch[2]}` : 'unknown/repo';
   };
 
   const getStateColor = (state: string) => {
@@ -64,53 +80,111 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick }) => {
     return date.toLocaleDateString();
   };
 
+  // Helper functions for reviewer badges (based on old JS app)
+  const getReviewerBadgeClass = (reviewer: GitHubReviewer): string => {
+    const baseClass = reviewer.isCurrentUser ? 'reviewer-you' : 
+                      reviewer.username.includes('[bot]') ? 'reviewer-bot' : 'reviewer-other';
+    
+    const stateClasses: Record<GitHubReviewer['state'], string> = {
+      'approved': 'reviewer-approved',
+      'changes_requested': 'reviewer-changes-requested', 
+      'commented': 'reviewer-commented',
+      'review_requested': 'reviewer-pending',
+      'dismissed': 'reviewer-dismissed'
+    };
+
+    const stateClass = stateClasses[reviewer.state] || 'reviewer-commented'; // Fallback to commented
+    return `${baseClass} ${stateClass}`;
+  };
+
+  const getReviewerStateText = (state: GitHubReviewer['state']): string => {
+    const stateTexts: Record<GitHubReviewer['state'], string> = {
+      'approved': 'Approved',
+      'changes_requested': 'Changes Requested',
+      'commented': 'Commented', 
+      'review_requested': 'Review Requested',
+      'dismissed': 'Dismissed'
+    };
+    return stateTexts[state] || 'Commented'; // Fallback to "Commented"
+  };
+
+  const getReviewerStateIcon = (state: GitHubReviewer['state']): string => {
+    const stateIcons: Record<GitHubReviewer['state'], string> = {
+      'approved': '✅',
+      'changes_requested': '❌',
+      'commented': '💬',
+      'review_requested': '📝',
+      'dismissed': '⏸️'
+    };
+    return stateIcons[state] || '💬'; // Fallback to comment icon
+  };
+
   return (
-    <div 
-      className="pr-card" 
-      onClick={handleClick}
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-    >
-      <div className="pr-card-header">
-        <div className="pr-card-info">
-          <span className="pr-card-number">#{pr.number}</span>
-          <span 
-            className="pr-card-state" 
-            style={{ backgroundColor: getStateColor(pr.state) }}
-          >
-            {pr.state}
-          </span>
-        </div>
-        <button 
-          className="pr-card-link" 
-          onClick={handleLinkClick}
-          title="Open on GitHub"
+    <div className="pr-card" onClick={handleClick}>
+      {/* PR Title as clickable link */}
+      <div className="pr-card-title-section">
+        <a 
+          href={pr.url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="pr-card-title-link"
+          onClick={(e) => e.stopPropagation()}
         >
-          🔗
-        </button>
+          #{pr.number} {pr.title}
+        </a>
       </div>
       
-      <div className="pr-card-title">
-        {pr.title}
+      {/* Status Badges */}
+      <div className="pr-card-badges">
+        <span 
+          className="pr-badge pr-state" 
+          style={{ backgroundColor: getStateColor(pr.state) }}
+        >
+          {pr.state.toUpperCase()}
+        </span>
+        {/* TODO: Add checks status badge when available */}
+        <span className="pr-badge pr-checks">
+          CHECKS: PASSED
+        </span>
       </div>
       
-      <div className="pr-card-branches">
-        <span className="pr-card-branch">{pr.head?.ref || 'unknown'}</span>
-        <span className="pr-card-arrow">→</span>
-        <span className="pr-card-branch">{pr.base?.ref || 'unknown'}</span>
+      {/* Author and date info */}
+      <div className="pr-card-author-info">
+        <span>By {pr.user?.login || 'Unknown user'} • Created: {formatDate(pr.created_at)}</span>
       </div>
       
-      <div className="pr-card-meta">
-        <div className="pr-card-author">
-          <img 
-            src={pr.user?.avatar_url || '/default-avatar.png'} 
-            alt={pr.user?.login || 'Unknown user'}
-            className="pr-card-avatar"
-          />
-          <span>{pr.user?.login || 'Unknown user'}</span>
+      {/* Reviewers section - placeholder for now */}
+      <div className="pr-card-reviewers">
+        <span className="pr-reviewers-label">Reviewers:</span>
+        <p className="pr-reviewers-help">* you can click on certain Reviewers badges to see comments</p>
+        <div className="pr-reviewers-badges">
+          {pr.reviewers && pr.reviewers.length > 0 ? (
+            pr.reviewers.map((reviewer) => (
+              <span 
+                key={reviewer.username}
+                className={`reviewer-badge ${getReviewerBadgeClass(reviewer)} ${reviewer.hasComments ? 'clickable-reviewer' : ''}`} 
+                onClick={reviewer.hasComments ? (e) => handleReviewerClick(e, reviewer.username) : undefined}
+                title={`${reviewer.username}${reviewer.isCurrentUser ? ' (You)' : ''}: ${getReviewerStateText(reviewer.state)}${reviewer.hasComments ? ' - Click to view comments' : ''}`}
+              >
+                {getReviewerStateIcon(reviewer.state)} {reviewer.username}{reviewer.isCurrentUser ? ' (You)' : ''}
+              </span>
+            ))
+          ) : (
+            <span className="reviewer-badge reviewer-none">No reviewers assigned</span>
+          )}
         </div>
-        <span className="pr-card-date">{formatDate(pr.updated_at)}</span>
       </div>
+      
+      {/* Reviewer Comments Modal */}
+      {selectedReviewer && (
+        <ReviewerCommentsModal
+          reviewer={selectedReviewer}
+          repoName={getRepoName()}
+          prNumber={pr.number}
+          isOpen={!!selectedReviewer}
+          onClose={closeReviewerModal}
+        />
+      )}
     </div>
   );
 };

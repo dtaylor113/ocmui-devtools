@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
+import { enhancePRsWithReviewers } from '../hooks/useApiQueries';
 import PRCard from './PRCard';
 import githubIcon from '../assets/githubIcon.png';
 
@@ -11,16 +12,17 @@ interface GitHubPR {
   url: string;
   created_at: string;
   updated_at: string;
-  user: {
+  user?: {
     login: string;
     avatar_url: string;
   };
-  head: {
+  head?: {
     ref: string;
   };
-  base: {
+  base?: {
     ref: string;
   };
+  repository_url?: string;
 }
 
 interface AssociatedPRsPanelProps {
@@ -62,7 +64,14 @@ const AssociatedPRsPanel: React.FC<AssociatedPRsPanelProps> = ({ selectedTicket 
         }
 
         const data = await response.json();
-        setAssociatedPRs(data.items || []);
+        const basePRs = data.items || [];
+        
+        // Debug: Log PR search results
+        // console.log(`📋 AssociatedPRsPanel found ${basePRs.length} PRs for ticket ${selectedTicket}`);
+        
+        // Enhance PRs with reviewer data (same as main PR hooks)
+        const enhancedPRs = await enhancePRsWithReviewers(basePRs, apiTokens.github, apiTokens.githubUsername);
+        setAssociatedPRs(enhancedPRs);
       } catch (err) {
         console.error('Error searching for associated PRs:', err);
         setError(err instanceof Error ? err.message : 'Failed to search for PRs');
@@ -83,10 +92,10 @@ const AssociatedPRsPanel: React.FC<AssociatedPRsPanelProps> = ({ selectedTicket 
   return (
     <div className="panel-content">
       <div className="panel-header">
-        <h3><img src={githubIcon} alt="GitHub" className="panel-icon" /> Associated PRs</h3>
-        {selectedTicket && (
-          <span className="panel-subtitle">for {selectedTicket}</span>
-        )}
+        <h3>
+          <img src={githubIcon} alt="GitHub" className="panel-icon" /> 
+          {selectedTicket ? `PRs associated with ${selectedTicket}` : 'Associated PRs'}
+        </h3>
       </div>
       
       <div className="panel-body">

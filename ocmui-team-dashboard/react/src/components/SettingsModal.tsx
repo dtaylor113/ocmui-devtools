@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useSettings } from '../contexts/SettingsContext';
 import type { ApiTokens } from '../types/settings';
 
@@ -92,7 +93,7 @@ const SettingsModal: React.FC = () => {
     return null;
   }
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" onClick={handleBackdropClick}>
       <div className="modal-content">
         <div className="modal-header">
@@ -204,7 +205,8 @@ const SettingsModal: React.FC = () => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
