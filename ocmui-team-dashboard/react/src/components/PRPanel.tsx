@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useMyCodeReviews, useMyPRs, useLastUpdatedFormat } from '../hooks/useApiQueries';
 import { useSettings } from '../contexts/SettingsContext';
 import PRCard from './PRCard';
+import BasePanel from './BasePanel';
 import githubIcon from '../assets/githubIcon.png';
 
 interface PRPanelProps {
   tabType: 'my-code-reviews' | 'my-prs';
   prStatus?: 'open' | 'closed';
   onPrStatusChange?: (status: 'open' | 'closed') => void;
+  onPRSelect?: (pr: any) => void;
+  selectedPR?: any;
+  invalidJiraIds?: string[];
 }
 
-const PRPanel: React.FC<PRPanelProps> = ({ tabType, prStatus = 'open', onPrStatusChange }) => {
+const PRPanel: React.FC<PRPanelProps> = ({ tabType, prStatus = 'open', onPrStatusChange, onPRSelect, selectedPR, invalidJiraIds }) => {
   const { isConfigured } = useSettings();
   
   // Use the appropriate query based on tab type
@@ -23,8 +27,10 @@ const PRPanel: React.FC<PRPanelProps> = ({ tabType, prStatus = 'open', onPrStatu
   const { data, isLoading, error } = query;
 
   const handlePRClick = (pr: any) => {
-    // Could add PR selection logic here in the future
     console.log('PR clicked:', pr);
+    if (onPRSelect) {
+      onPRSelect(pr);
+    }
   };
 
   const getTitle = () => {
@@ -51,75 +57,61 @@ const PRPanel: React.FC<PRPanelProps> = ({ tabType, prStatus = 'open', onPrStatu
     return `❌ Error loading ${type}: ${error.message}`;
   };
 
-  return (
-    <div className="panel-content">
-      <div className="panel-header">
-        <h3><img src={githubIcon} alt="GitHub" className="panel-icon" /> {getTitle()}</h3>
-        {tabType === 'my-prs' && onPrStatusChange && (
-          <div className="pr-status-toggle">
-            <label>
-              <input 
-                type="radio" 
-                name="pr-status" 
-                value="open" 
-                checked={prStatus === 'open'}
-                onChange={() => onPrStatusChange('open')}
-              /> 
-              Open
-            </label>
-            <label>
-              <input 
-                type="radio" 
-                name="pr-status" 
-                value="closed" 
-                checked={prStatus === 'closed'}
-                onChange={() => onPrStatusChange('closed')}
-              /> 
-              Closed
-            </label>
-          </div>
-        )}
-        {tabType === 'my-code-reviews' && (
-          <span className="last-updated">Last Updated: {lastUpdated} • updates every {getUpdateInterval()}</span>
-        )}
-      </div>
-      
-      {tabType === 'my-prs' && (
-        <div className="last-updated-row">
-          <span className="last-updated">Last Updated: {lastUpdated} • updates every {getUpdateInterval()}</span>
-        </div>
-      )}
-      
-      <div className="panel-body">
-        {!isConfigured ? (
-          <div className="empty-state">
-            <p>⚙️ Configure GitHub and JIRA tokens in Settings to view data</p>
-          </div>
-        ) : isLoading ? (
-          <div className="loading-state">
-            <p>🔍 {getLoadingMessage()}</p>
-          </div>
-        ) : error ? (
-          <div className="error-state">
-            <p>{getErrorMessage(error)}</p>
-          </div>
-        ) : data?.pullRequests.length ? (
-          <div className="pr-cards-container">
-            {data.pullRequests.map((pr) => (
-              <PRCard 
-                key={pr.id} 
-                pr={pr} 
-                onClick={handlePRClick} 
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <p><img src={githubIcon} alt="GitHub" className="inline-icon" /> {getEmptyMessage()}</p>
-          </div>
-        )}
-      </div>
+  // Header controls for My PRs status toggle
+  const headerControls = tabType === 'my-prs' && onPrStatusChange ? (
+    <div className="pr-status-toggle">
+      <label>
+        <input 
+          type="radio" 
+          name="pr-status" 
+          value="open" 
+          checked={prStatus === 'open'}
+          onChange={() => onPrStatusChange('open')}
+        /> 
+        Open
+      </label>
+      <label>
+        <input 
+          type="radio" 
+          name="pr-status" 
+          value="closed" 
+          checked={prStatus === 'closed'}
+          onChange={() => onPrStatusChange('closed')}
+        /> 
+        Closed
+      </label>
     </div>
+  ) : undefined;
+
+  return (
+    <BasePanel
+      title={getTitle()}
+      icon={githubIcon}
+      iconAlt="GitHub"
+      lastUpdated={lastUpdated}
+      updateInterval={getUpdateInterval()}
+      isConfigured={isConfigured}
+      isLoading={isLoading}
+      error={error}
+      emptyMessage={getEmptyMessage()}
+      loadingMessage={getLoadingMessage()}
+      headerControls={headerControls}
+    >
+      {data?.pullRequests.length ? (
+        <div className="pr-cards-container">
+          {data.pullRequests.map((pr) => (
+            <PRCard 
+              key={pr.id} 
+              pr={pr} 
+              onClick={handlePRClick}
+              isSelected={selectedPR?.id === pr.id}
+              hasInvalidJiraIds={selectedPR?.id === pr.id && invalidJiraIds && invalidJiraIds.length > 0}
+              invalidJiraIds={selectedPR?.id === pr.id ? invalidJiraIds : undefined}
+            />
+          ))}
+        </div>
+      ) : null}
+    </BasePanel>
   );
 };
 

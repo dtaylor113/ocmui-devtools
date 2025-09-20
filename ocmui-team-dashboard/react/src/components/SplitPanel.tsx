@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import type { PrimaryTab, SecondaryTab } from '../App';
 import JiraPanel from './JiraPanel';
 import PRPanel from './PRPanel';
 import AssociatedPRsPanel from './AssociatedPRsPanel';
 import EmptyState from './EmptyState';
 import JiraLookupPlaceholderPanel from './JiraLookupPlaceholderPanel';
-import AssociatedJirasPlaceholderPanel from './AssociatedJirasPlaceholderPanel';
+import AssociatedJirasPanel from './AssociatedJirasPanel';
 
 interface SplitPanelProps {
   primaryTab: PrimaryTab;
@@ -17,10 +17,31 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
   const [isDragging, setIsDragging] = useState(false);
   const [prStatus, setPrStatus] = useState<'open' | 'closed'>('open');
   const [selectedTicket, setSelectedTicket] = useState<string | undefined>();
+  const [selectedPR, setSelectedPR] = useState<any | undefined>();
+  const [invalidJiraIds, setInvalidJiraIds] = useState<string[]>([]);
 
   const handleTicketSelect = (ticketKey: string) => {
     setSelectedTicket(ticketKey);
   };
+
+  const handlePRSelect = (pr: any) => {
+    console.log(`🔥 SplitPanel: PR selected #${pr.number}: ${pr.title}`);
+    setSelectedPR(pr);
+    setInvalidJiraIds([]); // Clear invalid JIRA IDs when selecting new PR
+  };
+
+  const handleInvalidJiraIds = (invalidIds: string[]) => {
+    console.log(`⚠️ SplitPanel: Invalid JIRA IDs detected:`, invalidIds);
+    setInvalidJiraIds(invalidIds);
+  };
+
+  // Clear selected PR when switching between GitHub tabs
+  useEffect(() => {
+    if (primaryTab === 'github') {
+      setSelectedPR(undefined);
+      setInvalidJiraIds([]); // Clear invalid JIRA IDs when switching tabs
+    }
+  }, [primaryTab, secondaryTab]);
 
   const handleMouseDown = useCallback(() => {
     setIsDragging(true);
@@ -53,7 +74,7 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
     }
 
     if (primaryTab === 'github' && secondaryTab === 'my-code-reviews') {
-      return <PRPanel tabType="my-code-reviews" />;
+      return <PRPanel tabType="my-code-reviews" onPRSelect={handlePRSelect} selectedPR={selectedPR} invalidJiraIds={invalidJiraIds} />;
     }
 
     if (primaryTab === 'github' && secondaryTab === 'my-prs') {
@@ -62,6 +83,9 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
           tabType="my-prs" 
           prStatus={prStatus} 
           onPrStatusChange={setPrStatus} 
+          onPRSelect={handlePRSelect}
+          selectedPR={selectedPR}
+          invalidJiraIds={invalidJiraIds}
         />
       );
     }
@@ -75,7 +99,7 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
     }
 
     if (primaryTab === 'github') {
-      return <AssociatedJirasPlaceholderPanel />;
+      return <AssociatedJirasPanel selectedPR={selectedPR} onInvalidJiraIds={handleInvalidJiraIds} />;
     }
 
     return <EmptyState message="Right panel content" />;

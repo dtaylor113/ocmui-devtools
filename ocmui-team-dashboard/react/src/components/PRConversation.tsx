@@ -42,7 +42,7 @@ const PRConversation: React.FC<PRConversationProps> = ({ repoName, prNumber }) =
   }, [data?.comments, apiTokens.github]);
 
   if (isLoading) {
-    return <div className="loading-state">Loading conversation...</div>;
+    return <div className="loading">Loading conversation...</div>;
   }
 
   if (error) {
@@ -57,7 +57,7 @@ const PRConversation: React.FC<PRConversationProps> = ({ repoName, prNumber }) =
     <div className="scrollable-content" style={{ maxHeight: "250px" }}>
       {data.comments.length > 0 ? (
         parsingComments ? (
-          <div className="loading-state">Parsing comments...</div>
+          <div className="loading">Parsing comments...</div>
         ) : (
           <div className="comments-list conversation-timeline">
             {prepareGitHubComments(data.comments).map((comment) => (

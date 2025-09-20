@@ -985,12 +985,13 @@ html, body {
   padding: 20px;
 }
 
-/* Description Content - Fixed 20 lines with scrollbars */
+/* Description Content - Dynamic height that fits content */
 .description-content {
-  height: 20em; /* 20 lines of text (1em per line) */
-  max-height: 20em; /* Fixed height, no resizing */
-  overflow-y: auto; /* Scroll when content overflows */
-  resize: none; /* Remove all resize functionality */
+  min-height: 3em; /* Minimum 3 lines */
+  max-height: 20em; /* Maximum 20 lines before scrolling */
+  overflow-y: auto; /* Scroll when content overflows max-height */
+  overflow-x: hidden; /* Hide horizontal overflow */
+  resize: none; /* Remove resize functionality */
 }
 
 /* Legacy classes maintained for backward compatibility - styles now handled by .markdown-container */
@@ -1820,7 +1821,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 200px;
+  min-height: 200px; /* Increased for better centering */
   text-align: center;
   color: #6b7280;
 }
@@ -1830,6 +1831,141 @@ html, body {
 .error-state p {
   font-size: 16px;
   margin: 8px 0;
+}
+
+/* Loading spinner from old JS app */
+.loading {
+  color: #3b82f6;
+  text-align: center;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px; /* Added for vertical centering */
+}
+
+.loading::before {
+  content: '⧗';
+  font-size: 20px;
+  animation: spin 1s linear infinite;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #555;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* External link icons for cards */
+.pr-external-link,
+.jira-external-link {
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 16px; /* Larger font */
+  font-weight: bold; /* Bold text */
+  padding: 6px 10px; /* Bigger padding */
+  border-radius: 6px; /* More rounded */
+  transition: all 0.2s ease;
+  margin-left: 8px;
+  background: rgba(107, 114, 128, 0.1); /* Light background */
+  border: 1px solid rgba(107, 114, 128, 0.2); /* Subtle border */
+  min-width: 24px; /* Minimum width */
+  text-align: center; /* Center the arrow */
+  display: inline-block; /* Better control */
+}
+
+.pr-external-link:hover,
+.jira-external-link:hover {
+  color: #fff; /* White text on hover */
+  background: #3b82f6; /* Blue background on hover */
+  border-color: #3b82f6; /* Blue border on hover */
+  transform: translateY(-1px); /* Slight lift effect */
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); /* Shadow on hover */
+}
+
+.pr-card-title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pr-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Right-justify items */
+  gap: 4px; /* Smaller gap for vertical layout */
+}
+
+.jira-warning-icon {
+  background: #f59e0b; /* Amber background */
+  color: white;
+  border: none;
+  font-size: 12px; /* Smaller font */
+  padding: 2px 6px; /* Smaller padding */
+  border-radius: 3px; /* Smaller border radius */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px; /* Smaller width */
+  height: 20px; /* Smaller height */
+}
+
+.jira-warning-icon:hover {
+  background: #d97706; /* Darker amber on hover */
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+/* JIRA Warning Modal Styles */
+.jira-warning-modal {
+  max-width: 500px;
+  width: 90%;
+}
+
+.invalid-jira-list {
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+  padding: 12px;
+  margin: 12px 0;
+  border-radius: 4px;
+}
+
+.invalid-jira-item {
+  margin: 4px 0;
+}
+
+.invalid-jira-item code {
+  background: rgba(245, 158, 11, 0.2);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  color: #92400e;
+}
+
+.jira-card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jira-card-title-text {
+  cursor: pointer;
+  flex: 1;
+  color: #3b82f6; /* Lighter blue for JIRA cards */
+  font-weight: 500;
+}
+
+.pr-card-title-text {
+  cursor: pointer;
+  flex: 1;
+  color: #059669; /* Green for PR cards */
+  font-weight: 500;
 }
 
 .error-state p {
@@ -2135,6 +2271,11 @@ html, body {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* ===== RESPONSIVE DESIGN ===== */

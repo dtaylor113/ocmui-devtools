@@ -30,19 +30,27 @@ const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDe
   const { data: ticketData } = useJiraTicket(ticket.key);
   const commentsCount = ticketData?.success && ticketData?.ticket?.comments ? ticketData.ticket.comments.length : 0;
   
-  const handleClick = () => {
-    if (onClick) {
-      onClick(ticket);
-    }
-  };
-
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'numeric', 
-      day: 'numeric' 
-    });
+    if (!dateString) return 'Not specified';
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid date string in JIRA: ${dateString}`);
+        return 'Invalid Date';
+      }
+      
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'numeric', 
+        day: 'numeric' 
+      });
+    } catch (error) {
+      console.error(`Error formatting date: ${dateString}`, error);
+      return 'Date Error';
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -84,22 +92,30 @@ const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDe
     }
   };
 
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick(ticket);
+    }
+  };
+
   return (
     <div 
       className={`jira-card ${isSelected ? 'selected' : ''}`}
-      onClick={handleClick}
+      onClick={handleCardClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
       <div className="jira-card-title">
+        <span className="jira-card-title-text">{ticket.key}: {ticket.summary}</span>
         <a 
           href={`https://issues.redhat.com/browse/${ticket.key}`} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="jira-card-link"
+          className="jira-external-link"
           onClick={(e) => e.stopPropagation()}
+          title="Open JIRA ticket"
         >
-          {ticket.key}: {ticket.summary}
+          ↗
         </a>
       </div>
       

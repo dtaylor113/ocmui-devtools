@@ -76,6 +76,9 @@ interface MyPRsResponse {
   success: boolean;
   pullRequests: GitHubPR[];
   total: number;
+  page?: number;
+  perPage?: number;
+  hasMore?: boolean;
 }
 
 interface PRConversationResponse {
@@ -122,12 +125,76 @@ const fetchJiraTicket = async (jiraId: string, jiraToken: string) => {
   return response.json();
 };
 
+// Filter PRs to only those where the user is a reviewer (not author)
+const filterPRsForReviewerRole = async (prs: GitHubPR[], githubToken: string, githubUsername: string): Promise<GitHubPR[]> => {
+  const reviewerPRs: GitHubPR[] = [];
+  
+  for (const pr of prs) {
+    try {
+      // Skip if the user is the author
+      if (pr.user?.login === githubUsername) {
+        continue;
+      }
+      
+      // Get the repository name from the PR URL
+      const repoMatch = pr.repository_url?.match(/github\.com\/repos\/([^/]+)\/([^/]+)/);
+      if (!repoMatch) {
+        console.warn(`Could not extract repo name from: ${pr.repository_url}`);
+        continue;
+      }
+      
+      const repoName = `${repoMatch[1]}/${repoMatch[2]}`;
+      
+      // Fetch PR details and reviews to check if user is a reviewer
+      const [prResponse, reviewsResponse] = await Promise.all([
+        fetch(`https://api.github.com/repos/${repoName}/pulls/${pr.number}`, {
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        }),
+        fetch(`https://api.github.com/repos/${repoName}/pulls/${pr.number}/reviews`, {
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        })
+      ]);
+      
+      if (!prResponse.ok || !reviewsResponse.ok) {
+        console.warn(`Failed to fetch details for PR #${pr.number} in ${repoName}`);
+        continue;
+      }
+      
+      const [prDetails, reviews] = await Promise.all([
+        prResponse.json(),
+        reviewsResponse.json()
+      ]);
+      
+      // Check if user is a requested reviewer or has reviewed
+      const isRequestedReviewer = prDetails.requested_reviewers?.some((reviewer: any) => reviewer.login === githubUsername);
+      const hasUserReviewed = reviews.some((review: any) => review.user?.login === githubUsername);
+      
+      // Include PR if user is involved as a reviewer
+      if (isRequestedReviewer || hasUserReviewed) {
+        reviewerPRs.push(pr);
+      }
+      
+    } catch (error) {
+      console.error(`Error checking reviewer role for PR #${pr.number}:`, error);
+      // Continue processing other PRs
+    }
+  }
+  
+  return reviewerPRs;
+};
+
 const fetchMyCodeReviews = async (githubUsername: string, githubToken: string): Promise<CodeReviewsResponse> => {
   console.log(`🔍 fetchMyCodeReviews starting for user: ${githubUsername}`);
   
-  // GitHub search for PRs where user is requested as reviewer
-  const query = `is:pr is:open review-requested:${githubUsername}`;
-  const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc`, {
+  // Use broader search to find PRs involving the user, then filter for reviewer role (same as Plain JS version)
+  const query = `is:pr is:open involves:${githubUsername}`;
+  const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc&per_page=100`, {
     headers: {
       'Authorization': `Bearer ${githubToken}`,
       'Accept': 'application/vnd.github.v3+json'
@@ -139,28 +206,35 @@ const fetchMyCodeReviews = async (githubUsername: string, githubToken: string): 
   }
 
   const data = await response.json();
-  const basePRs = data.items || [];
+  const allPRs = data.items || [];
   
-  console.log(`📋 fetchMyCodeReviews found ${basePRs.length} PRs, enhancing first ${Math.min(basePRs.length, 10)}...`);
+  console.log(`📋 fetchMyCodeReviews found ${allPRs.length} PRs involving user, filtering for reviewer role...`);
   
-  // Enhance PRs with reviewer data (limit to first 10 for performance)
-  const enhancedPRs = await enhancePRsWithReviewers(basePRs.slice(0, 10), githubToken, githubUsername);
+  // Filter PRs to only those where the user is a reviewer (not author)
+  const reviewerPRs = await filterPRsForReviewerRole(allPRs, githubToken, githubUsername);
+  
+  console.log(`📋 After filtering: ${reviewerPRs.length} PRs where user is a reviewer`);
+  
+  // Enhance PRs with reviewer data (limit to first 20 for better coverage)
+  const enhancedPRs = await enhancePRsWithReviewers(reviewerPRs.slice(0, 20), githubToken, githubUsername);
   
   console.log(`✅ fetchMyCodeReviews completed, returning ${enhancedPRs.length} enhanced PRs`);
   
   return {
     success: true,
     pullRequests: enhancedPRs,
-    total: data.total_count || 0
+    total: reviewerPRs.length
   };
 };
 
-const fetchMyPRs = async (githubUsername: string, githubToken: string, status: 'open' | 'closed'): Promise<MyPRsResponse> => {
-  console.log(`🔍 fetchMyPRs starting for user: ${githubUsername}, status: ${status}`);
+const fetchMyPRs = async (githubUsername: string, githubToken: string, status: 'open' | 'closed', page: number = 1): Promise<MyPRsResponse> => {
+  console.log(`🔍 fetchMyPRs starting for user: ${githubUsername}, status: ${status}, page: ${page}`);
+  
+  const perPage = status === 'closed' ? 10 : 20; // Smaller page size for closed PRs to enable pagination
   
   // GitHub search for user's own PRs
   const query = `is:pr author:${githubUsername} is:${status}`;
-  const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc`, {
+  const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc&per_page=${perPage}&page=${page}`, {
     headers: {
       'Authorization': `Bearer ${githubToken}`,
       'Accept': 'application/vnd.github.v3+json'
@@ -174,17 +248,20 @@ const fetchMyPRs = async (githubUsername: string, githubToken: string, status: '
   const data = await response.json();
   const basePRs = data.items || [];
   
-  console.log(`📋 fetchMyPRs found ${basePRs.length} ${status} PRs, enhancing first ${Math.min(basePRs.length, 10)}...`);
+  console.log(`📋 fetchMyPRs found ${basePRs.length} ${status} PRs (page ${page}), enhancing all...`);
   
-  // Enhance PRs with reviewer data (limit to first 10 for performance)
-  const enhancedPRs = await enhancePRsWithReviewers(basePRs.slice(0, 10), githubToken, githubUsername);
+  // Enhance PRs with reviewer data (enhance all PRs on the page)
+  const enhancedPRs = await enhancePRsWithReviewers(basePRs, githubToken, githubUsername);
   
   console.log(`✅ fetchMyPRs completed, returning ${enhancedPRs.length} enhanced PRs`);
   
   return {
     success: true,
     pullRequests: enhancedPRs,
-    total: data.total_count || 0
+    total: data.total_count || 0,
+    page,
+    perPage,
+    hasMore: basePRs.length === perPage && (page * perPage) < (data.total_count || 0)
   };
 };
 
@@ -481,6 +558,7 @@ export const useJiraTicket = (jiraId: string) => {
     queryFn: () => fetchJiraTicket(jiraId, apiTokens.jira),
     enabled: !!jiraId && !!apiTokens.jira,
     staleTime: 2 * 60 * 1000, // 2 minutes for individual tickets
+    retry: false, // Don't retry failed requests to prevent delayed error messages
   });
 };
 

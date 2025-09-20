@@ -111,7 +111,7 @@ const AssociatedPRsPanel: React.FC<AssociatedPRsPanelProps> = ({ selectedTicket 
             <p>⚙️ Configure GitHub tokens in Settings to view related PRs</p>
           </div>
         ) : isLoading ? (
-          <div className="loading-state">
+          <div className="loading">
             <p>🔍 Searching for PRs related to {selectedTicket}...</p>
           </div>
         ) : error ? (

@@ -98,6 +98,7 @@ app.post('/api/jira-ticket', async (req, res) => {
                                 assignee: ticketData.fields.assignee ? ticketData.fields.assignee.displayName : null,
                                 reporter: ticketData.fields.reporter ? ticketData.fields.reporter.displayName : 'Unknown',
                                 created: ticketData.fields.created,
+                                updated: ticketData.fields.updated,
                                 comments: comments,
                                 attachments: attachments // Include attachment URL mapping
                             }

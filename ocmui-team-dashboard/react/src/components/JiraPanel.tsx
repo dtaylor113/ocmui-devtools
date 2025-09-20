@@ -45,8 +45,8 @@ const JiraPanel: React.FC<JiraPanelProps> = ({ onTicketSelect, selectedTicket })
             <p>⚙️ Configure GitHub and JIRA tokens in Settings to view data</p>
           </div>
         ) : isLoading ? (
-          <div className="loading-state">
-            <p>🔍 Loading sprint JIRAs...</p>
+          <div className="loading">
+            Loading sprint JIRAs...
           </div>
         ) : error ? (
           <div className="error-state">

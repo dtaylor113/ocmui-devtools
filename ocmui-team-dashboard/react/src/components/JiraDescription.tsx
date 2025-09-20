@@ -10,7 +10,7 @@ const JiraDescription: React.FC<JiraDescriptionProps> = ({ jiraKey }) => {
   const { data, isLoading, error } = useJiraTicket(jiraKey);
 
   if (isLoading) {
-    return <div className="loading-state">Loading description...</div>;
+    return <div className="loading">Loading description...</div>;
   }
 
   if (error) {

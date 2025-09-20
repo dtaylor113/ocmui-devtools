@@ -35,7 +35,7 @@ const PRDescription: React.FC<PRDescriptionProps> = ({ repoName, prNumber }) => 
   }, [data?.description, apiTokens.github]);
 
   if (isLoading) {
-    return <div className="loading-state">Loading description...</div>;
+    return <div className="loading">Loading description...</div>;
   }
 
   if (error) {
@@ -50,7 +50,7 @@ const PRDescription: React.FC<PRDescriptionProps> = ({ repoName, prNumber }) => 
     <div className="scrollable-content description-content">
       {data.description ? (
         parsingDescription ? (
-          <div className="loading-state">Parsing description...</div>
+          <div className="loading">Parsing description...</div>
         ) : (
           <div 
             className="markdown-container pr-description"

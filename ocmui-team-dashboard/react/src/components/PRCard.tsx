@@ -45,21 +45,18 @@ interface PRCardProps {
   pr: GitHubPR;
   onClick?: (pr: GitHubPR) => void;
   isSelected?: boolean;
+  hasInvalidJiraIds?: boolean;
+  invalidJiraIds?: string[];
 }
 
-const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
+const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false, hasInvalidJiraIds = false, invalidJiraIds = [] }) => {
   const [selectedReviewer, setSelectedReviewer] = useState<string | null>(null);
+  const [showJiraWarning, setShowJiraWarning] = useState(false);
   
   // Get PR conversation data to access comments count
   const repoName = getRepoName(pr);
   const { data: conversationData } = usePRConversation(repoName, pr.number);
   const conversationCount = conversationData?.comments ? conversationData.comments.length : 0;
-
-  const handleClick = () => {
-    if (onClick) {
-      onClick(pr);
-    }
-  };
 
   const handleReviewerClick = (e: React.MouseEvent, reviewer: string) => {
     e.stopPropagation(); // Prevent PR card click
@@ -131,19 +128,41 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
     return stateIcons[state] || '💬'; // Fallback to comment icon
   };
 
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick(pr);
+    }
+  };
+
   return (
-    <div className={`pr-card ${isSelected ? 'selected' : ''}`} onClick={handleClick}>
-      {/* PR Title as clickable link */}
+    <div className={`pr-card ${isSelected ? 'selected' : ''}`} onClick={handleCardClick}>
+      {/* PR Title with external link and warning icon */}
       <div className="pr-card-title-section">
-        <a 
-          href={pr.html_url} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="pr-card-title-link"
-          onClick={(e) => e.stopPropagation()}
-        >
-          #{pr.number} {pr.title}
-        </a>
+        <span className="pr-card-title-text">#{pr.number} {pr.title}</span>
+        <div className="pr-card-actions">
+          <a 
+            href={pr.html_url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="pr-external-link"
+            onClick={(e) => e.stopPropagation()}
+            title="Open PR on GitHub"
+          >
+            ↗
+          </a>
+          {hasInvalidJiraIds && (
+            <button
+              className="jira-warning-icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowJiraWarning(true);
+              }}
+              title="Invalid JIRA IDs detected"
+            >
+              ⚠️
+            </button>
+          )}
+        </div>
       </div>
       
       {/* Status Badges */}
@@ -160,7 +179,7 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
         </span>
         {/* Author and date info */}
         <span className="pr-card-author-info">
-          By {pr.user?.login || 'Unknown user'} • Created: {formatDate(pr.created_at)}
+          By {pr.user?.login || 'Unknown user'} • Created: {formatDate(pr.created_at)} • Last Updated: {formatDate(pr.updated_at)}
         </span>
       </div>
       
@@ -210,6 +229,40 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
           isOpen={!!selectedReviewer}
           onClose={closeReviewerModal}
         />
+      )}
+
+      {/* JIRA Warning Modal */}
+      {showJiraWarning && (
+        <div className="modal-backdrop" onClick={() => setShowJiraWarning(false)}>
+          <div className="modal-content jira-warning-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>⚠️ Invalid JIRA IDs Detected</h3>
+              <button className="modal-close" onClick={() => setShowJiraWarning(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p><strong>The following JIRA IDs were found but may be invalid:</strong></p>
+              <ul className="invalid-jira-list">
+                {invalidJiraIds.map((jiraId) => (
+                  <li key={jiraId} className="invalid-jira-item">
+                    <code>{jiraId}</code>
+                  </li>
+                ))}
+              </ul>
+              <p><strong>Possible issues:</strong></p>
+              <ul>
+                <li>Typos in JIRA project prefix (e.g., "OCMU" instead of "OCMUI")</li>
+                <li>Incorrect JIRA project reference</li>
+                <li>Ticket may not exist or you may not have access</li>
+              </ul>
+              <p><em>Please check the PR title and description for correct JIRA ID formatting.</em></p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={() => setShowJiraWarning(false)}>
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

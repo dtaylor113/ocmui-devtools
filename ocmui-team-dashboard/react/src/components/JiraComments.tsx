@@ -16,7 +16,7 @@ const JiraComments: React.FC<JiraCommentsProps> = ({ jiraKey }) => {
   const { data, isLoading, error } = useJiraTicket(jiraKey);
 
   if (isLoading) {
-    return <div className="loading-state">Loading comments...</div>;
+    return <div className="loading">Loading comments...</div>;
   }
 
   if (error) {
