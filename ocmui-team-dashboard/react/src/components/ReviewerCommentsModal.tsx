@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useSettings } from '../contexts/SettingsContext';
-import { parseGitHubMarkdown } from '../utils/formatting';
+import { parseGitHubMarkdownWithCaching } from '../utils/formatting';
 
 interface ReviewerComment {
   body: string;
@@ -28,6 +28,8 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
   const [comments, setComments] = useState<ReviewerComment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [parsedComments, setParsedComments] = useState<Record<string, string>>({});
+  const [parsingComments, setParsingComments] = useState(false);
   const { apiTokens } = useSettings();
 
   useEffect(() => {
@@ -117,6 +119,41 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
     fetchComments();
   }, [isOpen, reviewer, repoName, prNumber, apiTokens.github]);
 
+  // Parse comments after they're fetched
+  useEffect(() => {
+    if (comments.length > 0 && apiTokens.github) {
+      setParsingComments(true);
+      const parseCommentsAsync = async () => {
+        const parsed: Record<string, string> = {};
+        
+        for (let i = 0; i < comments.length; i++) {
+          const comment = comments[i];
+          if (comment.body) {
+            try {
+              const html = await parseGitHubMarkdownWithCaching(comment.body, apiTokens.github);
+              parsed[i.toString()] = html;
+            } catch (error) {
+              console.error(`Error parsing reviewer comment ${i}:`, error);
+              parsed[i.toString()] = comment.body.replace(/\n/g, '<br>');
+            }
+          }
+        }
+        
+        setParsedComments(parsed);
+        setParsingComments(false);
+      };
+      
+      parseCommentsAsync();
+    } else if (comments.length > 0) {
+      // No token, use simple line break replacement
+      const parsed: Record<string, string> = {};
+      comments.forEach((comment, i) => {
+        parsed[i.toString()] = comment.body?.replace(/\n/g, '<br>') || '';
+      });
+      setParsedComments(parsed);
+    }
+  }, [comments, apiTokens.github]);
+
   const getReviewerStateIcon = (state: string): string => {
     const stateIcons: Record<string, string> = {
       'approved': '✅',
@@ -146,7 +183,7 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
   };
 
-  // GitHub markdown parsing is now handled by the imported parseGitHubMarkdown function
+  // GitHub markdown parsing is now handled asynchronously with state management
 
   if (!isOpen) return null;
 
@@ -166,6 +203,8 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
               <div className="error">Failed to load comments: {error}</div>
             ) : comments.length === 0 ? (
               <div className="no-comments">No comments found for {reviewer}</div>
+            ) : parsingComments ? (
+              <div className="loading">Parsing comments...</div>
             ) : (
               <div className="comments-list">
                 {comments.map((comment, index) => (
@@ -177,7 +216,9 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
                     </div>
                     <div 
                       className="comment-body"
-                      dangerouslySetInnerHTML={{ __html: parseGitHubMarkdown(comment.body || '') }}
+                      dangerouslySetInnerHTML={{ 
+                        __html: parsedComments[index.toString()] || comment.body?.replace(/\n/g, '<br>') || ''
+                      }}
                     />
                   </div>
                 ))}

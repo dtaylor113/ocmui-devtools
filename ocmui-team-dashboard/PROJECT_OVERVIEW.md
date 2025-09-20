@@ -60,12 +60,16 @@ react/
 ├── src/
 │   ├── App.tsx           # ✅ Main application with routing
 │   ├── components/       # ✅ React component architecture
-│   │   ├── JiraPanel.tsx         # ✅ My Sprint JIRAs (COMPLETE)
-│   │   ├── JiraCard.tsx          # ✅ JIRA ticket display (COMPLETE)  
-│   │   ├── JiraMoreInfo.tsx      # ✅ Advanced JIRA details (COMPLETE)
+│   │   ├── JiraPanel.tsx         # ✅ My Sprint JIRAs (COMPLETE + Sorted by update date)
+│   │   ├── JiraCard.tsx          # ✅ JIRA ticket display (COMPLETE - Refactored)
+│   │   ├── JiraDescription.tsx   # ✅ JIRA description content (NEW)
+│   │   ├── JiraComments.tsx      # ✅ JIRA comments content (NEW)
+│   │   ├── PRCard.tsx            # ✅ PR cards (COMPLETE - Refactored)
+│   │   ├── PRDescription.tsx     # ✅ PR description content (NEW)
+│   │   ├── PRConversation.tsx    # ✅ PR conversation content (NEW)
 │   │   ├── CollapsibleSection.tsx# ✅ Reusable collapsible UI
-│   │   ├── PRPanel.tsx           # 🔸 PR display (API ready, UI incomplete)
-│   │   ├── PRCard.tsx            # 🔸 PR cards (basic, missing More Info)
+│   │   ├── ReviewerCommentsModal.tsx # ✅ Reviewer comment popup (FIXED)
+│   │   ├── AssociatedPRsPanel.tsx# ✅ Associated PRs display (COMPLETE)
 │   │   ├── SettingsModal.tsx     # ✅ Settings management (COMPLETE)
 │   │   ├── Header.tsx            # ✅ Navigation header
 │   │   ├── NavigationTabs.tsx    # ✅ Two-level navigation
@@ -78,7 +82,7 @@ react/
 │   │   └── useApiQueries.ts      # ✅ API integration with React Query
 │   ├── types/           # ✅ TypeScript definitions
 │   ├── utils/           # ✅ Utilities (ENHANCED)
-│   │   └── formatting.ts # ✅ ADVANCED: Uses official Atlassian libraries
+│   │   └── formatting.ts # ✅ ADVANCED: Uses official Atlassian libraries + Smart image caching
 │   └── styles/
 │       └── App.css      # ✅ Complete CSS (ported + enhanced)
 ├── package.json         # React dependencies & scripts
@@ -105,26 +109,30 @@ server/
 | Feature | Plain JS | React | Enhancement |
 |---------|----------|-------|-------------|
 | **Settings Management** | ✅ Complete | ✅ **Complete** | Modern React Context |
-| **My Sprint JIRAs** | ✅ Complete | ✅ **Complete** | **Superior JIRA markdown** |
+| **My Sprint JIRAs** | ✅ Complete | ✅ **Complete** | **Superior JIRA markdown + Auto-sorting by update date** |
 | **Navigation & Layout** | ✅ Complete | ✅ **Complete** | Two-level tabs, split panels |
 | **JIRA Markdown Rendering** | 🔸 Basic (marked.js) | ✅ **ADVANCED** | **Official Atlassian libraries** |
 | **Token Persistence** | ✅ localStorage | ✅ **Complete** | React Context integration |
 | **API Architecture** | ✅ Fetch-based | ✅ **Modern** | React Query with caching |
+| **JIRA Card Architecture** | 🔸 Basic collapsible | ✅ **ENHANCED** | **Individual collapsible Description + Comments sections** |
+| **PR Card Architecture** | 🔸 Basic collapsible | ✅ **ENHANCED** | **Individual collapsible Description + Conversation sections** |
+| **Associated PRs Panel** | ❌ Not implemented | ✅ **Complete** | Auto JIRA ID detection with PR search |
+| **Image Handling System** | 🔸 Basic | ✅ **ADVANCED** | Smart caching, GitHub/JIRA optimized, clickable fallbacks |
+| **Reviewer Comment Popups** | ✅ Complete | ✅ **Complete** | Async markdown parsing with proper error handling |
 
 ### 🔸 **Partially Implemented (React)**
 
 | Feature | Status | Plain JS Implementation | What's Missing |
 |---------|--------|------------------------|---------------|
-| **My Code Reviews** | API Ready | Full reviewer detection & status | UI panel implementation |
-| **My PRs** | API Ready | Open/closed filtering, detailed cards | UI panel + More Info sections |
+| **My Code Reviews** | API Ready | Full reviewer detection & status | **UI panel implementation (NEXT PRIORITY)** |
+| **My PRs** | API Ready | Open/closed filtering, detailed cards | UI panel implementation |
 
 ### ❌ **Not Implemented (React)**
 
 | Feature | Plain JS Status | Missing Implementation |
 |---------|----------------|----------------------|
 | **JIRA Lookup** | Complex input with prefix history | Complete feature missing |
-| **Associated JIRAs Panel** | Auto JIRA ID extraction from PRs | Complete feature missing |
-| **PR More Info Sections** | Rich collapsible sections with reviewer comments | Complete feature missing |
+| **Associated JIRAs Panel** | Auto JIRA ID extraction from PRs | Complete feature missing (placeholder exists) |
 
 ---
 
@@ -277,10 +285,9 @@ A sophisticated **image handling system** has been implemented to provide the be
 ```
 ocmui-team-dashboard/
 ├── images/
-│   ├── github/          # Hash-named cached GitHub images
-│   └── jira/           # Hash-named cached JIRA images  
+│   └── github/          # Hash-named cached GitHub images only
 ├── server/
-│   └── index.js        # Image caching endpoints
+│   └── index.js        # Image caching endpoints (GitHub only)
 └── react/src/utils/
     └── formatting.ts   # Smart image processing logic
 ```
@@ -295,22 +302,22 @@ ocmui-team-dashboard/
 - **Smart Detection**: Automatically identifies image type and applies appropriate handling
 
 #### **JIRA Image Handling** ✅:
-- **Direct Display**: Uses JIRA attachment URLs for immediate image rendering
+- **Direct Display**: Uses JIRA attachment URLs for immediate image rendering (live-loaded)
 - **Full Resolution**: Prioritizes `attachment.url` over thumbnails  
-- **No Caching Needed**: JIRA authentication works reliably for direct display
+- **No Caching Used**: JIRA images displayed directly from JIRA servers, not cached locally
 - **Fallback Links**: For filename-only references, links to JIRA ticket
 
 #### **Technical Implementation**:
 
 **Frontend Components**:
-- `PRMoreInfo.tsx`: Uses async `parseGitHubMarkdownWithCaching()` with smart image processing
-- `JiraMoreInfo.tsx`: Uses sync `parseJiraMarkdownSync()` with direct image display
+- `PRDescription.tsx` & `PRConversation.tsx`: Use async `parseGitHubMarkdownWithCaching()` with smart image processing
+- `JiraDescription.tsx` & `JiraComments.tsx`: Use sync `parseJiraMarkdownSync()` with direct JIRA image display
 - Progressive loading states during GitHub image processing
 
 **Backend Endpoints**:
 - `POST /api/cache-github-image`: Downloads and caches GitHub images
-- `POST /api/cache-jira-image`: Downloads and caches JIRA images (when needed)
-- `GET /images/*`: Static serving of cached images
+- `GET /images/*`: Static serving of cached GitHub images
+- **Note**: JIRA images use direct URLs, no backend caching needed
 
 **Smart Processing Logic**:
 ```typescript
@@ -327,10 +334,10 @@ if (imageUrl.includes('user-attachments/assets')) {
 ### **Current Implementation Status**:
 
 #### **✅ Successfully Working**:
-- **Real GitHub Images**: Cached and displayed inline (avatars, public assets)
-- **JIRA Images**: Direct display using full-size attachment URLs
+- **Real GitHub Images**: Cached locally and displayed inline (avatars, public assets)
+- **JIRA Images**: Direct display using live JIRA attachment URLs (no local caching)
 - **Smart Fallbacks**: Placeholder URLs converted to styled clickable links
-- **Hash-based Caching**: Prevents filename conflicts and enables permanent storage
+- **Hash-based Caching**: GitHub images cached with hash names to prevent conflicts
 
 #### **🔗 Clickable Link Fallbacks**:
 - **GitHub Placeholder URLs** (`user-attachments/assets`): Clean 🖼️ buttons
@@ -338,9 +345,10 @@ if (imageUrl.includes('user-attachments/assets')) {
 - **Visual Consistency**: GitHub-styled buttons that integrate with app design
 
 #### **🏗️ Technical Architecture**:
-- **Backend Caching**: `/api/cache-github-image` and `/api/cache-jira-image` endpoints
-- **Static Serving**: Express static middleware for cached images
+- **Backend Caching**: `/api/cache-github-image` endpoint for GitHub images only
+- **Static Serving**: Express static middleware for cached GitHub images
 - **Smart Processing**: `processGitHubImagesSmartly()` function with type detection
+- **JIRA Direct Display**: `parseJiraMarkdownSync()` uses live JIRA attachment URLs
 - **Error Handling**: Progressive enhancement with multiple fallback layers
 
 ### **Known Limitations & Design Decisions**:
@@ -353,21 +361,22 @@ if (imageUrl.includes('user-attachments/assets')) {
 
 ## 📊 Migration Progress Tracking
 
-### **Completion Status**: ~65% Complete
+### **Completion Status**: ~75% Complete
 
 | Component Category | Progress | Details |
 |-------------------|----------|---------|
 | **Core Infrastructure** | ✅ 100% | Settings, navigation, layouts, API setup |
-| **JIRA Integration** | ✅ 95% | Sprint JIRAs complete with image handling, Lookup missing |
-| **GitHub Integration** | 🔸 40% | API ready, basic UI with image handling, panels missing |
+| **JIRA Integration** | ✅ 95% | Sprint JIRAs complete with enhanced architecture, Lookup missing |
+| **GitHub Integration** | 🔸 60% | Enhanced PR cards, API ready, My Code Reviews panel missing |
 | **Image Handling** | ✅ 100% | Smart system: real images cached inline, placeholders as clickable links |
-| **Cross-Platform Features** | ❌ 0% | Associated content linking |
+| **Cross-Platform Features** | 🔸 50% | Associated PRs complete, Associated JIRAs placeholder only |
+| **Component Architecture** | ✅ 100% | Simplified, maintainable collapsible system |
 
 ### **Immediate Next Steps**:
-1. **Implement JIRA Lookup UI** - Core missing feature
-2. **Complete GitHub panels** - My Code Reviews & My PRs
-3. **Add PR More Info sections** - Rich expandable content  
-4. **Implement Associated panels** - Cross-platform linking
+1. **🔥 PRIORITY: Implement "My Code Reviews" Panel** - API ready, UI missing
+2. **Complete "My PRs" Panel** - Similar to Code Reviews but for authored PRs  
+3. **Implement JIRA Lookup UI** - Core missing feature with complex input history
+4. **Complete Associated JIRAs Panel** - Auto JIRA detection from PR content
 
 ---
 
@@ -396,7 +405,7 @@ if (imageUrl.includes('user-attachments/assets')) {
 2. **GitHub Rate Limits**: 30 requests/minute for search API - handled with caching
 3. **JIRA Authentication**: Requires Red Hat JIRA personal access tokens
 4. **GitHub PR Image Placeholders**: Most PR images show as styled clickable links due to GitHub's security model (placeholder URLs + JWT restrictions) - this is the optimal solution given API constraints
-5. **Image Caching Storage**: Cached images accumulate in `/images/` directory (cleanup system available as future enhancement)
+5. **GitHub Image Caching Storage**: Cached GitHub images accumulate in `/images/github/` directory (cleanup system available as future enhancement)
 
 ---
 
@@ -404,25 +413,40 @@ if (imageUrl.includes('user-attachments/assets')) {
 
 ### **Phase 1: Complete Core Features** (High Priority)
 
-#### **1. JIRA Lookup UI Implementation** 🔥 **CRITICAL**
-- **Status**: Missing entirely - core functionality gap
+#### **1. My Code Reviews Panel Implementation** 🔥 **CRITICAL - IMMEDIATE NEXT TASK**
+- **Status**: API completely ready, UI panel missing  
+- **Implementation**: Port from `src/components/reviews.js`
+- **What's Available**: 
+  - ✅ API hooks in `useApiQueries.ts` 
+  - ✅ PR card components with reviewer functionality
+  - ✅ Reviewer comment modals working
+- **What's Needed**:
+  - Create `MyCodeReviewsPanel.tsx` component
+  - Filter PRs where user is requested reviewer
+  - Sort by review status priority (changes requested first)
+  - Display using existing `PRCard` components
+- **Priority**: **HIGHEST** - most logical next feature, minimal new code needed
+
+#### **2. My PRs Panel Implementation** 🔸 **HIGH**  
+- **Status**: API ready, UI panel missing
+- **Implementation**: Port from `src/components/myPrs.js` 
+- **Complexity**: Medium - similar to Code Reviews but for authored PRs
+- **Features**: Open/closed filtering, status badges, associated JIRA detection
+
+#### **3. JIRA Lookup UI Implementation** 🔸 **IMPORTANT**
+- **Status**: Complex feature entirely missing
 - **Implementation**: Create search interface matching plain JS app (`src/components/jira.js`)
 - **Components Needed**: 
-  - Search input with typeahead/autocomplete
+  - Search input with JIRA prefix dropdown (OCMUI-, OCM-, etc.)
+  - Input history with localStorage persistence  
+  - Auto-completion based on previous searches
   - Results display with ticket summaries
-  - Integration with existing `useJiraTicket` hook
-- **Priority**: **HIGHEST** - essential missing feature
+- **Complexity**: High - requires input management and history system
 
-#### **2. GitHub Integration Completion** 🔸 **IMPORTANT**  
-- **My Code Reviews Panel**: Port from `src/components/reviews.js`
-- **My PRs Panel**: Port from `src/components/myPrs.js` 
-- **Status**: APIs ready, UI components missing
-- **Complexity**: Medium - follow existing patterns
-
-#### **3. Cross-Platform Association Features** 🔗 **MEDIUM**
-- **JIRA ↔ PR Linking**: Smart detection and bidirectional associations
-- **Associated Content Panels**: Show related items across platforms
-- **Status**: 0% complete, requires analysis of existing plain JS implementation
+#### **4. Associated JIRAs Panel** 🔗 **MEDIUM**
+- **Status**: Placeholder exists, logic missing
+- **Implementation**: Auto JIRA ID detection from PR titles/descriptions
+- **Complexity**: Medium - text parsing and API integration
 
 ### **Phase 2: System Optimization** (Medium Priority)
 
@@ -469,4 +493,44 @@ if (imageUrl.includes('user-attachments/assets')) {
 
 ---
 
-**This overview provides complete context for any AI/LLM working on this project. The React migration has solid foundations with sophisticated image handling, and clear priorities for completing the remaining features.**
+---
+
+## 📋 **Immediate Action Plan for Next Developer Session**
+
+### **🎯 PRIMARY TASK: Implement My Code Reviews Panel**
+
+**Goal**: Create a fully functional "My Code Reviews" panel that shows PRs where the current user is a requested reviewer.
+
+**Implementation Steps**:
+
+1. **Create `MyCodeReviewsPanel.tsx`** 
+   - Use existing GitHub PR APIs from `useApiQueries.ts`
+   - Follow pattern from `AssociatedPRsPanel.tsx` 
+   - Filter for PRs where `apiTokens.githubUsername` is in reviewers
+
+2. **Add Panel to Navigation**
+   - Update `NavigationTabs.tsx` to include "My Code Reviews" tab
+   - Wire up routing in `App.tsx`
+
+3. **Implement Review Priority Sorting**
+   - Sort PRs by review status: `changes_requested` → `review_requested` → `commented` → `approved`
+   - Use existing reviewer detection logic
+
+4. **UI Polish**  
+   - Loading states, error handling
+   - Empty state when no reviews pending
+   - Count badge showing number of pending reviews
+
+**Reference Implementation**: `src/components/reviews.js` (fully working in plain JS app)
+
+**Expected Time**: 2-3 hours (APIs and components already exist)
+
+**Success Criteria**: 
+- ✅ Panel shows PRs where user is requested reviewer
+- ✅ Proper sorting by review priority  
+- ✅ Clicking reviewer badges shows comment popups (already working)
+- ✅ Responsive loading and error states
+
+---
+
+**This overview provides complete context for any AI/LLM working on this project. The React migration has solid foundations with a simplified, maintainable architecture and clear immediate next steps focused on completing the GitHub integration.**
