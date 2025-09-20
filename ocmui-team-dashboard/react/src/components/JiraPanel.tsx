@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useMySprintJiras, useLastUpdatedFormat } from '../hooks/useApiQueries';
 import { useSettings } from '../contexts/SettingsContext';
 import JiraCard from './JiraCard';
@@ -21,6 +21,17 @@ const JiraPanel: React.FC<JiraPanelProps> = ({ onTicketSelect, selectedTicket })
     }
   };
 
+  // Sort tickets by most recent "Last Updated" date
+  const sortedTickets = useMemo(() => {
+    if (!data?.tickets) return [];
+    
+    return [...data.tickets].sort((a, b) => {
+      const dateA = new Date(a.updated);
+      const dateB = new Date(b.updated);
+      return dateB.getTime() - dateA.getTime(); // Most recent first
+    });
+  }, [data?.tickets]);
+
   return (
     <div className="panel-content">
       <div className="panel-header">
@@ -41,9 +52,9 @@ const JiraPanel: React.FC<JiraPanelProps> = ({ onTicketSelect, selectedTicket })
           <div className="error-state">
             <p>❌ Error loading sprint JIRAs: {error.message}</p>
           </div>
-        ) : data?.tickets.length ? (
+        ) : sortedTickets.length ? (
           <div className="jira-cards-container">
-            {data.tickets.map((ticket) => (
+            {sortedTickets.map((ticket) => (
               <JiraCard
                 key={ticket.key}
                 ticket={ticket}
@@ -51,9 +62,9 @@ const JiraPanel: React.FC<JiraPanelProps> = ({ onTicketSelect, selectedTicket })
                 isSelected={selectedTicket === ticket.key}
               />
             ))}
-            {data.sprintName && (
+            {data?.sprintName && (
               <div className="sprint-info">
-                🎯 Sprint: {data.sprintName} ({data.tickets.length} tickets)
+                🎯 Sprint: {data?.sprintName} ({sortedTickets.length} tickets)
               </div>
             )}
           </div>

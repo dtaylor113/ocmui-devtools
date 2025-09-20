@@ -608,10 +608,11 @@ html, body {
 }
 
 .pr-reviewers-help {
-  font-size: 11px;
-  color: #6b7280;
+  font-size: 12px;
+  color: #9ca3af;
   margin: 0 0 6px 0;
-  font-style: italic;
+  font-weight: 600;
+  align-self: flex-end;
 }
 
 /* .pr-reviewers-badges - No longer used, badges are now inline with label */

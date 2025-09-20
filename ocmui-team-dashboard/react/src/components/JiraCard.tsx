@@ -1,6 +1,8 @@
 import React from 'react';
-import MoreInfoSection from './MoreInfoSection';
-import JiraMoreInfo from './JiraMoreInfo';
+import CollapsibleSection from './CollapsibleSection';
+import JiraDescription from './JiraDescription';
+import JiraComments from './JiraComments';
+import { useJiraTicket } from '../hooks/useApiQueries';
 
 interface JiraTicket {
   key: string;
@@ -24,6 +26,10 @@ interface JiraCardProps {
 }
 
 const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDefault = false, isSelected = false }) => {
+  // Get full ticket data to access comments count
+  const { data: ticketData } = useJiraTicket(ticket.key);
+  const commentsCount = ticketData?.success && ticketData?.ticket?.comments ? ticketData.ticket.comments.length : 0;
+  
   const handleClick = () => {
     if (onClick) {
       onClick(ticket);
@@ -142,13 +148,22 @@ const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDe
       </div>
 
       {/* Description Section */}
-      <MoreInfoSection 
+      <CollapsibleSection 
         title="Description"
         isExpandedByDefault={expandMoreInfoByDefault}
-        className="jira-more-info"
+        className="jira-description-section"
       >
-        <JiraMoreInfo jiraKey={ticket.key} />
-      </MoreInfoSection>
+        <JiraDescription jiraKey={ticket.key} />
+      </CollapsibleSection>
+
+      {/* Comments Section */}
+      <CollapsibleSection 
+        title={`Comments (${commentsCount})`}
+        isExpandedByDefault={false}
+        className="jira-comments-section"
+      >
+        <JiraComments jiraKey={ticket.key} />
+      </CollapsibleSection>
     </div>
   );
 };

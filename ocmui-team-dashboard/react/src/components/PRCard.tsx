@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import type { GitHubReviewer } from '../hooks/useApiQueries';
+import { usePRConversation } from '../hooks/useApiQueries';
 import ReviewerCommentsModal from './ReviewerCommentsModal';
-import MoreInfoSection from './MoreInfoSection';
-import PRMoreInfo from './PRMoreInfo';
+import CollapsibleSection from './CollapsibleSection';
+import PRDescription from './PRDescription';
+import PRConversation from './PRConversation';
 
 // Use the GitHubPR interface from useApiQueries (via props)
 interface GitHubPR {
@@ -29,6 +31,16 @@ interface GitHubPR {
   repository_url?: string;
 }
 
+// Helper function to extract repository name from PR object
+const getRepoName = (pr: GitHubPR): string => {
+  // URLs are in format: https://api.github.com/repos/owner/repo/issues/123
+  const repoMatch = pr.repository_url?.match(/github\.com\/repos\/([^/]+)\/([^/]+)/);
+  if (repoMatch) return `${repoMatch[1]}/${repoMatch[2]}`;
+  
+  const urlMatch = pr.url?.match(/github\.com\/repos\/([^/]+)\/([^/]+)/);
+  return urlMatch ? `${urlMatch[1]}/${urlMatch[2]}` : 'unknown/repo';
+};
+
 interface PRCardProps {
   pr: GitHubPR;
   onClick?: (pr: GitHubPR) => void;
@@ -37,6 +49,11 @@ interface PRCardProps {
 
 const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
   const [selectedReviewer, setSelectedReviewer] = useState<string | null>(null);
+  
+  // Get PR conversation data to access comments count
+  const repoName = getRepoName(pr);
+  const { data: conversationData } = usePRConversation(repoName, pr.number);
+  const conversationCount = conversationData?.comments ? conversationData.comments.length : 0;
 
   const handleClick = () => {
     if (onClick) {
@@ -53,15 +70,6 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
     setSelectedReviewer(null);
   };
 
-  // Extract repository name from URL
-  const getRepoName = (): string => {
-    // URLs are in format: https://api.github.com/repos/owner/repo/issues/123
-    const repoMatch = pr.repository_url?.match(/github\.com\/repos\/([^/]+)\/([^/]+)/);
-    if (repoMatch) return `${repoMatch[1]}/${repoMatch[2]}`;
-    
-    const urlMatch = pr.url?.match(/github\.com\/repos\/([^/]+)\/([^/]+)/);
-    return urlMatch ? `${urlMatch[1]}/${urlMatch[2]}` : 'unknown/repo';
-  };
 
   const getStateColor = (state: string) => {
     switch (state.toLowerCase()) {
@@ -176,19 +184,28 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false }) => {
       </div>
       
       {/* Description Section */}
-      <MoreInfoSection 
+      <CollapsibleSection 
         title="Description"
         isExpandedByDefault={false}
-        className="pr-more-info"
+        className="pr-description-section"
       >
-        <PRMoreInfo repoName={getRepoName()} prNumber={pr.number} />
-      </MoreInfoSection>
+        <PRDescription repoName={repoName} prNumber={pr.number} />
+      </CollapsibleSection>
+
+      {/* Conversation Section */}
+      <CollapsibleSection 
+        title={`Conversation (${conversationCount})`}
+        isExpandedByDefault={false}
+        className="pr-conversation-section"
+      >
+        <PRConversation repoName={repoName} prNumber={pr.number} />
+      </CollapsibleSection>
       
       {/* Reviewer Comments Modal */}
       {selectedReviewer && (
         <ReviewerCommentsModal
           reviewer={selectedReviewer}
-          repoName={getRepoName()}
+          repoName={repoName}
           prNumber={pr.number}
           isOpen={!!selectedReviewer}
           onClose={closeReviewerModal}
