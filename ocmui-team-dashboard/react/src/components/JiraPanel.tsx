@@ -35,7 +35,7 @@ const JiraPanel: React.FC<JiraPanelProps> = ({ onTicketSelect, selectedTicket })
   return (
     <div className="panel-content">
       <div className="panel-header">
-        <h3><img src={jiraLogo} alt="JIRA" className="panel-icon" /> My Sprint JIRAs</h3>
+        <h3><img src={jiraLogo} alt="JIRA" className="panel-icon" /> I have {data?.total || 0} Sprint JIRAs</h3>
         <span className="last-updated">Last Updated: {lastUpdated} • updates every 5 minutes</span>
       </div>
       

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import type { PrimaryTab, SecondaryTab } from '../App';
+import type { TabType } from '../App';
 import JiraPanel from './JiraPanel';
 import PRPanel from './PRPanel';
 import AssociatedPRsPanel from './AssociatedPRsPanel';
@@ -8,11 +8,10 @@ import JiraLookupPlaceholderPanel from './JiraLookupPlaceholderPanel';
 import AssociatedJirasPanel from './AssociatedJirasPanel';
 
 interface SplitPanelProps {
-  primaryTab: PrimaryTab;
-  secondaryTab: SecondaryTab;
+  currentTab: TabType;
 }
 
-const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => {
+const SplitPanel: React.FC<SplitPanelProps> = ({ currentTab }) => {
   const [leftWidth, setLeftWidth] = useState(50); // Percentage
   const [isDragging, setIsDragging] = useState(false);
   const [prStatus, setPrStatus] = useState<'open' | 'closed'>('open');
@@ -37,11 +36,11 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
 
   // Clear selected PR when switching between GitHub tabs
   useEffect(() => {
-    if (primaryTab === 'github') {
+    if (currentTab === 'my-code-reviews' || currentTab === 'my-prs') {
       setSelectedPR(undefined);
       setInvalidJiraIds([]); // Clear invalid JIRA IDs when switching tabs
     }
-  }, [primaryTab, secondaryTab]);
+  }, [currentTab]);
 
   const handleMouseDown = useCallback(() => {
     setIsDragging(true);
@@ -63,42 +62,43 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ primaryTab, secondaryTab }) => 
     setIsDragging(false);
   }, []);
 
-  // Get content for current tab combination
+  // Get content for current tab
   const getLeftPanelContent = () => {
-    if (primaryTab === 'jira' && secondaryTab === 'my-sprint-jiras') {
-      return <JiraPanel onTicketSelect={handleTicketSelect} selectedTicket={selectedTicket} />;
-    }
+    switch (currentTab) {
+      case 'my-sprint-jiras':
+        return <JiraPanel onTicketSelect={handleTicketSelect} selectedTicket={selectedTicket} />;
 
-    if (primaryTab === 'jira' && secondaryTab === 'jira-lookup') {
-      return <JiraLookupPlaceholderPanel />;
-    }
+      case 'jira-lookup':
+        return <JiraLookupPlaceholderPanel />;
 
-    if (primaryTab === 'github' && secondaryTab === 'my-code-reviews') {
-      return <PRPanel tabType="my-code-reviews" onPRSelect={handlePRSelect} selectedPR={selectedPR} invalidJiraIds={invalidJiraIds} />;
-    }
+      case 'my-code-reviews':
+        return <PRPanel tabType="my-code-reviews" onPRSelect={handlePRSelect} selectedPR={selectedPR} invalidJiraIds={invalidJiraIds} />;
 
-    if (primaryTab === 'github' && secondaryTab === 'my-prs') {
-      return (
-        <PRPanel 
-          tabType="my-prs" 
-          prStatus={prStatus} 
-          onPrStatusChange={setPrStatus} 
-          onPRSelect={handlePRSelect}
-          selectedPR={selectedPR}
-          invalidJiraIds={invalidJiraIds}
-        />
-      );
-    }
+      case 'my-prs':
+        return (
+          <PRPanel 
+            tabType="my-prs" 
+            prStatus={prStatus} 
+            onPrStatusChange={setPrStatus} 
+            onPRSelect={handlePRSelect}
+            selectedPR={selectedPR}
+            invalidJiraIds={invalidJiraIds}
+          />
+        );
 
-    return <EmptyState message="Select a tab to view content" />;
+      default:
+        return <EmptyState message="Select a tab to view content" />;
+    }
   };
 
   const getRightPanelContent = () => {
-    if (primaryTab === 'jira') {
+    // JIRA tabs show Associated PRs
+    if (currentTab === 'my-sprint-jiras' || currentTab === 'jira-lookup') {
       return <AssociatedPRsPanel selectedTicket={selectedTicket} />;
     }
 
-    if (primaryTab === 'github') {
+    // GitHub tabs show Associated JIRAs
+    if (currentTab === 'my-code-reviews' || currentTab === 'my-prs') {
       return <AssociatedJirasPanel selectedPR={selectedPR} onInvalidJiraIds={handleInvalidJiraIds} />;
     }
 

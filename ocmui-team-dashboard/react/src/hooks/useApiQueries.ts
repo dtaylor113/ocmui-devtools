@@ -547,6 +547,8 @@ export const useMySprintJiras = () => {
     queryFn: () => fetchSprintJiras(apiTokens.jiraUsername, apiTokens.jira),
     enabled: isConfigured && !!apiTokens.jiraUsername && !!apiTokens.jira,
     refetchInterval: 5 * 60 * 1000, // Every 5 minutes
+    refetchIntervalInBackground: true, // Continue refreshing when window not focused
+    retry: 3, // Retry failed requests
   });
 };
 
@@ -578,6 +580,8 @@ export const useMyCodeReviews = () => {
     queryFn: () => fetchMyCodeReviews(apiTokens.githubUsername, apiTokens.github),
     enabled: isConfigured && !!apiTokens.githubUsername && !!apiTokens.github,
     refetchInterval: 2 * 60 * 1000, // Every 2 minutes
+    refetchIntervalInBackground: true, // Continue refreshing when window not focused
+    retry: 3, // Retry failed requests
   });
 };
 
@@ -598,6 +602,8 @@ export const useMyPRs = (status: 'open' | 'closed' = 'open') => {
     queryFn: () => fetchMyPRs(apiTokens.githubUsername, apiTokens.github, status),
     enabled: isConfigured && !!apiTokens.githubUsername && !!apiTokens.github,
     refetchInterval: 4 * 60 * 1000, // Every 4 minutes
+    refetchIntervalInBackground: true, // Continue refreshing when window not focused
+    retry: 3, // Retry failed requests
   });
 };
 

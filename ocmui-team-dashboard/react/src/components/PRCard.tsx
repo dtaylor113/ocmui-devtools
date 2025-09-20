@@ -122,7 +122,7 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false, hasInv
       'approved': '✅',
       'changes_requested': '❌',
       'commented': '💬',
-      'review_requested': '📝',
+      'review_requested': '?',
       'dismissed': '⏸️'
     };
     return stateIcons[state] || '💬'; // Fallback to comment icon

@@ -32,11 +32,28 @@ html, body {
   background: #0a0a0a;
   border-bottom: 1px solid #333;
   min-height: 60px;
+  position: relative;
 }
 
 .header-left {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
+}
+
+.header-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+.header-center .secondary-tabs {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border-bottom: none;
 }
 
 .logo {
@@ -61,6 +78,7 @@ html, body {
 .header-right {
   display: flex;
   gap: 12px;
+  flex: 0 0 auto;
 }
 
 .settings-btn,
@@ -82,65 +100,29 @@ html, body {
 }
 
 /* ===== NAVIGATION STYLES ===== */
+/* Navigation now integrated into header */
 .navigation {
-  background: #0a0a0a;
-  border-bottom: 1px solid #333;
-}
-
-.primary-tabs {
-  display: flex;
-  padding: 0 24px;
-  background: #0a0a0a;
-  margin-bottom: 8px;
-}
-
-.primary-tab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 24px;
-  background: none;
-  border: none;
-  color: #9ca3af;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 3px solid transparent;
-}
-
-.primary-tab:hover {
-  color: #e5e7eb;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.primary-tab.active {
-  color: #8b5cf6;
-  border-bottom-color: #8b5cf6;
-}
-
-.tab-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
   background: transparent;
-  border-radius: 3px;
+  border-bottom: none;
 }
 
-/* Make GitHub icons larger in primary tabs */
-.tab-icon[src*="githubIcon"] {
-  width: 38px;
-  height: 38px;
+/* Hide navigation when it would be standalone (not in header) */
+.app > .navigation {
+  display: none;
 }
 
 .secondary-tabs {
   display: flex;
+  justify-content: center;
   padding: 0 24px;
   background: #0a0a0a;
   border-bottom: 1px solid #333;
 }
 
 .secondary-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 12px 20px;
   background: none;
   border: none;
@@ -160,6 +142,21 @@ html, body {
 .secondary-tab.active {
   color: #60a5fa;
   border-bottom-color: #60a5fa;
+}
+
+/* Tab icon styles for single-row navigation */
+.tab-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  background: transparent;
+  border-radius: 3px;
+}
+
+/* Make GitHub icons larger in tabs */
+.tab-icon[src*="githubIcon"] {
+  width: 32px;
+  height: 32px;
 }
 
 /* ===== SPLIT PANEL STYLES ===== */
@@ -208,11 +205,11 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 20px;
   background: #0a0a0a;
   border-bottom: 1px solid #333;
-  min-height: 72px;
-  height: 72px;
+  min-height: 56px;
+  height: 56px;
 }
 
 .panel-header h3 {
@@ -667,8 +664,9 @@ html, body {
 }
 
 .reviewer-badge.reviewer-pending {
-  background: #f59e0b;
-  color: white;
+  background: transparent;
+  color: #9ca3af;
+  border: 1px solid #6b7280;
 }
 
 .reviewer-badge.reviewer-dismissed {
@@ -2284,21 +2282,21 @@ html, body {
     padding: 12px 16px;
   }
   
+  .header-center .secondary-tabs {
+    padding: 0 8px;
+  }
+  
   .logo-text {
     font-size: 18px;
   }
   
-  .primary-tabs,
   .secondary-tabs {
     padding: 0 16px;
   }
   
-  .primary-tab {
-    padding: 12px 16px;
-  }
-  
   .secondary-tab {
     padding: 10px 16px;
+    gap: 6px; /* Slightly smaller gap on mobile */
   }
 
   .modal-content {

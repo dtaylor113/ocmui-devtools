@@ -160,7 +160,7 @@ const ReviewerCommentsModal: React.FC<ReviewerCommentsModalProps> = ({
       'changes_requested': '❌',
       'commented': '💬',
       'inline_comment': '📝',
-      'review_requested': '📝',
+      'review_requested': '?',
       'dismissed': '⏸️'
     };
     return stateIcons[state] || '💬';

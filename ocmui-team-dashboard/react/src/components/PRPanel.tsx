@@ -34,7 +34,13 @@ const PRPanel: React.FC<PRPanelProps> = ({ tabType, prStatus = 'open', onPrStatu
   };
 
   const getTitle = () => {
-    return tabType === 'my-code-reviews' ? 'My Code Reviews' : 'My PRs';
+    const count = data?.total || 0;
+    if (tabType === 'my-code-reviews') {
+      return `I'm assigned to ${count} Code Reviews`;
+    } else {
+      const statusText = prStatus.charAt(0).toUpperCase() + prStatus.slice(1);
+      return `I have ${count} ${statusText} PRs`;
+    }
   };
 
   const getUpdateInterval = () => {
