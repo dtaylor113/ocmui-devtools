@@ -4,7 +4,7 @@ import JiraPanel from './JiraPanel';
 import PRPanel from './PRPanel';
 import AssociatedPRsPanel from './AssociatedPRsPanel';
 import EmptyState from './EmptyState';
-import JiraLookupPlaceholderPanel from './JiraLookupPlaceholderPanel';
+import JiraLookupPanel from './JiraLookupPanel';
 import AssociatedJirasPanel from './AssociatedJirasPanel';
 
 interface SplitPanelProps {
@@ -34,10 +34,17 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ currentTab }) => {
     setInvalidJiraIds(invalidIds);
   };
 
-  // Clear selected PR when switching between GitHub tabs
+  // Clear selections when switching between different tab types
   useEffect(() => {
     if (currentTab === 'my-code-reviews' || currentTab === 'my-prs') {
+      // Switching to GitHub tabs - clear PR selection and JIRA ticket selection
       setSelectedPR(undefined);
+      setSelectedTicket(undefined); // Clear JIRA ticket selection
+      setInvalidJiraIds([]); // Clear invalid JIRA IDs when switching tabs
+    } else if (currentTab === 'my-sprint-jiras' || currentTab === 'jira-lookup') {
+      // Switching to JIRA tabs - clear PR selection AND JIRA ticket selection for clean slate
+      setSelectedPR(undefined);
+      setSelectedTicket(undefined); // Clear JIRA ticket selection to prevent stale Associated PRs
       setInvalidJiraIds([]); // Clear invalid JIRA IDs when switching tabs
     }
   }, [currentTab]);
@@ -69,7 +76,7 @@ const SplitPanel: React.FC<SplitPanelProps> = ({ currentTab }) => {
         return <JiraPanel onTicketSelect={handleTicketSelect} selectedTicket={selectedTicket} />;
 
       case 'jira-lookup':
-        return <JiraLookupPlaceholderPanel />;
+        return <JiraLookupPanel onTicketSelect={handleTicketSelect} selectedTicket={selectedTicket} />;
 
       case 'my-code-reviews':
         return <PRPanel tabType="my-code-reviews" onPRSelect={handlePRSelect} selectedPR={selectedPR} invalidJiraIds={invalidJiraIds} />;

@@ -26,8 +26,8 @@ interface JiraCardProps {
 }
 
 const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDefault = false, isSelected = false }) => {
-  // Get full ticket data to access comments count
-  const { data: ticketData } = useJiraTicket(ticket.key);
+  // Get full ticket data to access comments count (only if ticket exists and has key)
+  const { data: ticketData } = useJiraTicket(ticket?.key || '');
   const commentsCount = ticketData?.success && ticketData?.ticket?.comments ? ticketData.ticket.comments.length : 0;
   
   const formatDate = (dateString: string) => {
