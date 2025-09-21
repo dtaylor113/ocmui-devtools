@@ -840,4 +840,180 @@ async function processGitHubImagesSmartly(html: string, token?: string): Promise
   }
   
   return html;
+}// TIMEZONE-AWARE UTILITIES FOR EXISTING FUNCTIONS
+// ===========================================
+
+/**
+ * Enhanced GitHub comment preparation with timezone awareness
+ * @param comments - Array of GitHub comment objects
+ * @param userTimezone - User's preferred timezone for timestamp formatting
+ * @returns Sorted array of comments with timezone-aware timestamps
+ */
+export function prepareGitHubCommentsWithTimezone(
+  comments: GitHubComment[],
+  userTimezone?: string
+): (GitHubComment & { formattedDate?: string })[] {
+  if (!comments || comments.length === 0) {
+    return [];
+  }
+  
+  // Sort comments by creation date and add formatted timestamps
+  return [...comments]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .map(comment => ({
+      ...comment,
+      formattedDate: formatCommentTimestamp(comment.created_at, userTimezone)
+    }));
+}
+
+/**
+ * Format a comment/conversation timestamp with timezone awareness
+ * @param dateInput - Comment timestamp
+ * @param userTimezone - User's preferred timezone
+ * @returns Formatted timestamp for comment displays
+ */
+export function formatCommentTimestamp(dateInput: string | Date | number, userTimezone?: string): string {
+  if (!dateInput) return 'N/A';
+  
+  // Use relative formatting for recent comments, absolute for older ones
+  const date = new Date(dateInput);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 7) {
+    return formatRelativeDateInTimezone(dateInput, userTimezone);
+  }
+  
+  return formatDateInTimezone(dateInput, userTimezone, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+/**
+ * Format a GitHub PR/issue timestamp with timezone awareness
+ * @param dateInput - GitHub timestamp string
+ * @param userTimezone - User's preferred timezone
+ * @returns Formatted timestamp for PR/issue displays
+ */
+export function formatGitHubTimestamp(
+  dateInput: string | Date | number,
+  userTimezone?: string
+): string {
+  if (!dateInput) return 'N/A';
+  
+  return formatDateInTimezone(dateInput, userTimezone, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+/**
+ * Format a JIRA timestamp with timezone awareness
+ * @param dateInput - JIRA timestamp string (usually ISO format)
+ * @param userTimezone - User's preferred timezone
+ * @returns Formatted timestamp for JIRA displays
+ */
+export function formatJiraTimestamp(
+  dateInput: string | Date | number,
+  userTimezone?: string
+): string {
+  if (!dateInput) return 'N/A';
+  
+  return formatDateInTimezone(dateInput, userTimezone, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+/**
+ * Format a date as a short relative time ("2 days ago") with timezone awareness
+ * @param dateInput - Date string, Date object, or timestamp
+ * @param userTimezone - User's preferred timezone
+ * @returns Formatted relative time string
+ */
+export function formatRelativeDateInTimezone(
+  dateInput: string | Date | number,
+  userTimezone?: string
+): string {
+  if (!dateInput) return 'N/A';
+  
+  try {
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    // For recent times, show relative
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return diffMinutes < 1 ? 'just now' : `${diffMinutes}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    }
+    
+    // For older dates, show formatted date in user's timezone
+    return formatDateInTimezone(date, userTimezone, {
+      month: 'short',
+      day: 'numeric',
+      year: diffDays > 365 ? 'numeric' : undefined
+    });
+  } catch (error) {
+    console.error('❌ Error formatting relative date:', error);
+    return 'Invalid Date';
+  }
+}
+
+/**
+ * Format a date/time in the user's preferred timezone
+ * @param dateInput - Date string, Date object, or timestamp
+ * @param userTimezone - User's preferred timezone (IANA format)
+ * @param options - Intl.DateTimeFormat options for customization
+ * @returns Formatted date string in user's timezone
+ */
+export function formatDateInTimezone(
+  dateInput: string | Date | number,
+  userTimezone?: string,
+  options?: Intl.DateTimeFormatOptions
+): string {
+  if (!dateInput) return 'N/A';
+  
+  try {
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    
+    // Use user's timezone or fall back to system timezone
+    const timezone = userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    // Default formatting options
+    const defaultOptions: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: timezone,
+      ...options
+    };
+    
+    return new Intl.DateTimeFormat('en-US', defaultOptions).format(date);
+  } catch (error) {
+    console.error('❌ Error formatting date in timezone:', error);
+    return 'Invalid Date';
+  }
 }

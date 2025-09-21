@@ -1,14 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { ApiTokens } from '../types/settings';
+import type { ApiTokens, UserPreferences } from '../types/settings';
 
 interface SettingsContextType {
   apiTokens: ApiTokens;
+  userPreferences: UserPreferences;
   isSettingsModalOpen: boolean;
   isConfigured: boolean;
   openSettingsModal: () => void;
   closeSettingsModal: () => void;
   saveSettings: (tokens: ApiTokens) => void;
+  updateUserPreferences: (preferences: Partial<UserPreferences>) => void;
   testGithubToken: (token: string) => Promise<{ success: boolean; message: string }>;
   testJiraToken: (token: string) => Promise<{ success: boolean; message: string }>;
 }
@@ -35,6 +37,10 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     jiraUsername: ''
   });
   
+  const [userPreferences, setUserPreferences] = useState<UserPreferences>({
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone // Default to system timezone
+  });
+  
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // Check if all required tokens are configured
@@ -46,6 +52,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   // Load settings from localStorage on mount
   useEffect(() => {
     loadSettingsFromStorage();
+    loadUserPreferencesFromStorage();
   }, []);
 
   const loadSettingsFromStorage = () => {
@@ -54,19 +61,41 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       if (stored) {
         const parsedTokens = JSON.parse(stored);
         setApiTokens(prev => ({ ...prev, ...parsedTokens }));
-        console.log('📱 Settings loaded from localStorage');
+        console.log('📱 API tokens loaded from localStorage');
       }
     } catch (error) {
-      console.error('❌ Error loading settings:', error);
+      console.error('❌ Error loading API tokens:', error);
+    }
+  };
+  
+  const loadUserPreferencesFromStorage = () => {
+    try {
+      const stored = localStorage.getItem('ocmui_user_preferences');
+      if (stored) {
+        const parsedPrefs = JSON.parse(stored);
+        setUserPreferences(prev => ({ ...prev, ...parsedPrefs }));
+        console.log('📱 User preferences loaded from localStorage');
+      }
+    } catch (error) {
+      console.error('❌ Error loading user preferences:', error);
     }
   };
 
   const saveSettingsToStorage = (tokens: ApiTokens) => {
     try {
       localStorage.setItem('ocmui_api_tokens', JSON.stringify(tokens));
-      console.log('💾 Settings saved to localStorage');
+      console.log('💾 API tokens saved to localStorage');
     } catch (error) {
-      console.error('❌ Error saving settings:', error);
+      console.error('❌ Error saving API tokens:', error);
+    }
+  };
+  
+  const saveUserPreferencesToStorage = (preferences: UserPreferences) => {
+    try {
+      localStorage.setItem('ocmui_user_preferences', JSON.stringify(preferences));
+      console.log('💾 User preferences saved to localStorage');
+    } catch (error) {
+      console.error('❌ Error saving user preferences:', error);
     }
   };
 
@@ -82,7 +111,14 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     setApiTokens(newTokens);
     saveSettingsToStorage(newTokens);
     closeSettingsModal();
-    console.log('✅ Settings saved successfully');
+    console.log('✅ API tokens saved successfully');
+  };
+  
+  const updateUserPreferences = (newPreferences: Partial<UserPreferences>) => {
+    const updatedPrefs = { ...userPreferences, ...newPreferences };
+    setUserPreferences(updatedPrefs);
+    saveUserPreferencesToStorage(updatedPrefs);
+    console.log('✅ User preferences updated successfully');
   };
 
   const testGithubToken = async (token: string): Promise<{ success: boolean; message: string }> => {
@@ -144,11 +180,13 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
 
   const value: SettingsContextType = {
     apiTokens,
+    userPreferences,
     isSettingsModalOpen,
     isConfigured,
     openSettingsModal,
     closeSettingsModal,
     saveSettings,
+    updateUserPreferences,
     testGithubToken,
     testJiraToken
   };

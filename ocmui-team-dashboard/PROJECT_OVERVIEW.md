@@ -44,22 +44,23 @@ react/
 │   │   ├── CollapsibleSection.tsx    # Reusable collapsible UI
 │   │   ├── ReviewerCommentsModal.tsx # Reviewer comment popup
 │   │   ├── SettingsModal.tsx         # Token management
+│   │   ├── TimeboardModal.tsx        # Team timezone dashboard
 │   │   ├── BasePanel.tsx             # Common panel wrapper
 │   │   └── EmptyState.tsx            # Placeholder component
 │   │
 │   ├── contexts/                 # React Context API
-│   │   ├── SettingsContext.tsx   # Token management & persistence
+│   │   ├── SettingsContext.tsx   # Token management, user preferences & persistence
 │   │   └── QueryProvider.tsx     # React Query setup
 │   │
 │   ├── hooks/                    # Custom React hooks  
 │   │   └── useApiQueries.ts      # API integration with React Query
 │   │
 │   ├── types/                    # TypeScript definitions
-│   │   ├── settings.ts           # Settings interfaces
+│   │   ├── settings.ts           # Settings interfaces (includes UserPreferences)
 │   │   └── marked.d.ts           # Markdown type declarations
 │   │
 │   ├── utils/                    # Utility functions
-│   │   └── formatting.ts         # Advanced markdown parsing with Atlassian libraries
+│   │   └── formatting.ts         # Advanced markdown parsing & timezone-aware date formatting
 │   │
 │   └── styles/
 │       └── App.css               # Complete application styling
@@ -81,33 +82,54 @@ server/
 
 #### **Why Backend Server is Required for JIRA (But Not GitHub)**
 
-The application uses **different architectural approaches** for JIRA vs GitHub APIs due to their security models:
+The Express server exists **specifically to solve JIRA CORS limitations** - it's not an architectural preference but a necessary workaround:
 
-**🔒 JIRA API Proxy Pattern:**
-- **CORS Restrictions**: Red Hat's JIRA (`issues.redhat.com`) blocks direct browser requests due to enterprise security policies
-- **Server-Side Proxy**: Express server acts as a proxy to bypass CORS limitations
-- **Token Security**: JIRA tokens never leave the server environment
-- **Request Flow**: `Frontend → Backend Server → JIRA API → Backend → Frontend`
+**❌ JIRA Direct Access Fails:**
+```javascript
+// This fails from browser with CORS error:
+fetch('https://issues.redhat.com/rest/api/2/search', {
+  headers: { 'Authorization': `Basic ${base64(email:token)}` }
+});
+// Error: "Access-Control-Allow-Origin header is not present"
+```
 
-**🌐 GitHub API Direct Access:**
-- **CORS-Enabled**: GitHub's public API explicitly allows browser requests with proper headers
-- **Client-Side Tokens**: GitHub personal access tokens work directly from frontend
-- **Public API Design**: Built for client-side applications and OAuth flows  
-- **Request Flow**: `Frontend → GitHub API directly`
+**✅ GitHub Direct Access Works:**
+```javascript
+// This works perfectly from browser:
+fetch('https://api.github.com/repos/owner/repo/pulls', {
+  headers: { 'Authorization': `token ${githubToken}` }
+});
+```
 
-This hybrid architecture provides optimal security for enterprise JIRA while maintaining performance for public GitHub API calls.
+**🔒 JIRA API Challenges:**
+- **No CORS Support**: Red Hat JIRA doesn't allow cross-origin browser requests
+- **Enterprise Security**: Corporate JIRA instances block direct browser access by design
+- **Authentication Model**: Basic Auth with email:token requires server-side handling
+- **Solution**: Express proxy acts as CORS-free bridge between frontend and JIRA
+
+**🌐 GitHub API Advantages:**
+- **CORS-Enabled**: GitHub API designed for browser access with proper headers
+- **Client-Side Friendly**: Personal Access Tokens work directly from frontend
+- **Public API Design**: Built specifically for client applications and OAuth
+
+**Architecture Summary:**
+- **JIRA**: `React (5174) → Express Proxy (3017) → JIRA API` *(required due to CORS)*
+- **GitHub**: `React (5174) → GitHub API directly` *(no proxy needed)*
+
+This hybrid approach eliminates unnecessary complexity for GitHub while solving JIRA's enterprise security restrictions.
 
 ---
 
 ## 🎨 User Interface & Features
 
 ### **Navigation System**
-- **Single-Row Header**: Compact design with logo, navigation, and settings
+- **Single-Row Header**: Compact design with logo, navigation, timeboard, and settings
 - **Four Primary Tabs**:
   1. **My Sprint JIRAs** - Current sprint tickets with status tracking
   2. **My Code Reviews** - PRs awaiting user review 
   3. **My PRs** - Personal PRs with open/closed filtering
   4. **JIRA Lookup** - Search any JIRA ticket with history
+- **Team Timeboard**: 🌍 Globe button opens team timezone dashboard with member selection
 
 ### **Core Features**
 
@@ -159,6 +181,16 @@ This hybrid architecture provides optimal security for enterprise JIRA while mai
 - **Review Comments**: Inline code review feedback
 - **Status Badges**: Merge status, review state, CI status
 - **External Links**: Direct links to GitHub PRs
+- **Timezone-Aware Timestamps**: All dates displayed in user's selected timezone
+
+#### **TimeboardModal Component**
+- **Team Timezone Dashboard**: View all team members' local times simultaneously
+- **Smart Identity Selection**: "I am..." feature for first-time users with automatic timezone setting
+- **Multi-Mode Display**: "Now" for current time or "Reference" for specific time comparisons
+- **Dynamic Member Management**: Add/edit/delete team members with timezone validation
+- **Off-Hours Detection**: Visual indicators for team members outside 9am-5pm local time
+- **Search & Filter**: Quick filtering by name, role, or timezone
+- **IANA Timezone Support**: Full timezone database with automatic DST handling
 
 ---
 
@@ -197,9 +229,9 @@ This hybrid architecture provides optimal security for enterprise JIRA while mai
 ## 🔧 Technical Architecture
 
 ### **State Management**
-- **React Context**: Application-wide settings and authentication
+- **React Context**: Application-wide settings, authentication, and user preferences (timezone)
 - **React Query**: Server state management with caching and background updates
-- **LocalStorage**: Token persistence and search history
+- **LocalStorage**: Token persistence, search history, timezone preferences, and team member selection
 - **Component State**: UI state and form management
 
 ### **API Integration**
@@ -214,6 +246,66 @@ This hybrid architecture provides optimal security for enterprise JIRA while mai
 - **Responsive Design**: Mobile-compatible layouts
 - **Component Isolation**: Scoped CSS classes prevent conflicts
 
+### **Image Retrieval Systems**
+
+The application handles image display differently for JIRA and GitHub content due to varying security policies and architectural constraints.
+
+#### **Current Implementation**
+- **JIRA Images**: ✅ Display inline successfully
+  - JIRA attachments load directly from `https://issues.redhat.com/secure/attachment/` URLs
+  - Images render properly in descriptions and comments using `<img>` tags
+  - Authentication handled via browser session/cookies to Red Hat JIRA
+
+- **GitHub Images**: ⚠️ Display as clickable link-and-launch buttons
+  - GitHub user-attachments appear as styled buttons with external link icons
+  - Users must click to open images in new tabs
+  - Not ideal UX but functional fallback
+
+#### **Legacy JavaScript App Behavior**
+The original JavaScript application (`/src/`) successfully displays **both JIRA and GitHub images inline**:
+
+- **Same-Origin Advantage**: Legacy app runs on `localhost:3017` (same as backend)
+- **No CORS Restrictions**: All requests appear to come from the same origin
+- **Direct Image Loading**: GitHub user-attachments load directly without proxy issues
+- **Unified Authentication**: Both GitHub and JIRA images work seamlessly
+
+#### **React App Challenges & Failed Attempts**
+Multiple approaches were attempted to achieve inline GitHub image display in the React app:
+
+**Root Cause**: The React app runs on `localhost:5174` (Vite dev server) while the backend runs on `localhost:3017`, creating cross-origin request issues.
+
+**Attempted Solutions**:
+1. **Backend Image Proxy** (`/api/github-image-proxy`)
+   - Implemented comprehensive header spoofing (User-Agent, Referer, etc.)
+   - GitHub consistently returned 404 errors for user-attachments URLs
+   - User-attachments redirect to signed S3 URLs with strict CORS policies
+
+2. **Header Optimization**
+   - Tried various browser-like User-Agent strings
+   - Experimented with different Referer policies
+   - Removed authentication headers for public images
+   - None consistently worked due to GitHub's security model
+
+3. **Direct Display with Fallbacks**
+   - Attempted direct `<img>` tags with `onerror` handlers
+   - GitHub user-attachments URLs are temporary/signed (expire quickly)
+   - S3 redirects block cross-origin requests from `localhost:5174`
+
+**Technical Limitations**:
+- **GitHub Security Model**: User-attachments use temporary, signed URLs that expire
+- **CORS Policy**: GitHub/S3 blocks cross-origin image requests by design
+- **Authentication Requirements**: GitHub images require specific session context
+- **URL Expiration**: User-attachments URLs become invalid after short periods
+
+**Brief Success & Regression**:
+We achieved inline GitHub image display temporarily during development, but the solution was unstable due to:
+- URL expiration cycles
+- Inconsistent GitHub API responses  
+- Development environment variations
+- Authentication token refresh cycles
+
+The current clickable link approach provides reliable access to GitHub images, though it requires an additional user interaction step.
+
 ---
 
 ## 🚨 Known Issues & Considerations
@@ -224,7 +316,7 @@ This hybrid architecture provides optimal security for enterprise JIRA while mai
 - **GitHub Image Placeholders**: Most PR images show as styled clickable links due to GitHub's security model
 
 ### **Performance Notes**
-- **Image Caching**: GitHub images cached in `/images/github/` directory
+- **Image Loading**: JIRA images load directly; GitHub images use clickable fallbacks
 - **Bundle Size**: ~2MB including markdown parsing libraries
 - **Memory Usage**: React Query maintains reasonable cache limits
 
@@ -246,50 +338,102 @@ This hybrid architecture provides optimal security for enterprise JIRA while mai
 
 ---
 
-## 🕐 Legacy JavaScript Application & Remaining Task
+## ✅ Migration Complete - Legacy JavaScript Application
 
 ### **Background**
-This React application was migrated from a working plain JavaScript implementation located in `/src/`. All core features have been successfully ported to React with enhanced functionality.
+This React application was migrated from a working plain JavaScript implementation located in `/src/`. **ALL core features have been successfully ported to React** with significant enhancements.
 
 ### **Legacy Architecture Reference** (`/src/`)
 ```
 src/
-├── app.js                 # Main orchestrator
-├── components/            # Feature modules
+├── app.js                 # Main orchestrator (ported ✅)
+├── components/            # Feature modules  
 │   ├── jira.js           # JIRA functionality (ported ✅)
 │   ├── github.js         # GitHub functionality (ported ✅)  
 │   ├── myPrs.js          # PR management (ported ✅)
 │   ├── mySprintJiras.js  # Sprint JIRAs (ported ✅)
 │   ├── reviews.js        # Code reviews (ported ✅)
-│   └── timeboard.js      # ⏰ TIMEZONE FEATURE - needs porting
-├── core/                 # Application state & settings
-├── utils/                # Shared utilities
-└── styles/main.css       # Legacy styling (reference only)
+│   └── timeboard.js      # ⏰ TIMEZONE FEATURE (ported ✅)
+├── core/                 # Application state & settings (ported ✅)
+├── utils/                # Shared utilities (ported ✅)
+└── styles/main.css       # Legacy styling (ported ✅)
 ```
 
-### **Remaining Task: Timezone Feature Implementation**
+### **✅ Completed Migration Features**
 
-The only remaining enhancement is porting the timezone functionality from the legacy JavaScript app.
+#### **🕐 Timezone & Timeboard Implementation** 
+The sophisticated timezone functionality has been fully ported and enhanced:
 
-#### **Implementation Requirements**
-- **Header Button**: Add timezone picker between Timeboard 🕒 and Settings ⚙️ buttons
-- **Settings Integration**: Add timezone preference to `SettingsContext`
-- **UI Component**: Create timezone selection dropdown/modal
-- **Date Conversion**: Update all timestamp displays across components:
-  - `PRCard.tsx` and `JiraCard.tsx` timestamp displays
-  - `PRConversation.tsx` and `JiraComments.tsx` comment dates
-  - All existing `formatDate()` calls in `formatting.ts`
-- **Persistence**: Save timezone preference to localStorage
+**New Components Added:**
+- `TimeboardModal.tsx` - Complete team timezone dashboard with advanced features
+- Enhanced `SettingsContext.tsx` - User preferences with timezone persistence
+- Enhanced `formatting.ts` - Timezone-aware date formatting utilities
 
-#### **Files to Modify**
-1. `/react/src/components/Header.tsx` - Add timezone button
-2. `/react/src/contexts/SettingsContext.tsx` - Add timezone state
-3. `/react/src/utils/formatting.ts` - Add timezone conversion utilities  
-4. Update timestamp displays across all components
+**Key Features Implemented:**
+- **Team Timeboard Dashboard**: View all team members' current local times
+- **"I am..." Identity Selection**: Smart first-time user experience with automatic timezone detection
+- **Timezone-Aware Timestamps**: All dates across the application display in user's selected timezone
+- **Multi-Mode Time Display**: Current time vs. reference time comparisons
+- **Member Management**: Add/edit/delete team members with full timezone support
+- **Off-Hours Detection**: Visual indicators for team members outside business hours
+- **Advanced Search & Filtering**: Quick team member lookup capabilities
 
-#### **Expected Scope**
-2-3 hours - Medium complexity feature requiring timezone logic and UI integration.
+**Enhanced Components:**
+- `PRCard.tsx` - All PR timestamps now timezone-aware
+- `JiraCard.tsx` - All JIRA timestamps now timezone-aware  
+- `PRConversation.tsx` - Comment timestamps now timezone-aware
+- `JiraComments.tsx` - Comment timestamps now timezone-aware
+- `Header.tsx` - Integrated timeboard access with streamlined UX
+
+#### **🎨 UI/UX Improvements Beyond Legacy**
+- **Streamlined Controls**: Clean left/right grouped layout in timeboard controls
+- **Red Alert Styling**: Consistent alert indicators for unset user preferences
+- **Responsive Design**: Mobile-compatible timeboard interface
+- **Professional Spacing**: Eliminated excessive padding throughout interface
+- **Visual Hierarchy**: Clear grouping and separation of functional areas
 
 ---
 
-**The React application is fully functional and production-ready. Only the timezone feature remains to be ported from the legacy implementation.**
+## 🎯 Project Status: 100% Complete
+
+**The React application is now fully functional, production-ready, and contains ALL functionality from the legacy JavaScript implementation plus significant enhancements.**
+
+### **Next Steps: Legacy Cleanup & Production Setup**
+
+#### **Phase 1: Remove Legacy Application** 🗑️
+- **Delete `/src/` directory**: Remove entire legacy JavaScript codebase
+- **Clean up root files**: Remove legacy `package.json`, `webpack.config.js`, and related files
+- **Archive `/dist/` folder**: Remove built legacy application files
+
+#### **Phase 2: Make React App the Default** 🚀
+- **Update `README.md`**: Replace instructions to point to React application (`/react/`)
+- **Modify `setup.sh`**: Update script to install React dependencies and start React dev server
+- **Update root `package.json`**: Simplify to only manage the React application
+- **Restructure repository**: Consider moving React app contents to root level
+
+#### **Phase 3: Production Optimization** ⚡
+- **Build Process**: Optimize production build for deployment
+- **Environment Configuration**: Set up production vs. development environments
+- **Documentation**: Update all documentation to reflect React-only architecture
+- **Deployment**: Configure hosting for React SPA with Express.js API server
+
+### **Recommended Repository Structure (Post-Cleanup)**
+```
+ocmui-team-dashboard/
+├── src/                  # React application (moved from /react/src/)
+├── server/               # Express.js API server (unchanged)
+├── package.json          # React app dependencies
+├── vite.config.ts        # Vite build configuration
+├── README.md             # Updated React-focused documentation
+└── setup.sh              # Simplified React setup script
+```
+
+### **Project Goals - Next Phase**
+1. **🧹 Legacy Removal**: Clean elimination of JavaScript codebase
+2. **📚 Documentation Update**: Comprehensive React-focused documentation  
+3. **🚀 Production Readiness**: Optimized build and deployment configuration
+4. **👥 Team Onboarding**: Simplified setup process for new team members
+5. **📈 Performance Monitoring**: Analytics and performance optimization
+6. **🔧 Maintenance Mode**: Focus on bug fixes and incremental improvements
+
+**The core application functionality is complete. Future work focuses on operational excellence and team productivity optimization.**

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePRConversation } from '../hooks/useApiQueries';
-import { parseGitHubMarkdownWithCaching, prepareGitHubComments } from '../utils/formatting';
+import { parseGitHubMarkdownWithCaching, prepareGitHubComments, formatCommentTimestamp } from '../utils/formatting';
 import { useSettings } from '../contexts/SettingsContext';
 
 interface PRConversationProps {
@@ -10,7 +10,7 @@ interface PRConversationProps {
 
 const PRConversation: React.FC<PRConversationProps> = ({ repoName, prNumber }) => {
   const { data, isLoading, error } = usePRConversation(repoName, prNumber);
-  const { apiTokens } = useSettings();
+  const { apiTokens, userPreferences } = useSettings();
   const [parsedComments, setParsedComments] = useState<Record<string, string>>({});
   const [parsingComments, setParsingComments] = useState(false);
 
@@ -80,11 +80,7 @@ const PRConversation: React.FC<PRConversationProps> = ({ repoName, prNumber }) =
                     )}
                   </span>
                   <span className="comment-date">
-                    {new Date(comment.created_at || comment.submitted_at || '').toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short', 
-                      day: 'numeric'
-                    })}
+                    {formatCommentTimestamp(comment.created_at || comment.submitted_at || '', userPreferences.timezone)}
                   </span>
                 </div>
                 <div 

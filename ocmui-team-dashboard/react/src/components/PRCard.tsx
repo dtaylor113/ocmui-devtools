@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { GitHubReviewer } from '../hooks/useApiQueries';
 import { usePRConversation } from '../hooks/useApiQueries';
+import { useSettings } from '../contexts/SettingsContext';
+import { formatRelativeDateInTimezone } from '../utils/formatting';
 import ReviewerCommentsModal from './ReviewerCommentsModal';
 import CollapsibleSection from './CollapsibleSection';
 import PRDescription from './PRDescription';
@@ -50,6 +52,7 @@ interface PRCardProps {
 }
 
 const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false, hasInvalidJiraIds = false, invalidJiraIds = [] }) => {
+  const { userPreferences } = useSettings();
   const [selectedReviewer, setSelectedReviewer] = useState<string | null>(null);
   const [showJiraWarning, setShowJiraWarning] = useState(false);
   
@@ -75,18 +78,6 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false, hasInv
       case 'merged': return '#8b5cf6';
       default: return '#6b7280';
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString();
   };
 
   // Helper functions for reviewer badges (based on old JS app)
@@ -179,7 +170,7 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false, hasInv
         </span>
         {/* Author and date info */}
         <span className="pr-card-author-info">
-          By {pr.user?.login || 'Unknown user'} • Created: {formatDate(pr.created_at)} • Last Updated: {formatDate(pr.updated_at)}
+          By {pr.user?.login || 'Unknown user'} • Created: {formatRelativeDateInTimezone(pr.created_at, userPreferences.timezone)} • Last Updated: {formatRelativeDateInTimezone(pr.updated_at, userPreferences.timezone)}
         </span>
       </div>
       

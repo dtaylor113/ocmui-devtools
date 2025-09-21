@@ -3,6 +3,8 @@ import CollapsibleSection from './CollapsibleSection';
 import JiraDescription from './JiraDescription';
 import JiraComments from './JiraComments';
 import { useJiraTicket } from '../hooks/useApiQueries';
+import { useSettings } from '../contexts/SettingsContext';
+import { formatJiraTimestamp } from '../utils/formatting';
 
 interface JiraTicket {
   key: string;
@@ -28,30 +30,9 @@ interface JiraCardProps {
 const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDefault = false, isSelected = false }) => {
   // Get full ticket data to access comments count (only if ticket exists and has key)
   const { data: ticketData } = useJiraTicket(ticket?.key || '');
+  const { userPreferences } = useSettings();
   const commentsCount = ticketData?.success && ticketData?.ticket?.comments ? ticketData.ticket.comments.length : 0;
   
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'Not specified';
-    
-    try {
-      const date = new Date(dateString);
-      
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        console.warn(`Invalid date string in JIRA: ${dateString}`);
-        return 'Invalid Date';
-      }
-      
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'numeric', 
-        day: 'numeric' 
-      });
-    } catch (error) {
-      console.error(`Error formatting date: ${dateString}`, error);
-      return 'Date Error';
-    }
-  };
 
   const getTypeColor = (type: string) => {
     switch (type.toUpperCase()) {
@@ -148,7 +129,7 @@ const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDe
           </div>
           <div className="jira-card-field">
             <span className="jira-field-label">Last Updated:</span>
-            <span className="jira-field-value">{formatDate(ticket.updated)}</span>
+            <span className="jira-field-value">{formatJiraTimestamp(ticket.updated, userPreferences.timezone)}</span>
           </div>
         </div>
         <div className="jira-metadata-row">
@@ -158,7 +139,7 @@ const JiraCard: React.FC<JiraCardProps> = ({ ticket, onClick, expandMoreInfoByDe
           </div>
           <div className="jira-card-field">
             <span className="jira-field-label">Created:</span>
-            <span className="jira-field-value">{formatDate(ticket.created)}</span>
+            <span className="jira-field-value">{formatJiraTimestamp(ticket.created, userPreferences.timezone)}</span>
           </div>
         </div>
       </div>
