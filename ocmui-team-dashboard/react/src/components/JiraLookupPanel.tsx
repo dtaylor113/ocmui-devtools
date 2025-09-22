@@ -41,8 +41,7 @@ const JiraLookupPanel: React.FC<JiraLookupPanelProps> = ({ onTicketSelect, selec
   const { 
     data: jiraTicketData, 
     isLoading: jiraLoading, 
-    error: jiraError,
-    refetch: refetchJira 
+    error: jiraError
   } = useJiraTicket(selectedJiraId);
 
   // Load history from localStorage on mount
@@ -224,9 +223,10 @@ const JiraLookupPanel: React.FC<JiraLookupPanelProps> = ({ onTicketSelect, selec
       <BasePanel 
         title="JIRA Lookup" 
         icon={jiraLogo}
+        iconAlt="JIRA"
         isLoading={true}
-        loadingText={`Loading ${selectedJiraId}...`}
-      />
+        loadingMessage={`Loading ${selectedJiraId}...`}
+      ><div>Loading...</div></BasePanel>
     );
   }
 
@@ -236,10 +236,9 @@ const JiraLookupPanel: React.FC<JiraLookupPanelProps> = ({ onTicketSelect, selec
       <BasePanel 
         title="JIRA Lookup" 
         icon={jiraLogo}
-        hasError={true}
-        errorTitle="JIRA credentials required"
-        errorMessage="Please configure your JIRA token and username (email) in Settings"
-      />
+        iconAlt="JIRA"
+        error={new Error("JIRA credentials required: Please configure your JIRA token and username (email) in Settings")}
+      ><div>Configuration required</div></BasePanel>
     );
   }
 

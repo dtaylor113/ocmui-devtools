@@ -105,13 +105,6 @@ const AssociatedJirasPanel: React.FC<AssociatedJirasPanelProps> = ({ selectedPR,
     console.log('JIRA ticket clicked:', ticket);
   };
 
-  const getRepoName = (pr: GitHubPR): string => {
-    const repoMatch = pr.repository_url?.match(/github\.com\/repos\/([^/]+)\/([^/]+)/);
-    if (repoMatch) return `${repoMatch[1]}/${repoMatch[2]}`;
-    
-    const urlMatch = pr.url?.match(/github\.com\/repos\/([^/]+)\/([^/]+)/);
-    return urlMatch ? `${urlMatch[1]}/${urlMatch[2]}` : 'unknown/repo';
-  };
 
   return (
     <BasePanel

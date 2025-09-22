@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useMyCodeReviews, useMyPRs, useLastUpdatedFormat } from '../hooks/useApiQueries';
 import { useSettings } from '../contexts/SettingsContext';
 import PRCard from './PRCard';
@@ -58,10 +58,6 @@ const PRPanel: React.FC<PRPanelProps> = ({ tabType, prStatus = 'open', onPrStatu
     return tabType === 'my-code-reviews' ? 'Loading code reviews...' : 'Loading your PRs...';
   };
 
-  const getErrorMessage = (error: Error) => {
-    const type = tabType === 'my-code-reviews' ? 'code reviews' : 'your PRs';
-    return `❌ Error loading ${type}: ${error.message}`;
-  };
 
   // Header controls for My PRs status toggle
   const headerControls = tabType === 'my-prs' && onPrStatusChange ? (

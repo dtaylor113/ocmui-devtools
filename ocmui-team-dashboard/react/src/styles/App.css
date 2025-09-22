@@ -3109,3 +3109,42 @@ html, body {
   border-radius: 6px;
   font-size: 14px;
 }
+
+/* GitHub Image Fallback Links */
+.github-image-fallback {
+  display: inline-block;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border: 2px dashed #d1d5db;
+  border-radius: 6px;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin: 4px 0;
+}
+
+.github-image-fallback:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  color: #374151;
+  text-decoration: none;
+}
+
+.github-image-fallback:active {
+  transform: scale(0.98);
+}
+
+/* Dark theme support */
+body.dark-theme .github-image-fallback {
+  background: #374151;
+  border-color: #6b7280;
+  color: #d1d5db;
+}
+
+body.dark-theme .github-image-fallback:hover {
+  background: #4b5563;
+  border-color: #9ca3af;
+  color: #f3f4f6;
+}

@@ -1,111 +1,55 @@
 import { marked } from 'marked';
 import { WikiMarkupTransformer } from '@atlaskit/editor-wikimarkup-transformer';
 
-/**
- * Cache an image and return the local URL
- * @param imageUrl - Original image URL
- * @param type - 'github' or 'jira'
- * @param token - API token if needed
- * @returns Promise<string> - Local image URL or fallback
- */
-async function cacheImage(imageUrl: string, type: 'github' | 'jira', token?: string): Promise<string | null> {
-  try {
-    const endpoint = type === 'github' ? '/api/cache-github-image' : '/api/cache-jira-image';
-    
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        imageUrl,
-        ...(token && { token })
-      })
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        console.log(`✅ Image cached successfully: ${imageUrl} -> ${result.localUrl}`);
-        return result.localUrl;
-      }
-    }
-    
-    console.warn(`⚠️ Image caching failed for: ${imageUrl}, falling back to clickable link`);
-    return null; // Will trigger fallback
-  } catch (error) {
-    console.warn(`⚠️ Image caching error for: ${imageUrl}`, error);
-    return null; // Will trigger fallback
-  }
-}
+// Complex image caching removed - not needed when serving from same origin (localhost:3017)
+// Images now load directly like the old JS app
 
 /**
- * Process images in HTML - cache them and replace URLs
- * @param html - HTML content
- * @param type - 'github' or 'jira'
- * @param token - API token if needed
- * @returns Promise<string> - Updated HTML with local image URLs or fallbacks
- */
-async function processImagesWithCaching(html: string, type: 'github' | 'jira', token?: string): Promise<string> {
-  const imageRegex = /<img\s+[^>]*src="([^"]*)"[^>]*\/?>/gi;
-  const images: Array<{ match: string, src: string, index: number }> = [];
-  let match;
-  
-  // Find all images
-  while ((match = imageRegex.exec(html)) !== null) {
-    images.push({
-      match: match[0],
-      src: match[1],
-      index: match.index
-    });
-  }
-  
-  // Process images in reverse order to maintain indices
-  for (const image of images.reverse()) {
-    try {
-      // Skip if already processed or is a data URL
-      if (image.src.startsWith('/images/') || image.src.startsWith('data:')) {
-        continue;
-      }
-      
-      console.log(`🖼️ Processing ${type} image: ${image.src}`);
-      
-      // Try to cache the image
-      const localUrl = await cacheImage(image.src, type, token);
-      
-      if (localUrl) {
-        // Replace with local URL
-        const newImg = image.match.replace(image.src, localUrl);
-        html = html.substring(0, image.index) + newImg + html.substring(image.index + image.match.length);
-        console.log(`✅ Replaced with cached image: ${localUrl}`);
-      } else {
-        // Fallback to clickable link
-        const filename = image.src.split('/').pop() || 'Image';
-        const altMatch = image.match.match(/alt="([^"]*)"/);
-        const altText = altMatch ? altMatch[1] : filename;
-        const linkText = type === 'github' ? '🖼️' : '📎';
-        
-        const fallbackLink = `<a href="${image.src}" target="_blank" rel="noopener noreferrer" class="github-image-link">${linkText} ${altText}</a>`;
-        html = html.substring(0, image.index) + fallbackLink + html.substring(image.index + image.match.length);
-        console.log(`🔗 Replaced with clickable link: ${altText}`);
-      }
-    } catch (error) {
-      console.error(`❌ Error processing image: ${image.src}`, error);
-    }
-  }
-  
-  return html;
-}
-
-/**
- * Parse GitHub markdown to HTML with image caching
+ * Parse GitHub markdown to HTML (simplified - no caching needed on same origin)
  * Uses the marked library to convert GitHub Flavored Markdown to HTML
  * Same configuration as plain JS app for consistency
- * @param markdown - Raw markdown text
- * @param token - GitHub token for authenticated requests
- * @returns Promise<string> - HTML string with cached images
+ * @param markdown - Raw markdown text  
+ * @param token - GitHub token (not needed for image display on same origin)
+ * @returns Promise<string> - HTML string with direct image loading
  */
-export async function parseGitHubMarkdown(markdown: string, token?: string): Promise<string> {
+/**
+ * Add graceful fallback for broken images - converts them to clickable links
+ * @param html - HTML string containing img tags
+ * @returns HTML string with onerror handlers added to img tags
+ */
+function addImageFallback(html: string): string {
+  return html.replace(/<img([^>]+)>/g, (match, attributes) => {
+    // Extract src and alt from the attributes
+    const srcMatch = attributes.match(/src=["']([^"']+)["']/);
+    const altMatch = attributes.match(/alt=["']([^"']*)["']/);
+    
+    const src = srcMatch ? srcMatch[1] : '';
+    const alt = altMatch ? altMatch[1] : 'image';
+    
+    if (!src) return match; // Keep original if no src found
+    
+    // Generate a unique ID for this image to handle the fallback
+    const imageId = 'img_' + Math.random().toString(36).substr(2, 9);
+    
+    return `<img${attributes} id="${imageId}" onerror="
+      this.style.display='none'; 
+      document.getElementById('${imageId}_fallback').style.display='inline-block';
+    ">
+    <a 
+      id="${imageId}_fallback" 
+      href="${src}" 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      class="github-image-fallback" 
+      style="display:none;"
+      title="Click to open image: ${alt}"
+    >
+      🖼️ ${alt || 'View Image'}
+    </a>`;
+  });
+}
+
+export async function parseGitHubMarkdown(markdown: string, _token?: string): Promise<string> {
   if (!markdown) return '';
   
   console.log('📝 parseGitHubMarkdown called with:', {
@@ -126,18 +70,12 @@ export async function parseGitHubMarkdown(markdown: string, token?: string): Pro
     
     let html = marked(markdown) as string;
     
-    console.log('📄 marked() output:', {
+    // Add graceful fallback for broken images
+    html = addImageFallback(html);
+    
+    console.log('📄 Final GitHub markdown HTML (same origin - direct loading with fallback):', {
       length: html.length,
       hasImgTags: /<img[^>]+>/i.test(html),
-      preview: html.substring(0, 300) + (html.length > 300 ? '...' : '')
-    });
-    
-    // Process images with caching system
-    html = await processImagesWithCaching(html, 'github', token);
-    
-    console.log('📄 Final GitHub markdown HTML:', {
-      length: html.length,
-      hasCachedImages: /\/images\/github\//.test(html),
       preview: html.substring(0, 300) + (html.length > 300 ? '...' : '')
     });
     
@@ -194,17 +132,13 @@ function parseBasicMarkdown(markdown: string): string {
   html = html.replace(/```([^`]*)```/gim, '<pre><code>$1</code></pre>');
   html = html.replace(/`([^`]*)`/gim, '<code>$1</code>');
   
-  // EXPERIMENT: Images - let user-attachments display directly (JWT will expire!)
-  // html = html.replace(/!\[([^\]]*)\]\(([^)]*user-attachments\/assets\/[^)]*)\)/gim, (_, alt, src) => {
-  //   return `<a href="${src}" target="_blank" rel="noopener noreferrer" class="github-image-link">🖼️ ${alt || 'Image'}</a>`;
-  // });
-  console.log('🧪 EXPERIMENT: Basic markdown also letting user-attachments display directly!');
-  
-  // Other images - convert to use proxy endpoint
+  // Images - let them load directly like the old JS app (using browser session/cookies)
   html = html.replace(/!\[([^\]]*)\]\(([^)]*)\)/gim, (_, alt, src) => {
-    const proxyUrl = `/api/github-image-proxy?imageUrl=${encodeURIComponent(src)}&token=GITHUB_TOKEN_PLACEHOLDER`;
-    return `<img src="${proxyUrl}" alt="${alt}" loading="lazy" />`;
+    return `<img src="${src}" alt="${alt}" loading="lazy" />`;
   });
+  
+  // Add graceful fallback for broken images
+  html = addImageFallback(html);
   
   // Links
   html = html.replace(/\[([^\]]*)\]\(([^)]*)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
@@ -254,7 +188,7 @@ export async function parseJiraMarkdown(jiraText: string, jiraKey?: string, atta
     console.error('❌ JIRA wiki markup parsing error:', error);
     console.error('Falling back to basic JIRA parsing');
     // Fallback to basic parsing if official library fails
-    return await parseBasicJiraMarkdown(jiraText, jiraKey, attachments, token);
+    return await parseBasicJiraMarkdown(jiraText, jiraKey, attachments);
   }
 }
 
@@ -406,16 +340,9 @@ async function convertAdfToHtml(adfNode: any, jiraKey?: string, attachments?: Re
     
     if (finalImageUrl) {
       try {
-        // Try to cache the image
-        const localUrl = await cacheImage(finalImageUrl, 'jira', token);
-        if (localUrl) {
-          html += `<img src="${localUrl}" alt="${filename}" loading="lazy" class="jira-image" />`;
-          console.log(`✅ Cached JIRA image: ${filename} -> ${localUrl}`);
-        } else {
-          // Fallback to clickable link if caching fails
-          html += `<a href="${finalImageUrl}" target="_blank" rel="noopener noreferrer" class="github-image-link">📎 ${filename}</a>`;
-          console.log(`🔗 Fallback to direct link: ${filename}`);
-        }
+        // Direct image loading (same origin - no caching needed)
+        html += `<img src="${finalImageUrl}" alt="${filename}" loading="lazy" class="jira-image" />`;
+        console.log(`✅ Direct JIRA image: ${filename} -> ${finalImageUrl}`);
       } catch (error) {
         console.error(`❌ Error processing JIRA image: ${filename}`, error);
         html += `<a href="${finalImageUrl}" target="_blank" rel="noopener noreferrer" class="github-image-link">📎 ${filename}</a>`;
@@ -493,7 +420,7 @@ function parseBasicJiraMarkdownSync(jiraText: string, jiraKey?: string, attachme
  * @param token - JIRA token for authenticated requests
  * @returns Promise<string> - HTML string with cached images
  */
-async function parseBasicJiraMarkdown(jiraText: string, jiraKey?: string, attachments?: Record<string, any>, token?: string): Promise<string> {
+async function parseBasicJiraMarkdown(jiraText: string, jiraKey?: string, attachments?: Record<string, any>, _token?: string): Promise<string> {
   if (!jiraText) return '';
   
   let html = jiraText;
@@ -546,21 +473,9 @@ async function parseBasicJiraMarkdown(jiraText: string, jiraKey?: string, attach
     let replacement = '';
     
     if (finalImageUrl) {
-      try {
-        // Try to cache the image
-        const localUrl = await cacheImage(finalImageUrl, 'jira', token);
-        if (localUrl) {
-          replacement = `<img src="${localUrl}" alt="${filename}" loading="lazy" class="jira-image" />`;
-          console.log(`✅ Cached JIRA image: ${filename} -> ${localUrl}`);
-        } else {
-          // Fallback to clickable link if caching fails
-          replacement = `<a href="${finalImageUrl}" target="_blank" rel="noopener noreferrer" class="github-image-link">📎 ${filename}</a>`;
-          console.log(`🔗 Fallback to direct link: ${filename}`);
-        }
-      } catch (error) {
-        console.error(`❌ Error processing JIRA image: ${filename}`, error);
-        replacement = `<a href="${finalImageUrl}" target="_blank" rel="noopener noreferrer" class="github-image-link">📎 ${filename}</a>`;
-      }
+      // Direct image loading (same origin - no caching needed)
+      replacement = `<img src="${finalImageUrl}" alt="${filename}" loading="lazy" class="jira-image" />`;
+      console.log(`✅ Direct JIRA image: ${filename} -> ${finalImageUrl}`);
     } else if (jiraKey) {
       // Fallback to JIRA ticket link
       const jiraUrl = `https://issues.redhat.com/browse/${jiraKey}`;
@@ -747,99 +662,12 @@ export function parseJiraMarkdownSync(jiraText: string, jiraKey?: string, attach
 }
 
 /**
- * GitHub-specific async markdown parser with smart image handling
+ * Simplified GitHub markdown parser (replaces the complex caching version)  
+ * All images now load directly since we're on same origin (localhost:3017)
  */
 export async function parseGitHubMarkdownWithCaching(markdown: string, token?: string): Promise<string> {
-  if (!markdown) return '';
-  
-  try {
-    // Use marked for GitHub-flavored markdown
-    marked.setOptions({
-      breaks: true,
-      gfm: true,
-      sanitize: false,
-      smartLists: true,
-      smartypants: false
-    });
-    
-    let html = marked(markdown) as string;
-    
-    // Smart GitHub image processing
-    html = await processGitHubImagesSmartly(html, token);
-    
-    return html;
-  } catch (error) {
-    console.error('❌ GitHub markdown parsing error:', error);
-    return parseBasicMarkdown(markdown);
-  }
-}
-
-/**
- * Smart GitHub image processor that handles different types of GitHub images differently
- */
-async function processGitHubImagesSmartly(html: string, token?: string): Promise<string> {
-  const imageRegex = /<img\s+[^>]*src="([^"]*)"[^>]*\/?>/gi;
-  const images: Array<{ match: string, src: string, index: number }> = [];
-  let match;
-  
-  while ((match = imageRegex.exec(html)) !== null) {
-    images.push({ match: match[0], src: match[1], index: match.index });
-  }
-  
-  // Process images in reverse order to maintain indices
-  for (const image of images.reverse()) {
-    try {
-      if (image.src.startsWith('/images/') || image.src.startsWith('data:')) {
-        continue; // Skip already processed images
-      }
-      
-      console.log(`🔍 Processing GitHub image: ${image.src}`);
-      
-      // Identify image type and handle accordingly
-      if (image.src.includes('user-attachments/assets')) {
-        // Placeholder URLs - convert to clickable links
-        const filename = image.src.split('/').pop() || 'Image';
-        const altMatch = image.match.match(/alt="([^"]*)"/);
-        const altText = altMatch ? altMatch[1] : filename;
-        const fallbackLink = `<a href="${image.src}" target="_blank" rel="noopener noreferrer" class="github-image-link">🖼️ ${altText}</a>`;
-        html = html.substring(0, image.index) + fallbackLink + html.substring(image.index + image.match.length);
-        console.log(`🔗 Converted placeholder URL to link: ${altText}`);
-      } else if (image.src.includes('avatars.githubusercontent.com') || 
-                 image.src.includes('github.com') ||
-                 image.src.includes('githubusercontent.com')) {
-        // Real GitHub images - try caching
-        const localUrl = await cacheImage(image.src, 'github', token);
-        if (localUrl) {
-          const newImg = image.match.replace(image.src, localUrl);
-          html = html.substring(0, image.index) + newImg + html.substring(image.index + image.match.length);
-          console.log(`✅ Cached GitHub image: ${localUrl}`);
-        } else {
-          // Caching failed - fallback to clickable link
-          const filename = image.src.split('/').pop() || 'Image';
-          const altMatch = image.match.match(/alt="([^"]*)"/);
-          const altText = altMatch ? altMatch[1] : filename;
-          const fallbackLink = `<a href="${image.src}" target="_blank" rel="noopener noreferrer" class="github-image-link">🖼️ ${altText}</a>`;
-          html = html.substring(0, image.index) + fallbackLink + html.substring(image.index + image.match.length);
-          console.log(`🔗 Caching failed, fallback to link: ${altText}`);
-        }
-      } else {
-        // Other images - attempt caching
-        const localUrl = await cacheImage(image.src, 'github', token);
-        if (localUrl) {
-          const newImg = image.match.replace(image.src, localUrl);
-          html = html.substring(0, image.index) + newImg + html.substring(image.index + image.match.length);
-          console.log(`✅ Cached external image: ${localUrl}`);
-        } else {
-          // Keep original image tag for external images that fail caching
-          console.log(`⚠️ Keeping original external image: ${image.src}`);
-        }
-      }
-    } catch (error) {
-      console.error(`❌ Error processing image: ${image.src}`, error);
-    }
-  }
-  
-  return html;
+  // Just use the simple direct loading parser
+  return await parseGitHubMarkdown(markdown, token);
 }// TIMEZONE-AWARE UTILITIES FOR EXISTING FUNCTIONS
 // ===========================================
 

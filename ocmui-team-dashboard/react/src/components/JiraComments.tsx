@@ -2,11 +2,6 @@ import React from 'react';
 import { useJiraTicket } from '../hooks/useApiQueries';
 import { parseJiraMarkdownSync } from '../utils/formatting';
 
-interface JiraComment {
-  author: string;
-  body: string;
-  created: string;
-}
 
 interface JiraCommentsProps {
   jiraKey: string;

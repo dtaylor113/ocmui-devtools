@@ -9,6 +9,7 @@
     "build": "webpack --mode production",
     "start:react": "lsof -ti:3017 | xargs kill -9 2>/dev/null || true; concurrently --names \"API,React\" --prefix-colors \"blue,green\" \"node server/index.js\" \"cd react && npm run dev\"",
     "build:react": "cd react && npm run build",
+    "start:monolith": "yarn build:react && lsof -ti:3017 | xargs kill -9 2>/dev/null || true; node server/index.js & sleep 2 && open http://localhost:3017 && wait",
     "dev": "concurrently \"yarn build --watch\" \"yarn start\""
   },
   "dependencies": {

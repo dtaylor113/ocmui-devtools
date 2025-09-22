@@ -9,7 +9,8 @@ const PORT = 3017;
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../dist')));
+// Serve React app static files
+app.use(express.static(path.join(__dirname, '../react/dist')));
 
 // CORS middleware for API routes
 app.use('/api', (req, res, next) => {
@@ -826,9 +827,9 @@ app.get('/api/jira-image-proxy', async (req, res) => {
     }
 });
 
-// Serve React app for all other routes
+// Serve React app for all other routes (SPA routing support)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    res.sendFile(path.join(__dirname, '../react/dist/index.html'));
 });
 
 app.listen(PORT, () => {
