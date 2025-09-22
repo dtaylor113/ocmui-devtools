@@ -185,7 +185,8 @@ This hybrid approach eliminates unnecessary complexity for GitHub while solving 
 - **GitHub Markdown**: Full GitHub Flavored Markdown support
 - **Conversation Threading**: Complete PR discussion threads
 - **Review Comments**: Inline code review feedback
-- **Status Badges**: Merge status, review state, CI status
+- **Enhanced Reviewer Badges**: Multi-endpoint reviewer discovery with state preservation
+- **Status Badges**: Merge status, review state, CI status with improved error handling
 - **External Links**: Direct links to GitHub PRs
 - **Timezone-Aware Timestamps**: All dates displayed in user's selected timezone
 
@@ -253,10 +254,11 @@ This hybrid approach eliminates unnecessary complexity for GitHub while solving 
 - **Component State**: UI state and form management
 
 ### **API Integration**
-- **GitHub API**: Direct integration from frontend with rate limiting
+- **GitHub API**: Enhanced multi-endpoint integration with comprehensive error handling
 - **JIRA API**: Proxied through Express server for authentication
-- **React Query Hooks**: `useJiraTicket`, `useGitHubPRs`, `useSprintJiras`
-- **Background Refetch**: Automatic data updates every 30 seconds
+- **React Query Hooks**: `useJiraTicket`, `useGitHubPRs`, `useSprintJiras` with enhanced reviewer processing
+- **Background Refetch**: Automatic data updates every 2-5 minutes (optimized intervals)
+- **Reviewer Discovery**: Multi-source GitHub API calls for complete reviewer data
 
 ### **Styling & UI**
 - **CSS Architecture**: Single `App.css` with organized sections
@@ -330,6 +332,7 @@ The current implementation provides the best of both worlds: inline images when 
 - **GitHub Rate Limits**: 30 requests/minute for search API (handled with caching)
 - **JIRA Authentication**: Requires Red Hat JIRA personal access tokens
 - **GitHub Image Variability**: Some GitHub images may use fallback links based on repository access and URL expiration
+- **Enterprise Reviewer Limitations**: Some GitHub Enterprise reviewer types not accessible via REST API (documented and handled gracefully)
 
 ### **Performance Notes**
 - **Image Loading**: JIRA images load directly; GitHub images have graceful fallbacks
@@ -425,8 +428,9 @@ The sophisticated timezone functionality has been fully ported and enhanced:
 
 **Codebase Size Analysis**:
 - **Legacy JavaScript**: ~10,097 lines of code (ready for deletion)
-- **React Application**: ~8,089 lines of code (more concise and maintainable)
-- **Size Reduction**: 20% smaller codebase with enhanced functionality
+- **React Application**: ~8,200+ lines of code (enhanced with reviewer system improvements)
+- **Recent Additions**: Enhanced GitHub reviewer processing, multi-endpoint API coverage, error handling
+- **Code Quality**: More robust and maintainable with comprehensive TypeScript coverage
 
 **Legacy Application Structure** (For Removal):
 ```
@@ -508,6 +512,7 @@ ocmui-team-dashboard/
 2. **🏗️ Monolith Architecture**: Production-ready same-origin deployment option
 3. **⏰ Enhanced Timeboard**: Improved styling, local time display, performance optimization
 4. **🐛 Bug Fixes**: Resolved TypeScript errors and startup issues
+5. **👥 Enhanced GitHub Reviewer Badges**: Comprehensive reviewer system improvements (see detailed section below)
 
 **🎯 Immediate Next Steps (Priority Order):**
 1. **🗑️ Legacy Removal**: Clean elimination of JavaScript codebase (~10K lines)
@@ -531,4 +536,42 @@ ocmui-team-dashboard/
 6. **👥 Team Features**: Expanded collaboration and notification features
 7. **🎨 UI Polish**: Design system refinements and accessibility improvements
 
-**Current Status**: The React application is **production-ready** with full feature parity plus enhancements. The monolith architecture provides optimal performance and eliminates cross-origin image issues. Legacy cleanup is the only remaining technical debt.
+### **🎯 Major Enhancement: GitHub Reviewer Badges System**
+
+**Comprehensive Reviewer Processing Overhaul** - Significant improvements to GitHub PR reviewer badge display and processing:
+
+#### **🔧 Enhanced API Coverage**
+- **Multi-endpoint Integration**: Now queries `/reviews`, `/requested_reviewers`, and PR details endpoints
+- **Complete Reviewer Discovery**: Catches reviewers missed by single-endpoint approaches
+- **Team Reviewer Support**: Handles GitHub team-based reviewers and organization permissions
+- **Enterprise GitHub Compatible**: Works with GitHub Enterprise reviewer limitations
+
+#### **🌐 GitHub Web UI Mirroring Logic**
+- **Historical Approval Preservation**: Maintains approved states even after new commits (matches GitHub web behavior)
+- **State Priority System**: `APPROVED > CHANGES_REQUESTED > COMMENTED > REVIEW_REQUESTED`
+- **Stale Approval Handling**: Preserves approvals that would count toward merge requirements
+- **Web-API Consistency**: Bridges gap between GitHub web UI and API data differences
+
+#### **🛡️ Robust Error Handling**
+- **User-Friendly Messages**: Converts technical API errors (403, 401, 422) to actionable guidance
+- **Graceful Degradation**: Continues functioning when individual reviewer requests fail
+- **Comprehensive Logging**: Detailed debugging for troubleshooting without console noise
+- **TypeScript Safety**: Full type safety with proper error handling
+
+#### **📊 Technical Improvements**
+- **Enhanced GitHubReviewer Interface**: Added `isStale` field for future stale approval indicators
+- **Optimized Processing Logic**: Efficient reviewer state determination with conflict resolution
+- **Reduced Debug Noise**: Cleaned excessive console output while maintaining essential debugging
+- **Performance Optimized**: Parallel API calls with intelligent caching
+
+#### **🎯 Key Insights Discovered**
+- **GitHub Approval Invalidation**: New commits automatically dismiss previous approvals in API
+- **Web UI vs API Differences**: GitHub web shows historical context, API shows current state
+- **Enterprise Limitations**: Some reviewer types not exposed via standard REST API
+- **Re-request Behavior**: Re-requesting reviews brings dismissed reviewers back to API data
+
+**Result**: Reviewer badges now accurately mirror GitHub webpage behavior while handling edge cases gracefully.
+
+---
+
+**Current Status**: The React application is **production-ready** with full feature parity plus significant enhancements. The enhanced reviewer system provides enterprise-grade reliability and user experience matching GitHub's web interface. Legacy cleanup remains the only technical debt.

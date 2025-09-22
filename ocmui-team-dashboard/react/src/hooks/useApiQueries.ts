@@ -32,6 +32,7 @@ export interface GitHubReviewer {
   hasComments: boolean;
   date?: string;
   isCurrentUser?: boolean;
+  isStale?: boolean;  // For indicating stale approvals like GitHub web UI
 }
 
 interface GitHubPR {
@@ -202,7 +203,15 @@ const fetchMyCodeReviews = async (githubUsername: string, githubToken: string): 
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch code reviews: ${response.status} ${response.statusText}`);
+    if (response.status === 403) {
+      throw new Error('GitHub access denied. Please check your GitHub token permissions or try refreshing the page.');
+    } else if (response.status === 401) {
+      throw new Error('GitHub authentication failed. Please check your GitHub token in Settings.');
+    } else if (response.status === 422) {
+      throw new Error('GitHub search query limit reached. Please try again in a few minutes.');
+    } else {
+      throw new Error(`Unable to load code reviews from GitHub (${response.status}). Please try again later.`);
+    }
   }
 
   const data = await response.json();
@@ -242,7 +251,15 @@ const fetchMyPRs = async (githubUsername: string, githubToken: string, status: '
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch my PRs: ${response.status} ${response.statusText}`);
+    if (response.status === 403) {
+      throw new Error('GitHub access denied. Please check your GitHub token permissions or try refreshing the page.');
+    } else if (response.status === 401) {
+      throw new Error('GitHub authentication failed. Please check your GitHub token in Settings.');
+    } else if (response.status === 422) {
+      throw new Error('GitHub search query limit reached. Please try again in a few minutes.');
+    } else {
+      throw new Error(`Unable to load PRs from GitHub (${response.status}). Please try again later.`);
+    }
   }
 
   const data = await response.json();
@@ -286,37 +303,68 @@ const fetchPRDetails = async (repoUrl: string, prNumber: number, githubToken: st
   // console.log(`🚀 Starting fetchPRDetails for PR #${prNumber}`);
 
   try {
-    // Fetch reviews, comments, and PR details in parallel (same as old JS app)
-    const [reviewsResponse, commentsResponse, prDetailsResponse] = await Promise.all([
+    // Fetch reviews, comments, PR details, AND additional reviewer endpoints in parallel
+    const [reviewsResponse, commentsResponse, prDetailsResponse, requestedReviewersResponse] = await Promise.all([
       fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/reviews`, { headers }),
       fetch(`https://api.github.com/repos/${repoName}/issues/${prNumber}/comments`, { headers }),
-      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}`, { headers })
+      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}`, { headers }),
+      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/requested_reviewers`, { headers }) // Additional endpoint
     ]);
     
     // Debug: Log API response status
     // console.log(`📞 API Responses for PR #${prNumber}:`, {...});
 
     if (!reviewsResponse.ok || !commentsResponse.ok || !prDetailsResponse.ok) {
-      throw new Error(`Failed to fetch PR details: reviews=${reviewsResponse.status}, comments=${commentsResponse.status}, prDetails=${prDetailsResponse.status}`);
+      const errorDetails = {
+        reviews: { status: reviewsResponse.status, statusText: reviewsResponse.statusText },
+        comments: { status: commentsResponse.status, statusText: commentsResponse.statusText },
+        prDetails: { status: prDetailsResponse.status, statusText: prDetailsResponse.statusText },
+        requestedReviewers: { status: requestedReviewersResponse.status, statusText: requestedReviewersResponse.statusText }
+      };
+      console.error(`❌ GitHub API Error for PR #${prNumber}:`, errorDetails);
+      throw new Error(`Failed to fetch PR details for #${prNumber}: reviews=${reviewsResponse.status}, comments=${commentsResponse.status}, prDetails=${prDetailsResponse.status}`);
     }
 
-    const [reviews, generalComments, prDetails] = await Promise.all([
+    const [reviews, generalComments, prDetails, requestedReviewersData] = await Promise.all([
       reviewsResponse.json(),
       commentsResponse.json(),
-      prDetailsResponse.json()
+      prDetailsResponse.json(),
+      requestedReviewersResponse.ok ? requestedReviewersResponse.json() : { users: [], teams: [] }
     ]);
 
-    // Debug: Log fetched data
-    // console.log(`📊 PR #${prNumber} data:`, {...});
+    // Debug: Basic PR data (simplified logging)
+    if (reviews.length === 0 && (prDetails?.requested_reviewers || []).length === 0) {
+      console.log(`📊 PR #${prNumber}: No reviews or reviewers found`);
+    }
 
     // Process reviewers (based on processReviewers from old JS app)
     const reviewerMap = new Map<string, GitHubReviewer>();
     const reviewerComments = new Map<string, any[]>();
     
-    // First, process requested reviewers (those who haven't reviewed yet)
+    // First, process requested reviewers from multiple sources
     const requestedReviewers = prDetails?.requested_reviewers || [];
+    const additionalRequestedUsers = requestedReviewersData?.users || [];
+    
+    // Process standard requested reviewers (preserve existing approvals like GitHub web UI)
     requestedReviewers.forEach((reviewer: any) => {
       if (reviewer?.login) {
+        const existingReviewer = reviewerMap.get(reviewer.login);
+        // Don't overwrite existing approvals/change requests with review requests
+        if (!existingReviewer || (existingReviewer.state !== 'approved' && existingReviewer.state !== 'changes_requested')) {
+          reviewerMap.set(reviewer.login, {
+            username: reviewer.login,
+            state: 'review_requested',
+            hasComments: false,
+            date: undefined,
+            isCurrentUser: reviewer.login === currentUser
+          });
+        }
+      }
+    });
+    
+    // Process additional requested users from /requested_reviewers endpoint
+    additionalRequestedUsers.forEach((reviewer: any) => {
+      if (reviewer?.login && !reviewerMap.has(reviewer.login)) {
         reviewerMap.set(reviewer.login, {
           username: reviewer.login,
           state: 'review_requested',
@@ -326,6 +374,12 @@ const fetchPRDetails = async (repoUrl: string, prNumber: number, githubToken: st
         });
       }
     });
+    
+    // Log team reviewers for debugging (teams require different handling)
+    const additionalRequestedTeams = requestedReviewersData?.teams || [];
+    if (additionalRequestedTeams.length > 0) {
+      console.log(`🗃️ Found ${additionalRequestedTeams.length} team reviewers:`, additionalRequestedTeams.map((t: any) => t.name || t.slug));
+    }
 
     // Helper function to map GitHub API review states to our interface
     const mapReviewState = (apiState: string): GitHubReviewer['state'] => {
@@ -334,16 +388,20 @@ const fetchPRDetails = async (repoUrl: string, prNumber: number, githubToken: st
         case 'CHANGES_REQUESTED': return 'changes_requested';
         case 'COMMENTED': return 'commented';
         case 'DISMISSED': return 'dismissed';
+        case 'PENDING': return 'review_requested'; // Handle pending reviews
         default: 
-          console.warn(`Unknown review state from GitHub API: ${apiState}`);
+          console.error(`❌ Unknown review state from GitHub API: '${apiState}' - this may cause reviewer data issues`);
           return 'commented'; // Default fallback
       }
     };
 
     // Process completed reviews
-    reviews.forEach((review: any) => {
+    reviews.forEach((review: any, index: number) => {
       const reviewer = review.user?.login;
-      if (!reviewer) return;
+      if (!reviewer) {
+        console.warn(`⚠️ Review ${index} missing user.login:`, { reviewId: review.id, user: review.user });
+        return;
+      }
 
       const hasCommentBody = review.body && review.body.trim().length > 0;
       const mappedState = mapReviewState(review.state);
@@ -361,14 +419,39 @@ const fetchPRDetails = async (repoUrl: string, prNumber: number, githubToken: st
         });
       }
 
-      // Track reviewer state (latest review wins)
-      reviewerMap.set(reviewer, {
-        username: reviewer,
-        state: mappedState,
-        hasComments: hasCommentBody,
-        date: review.submitted_at,
-        isCurrentUser: reviewer === currentUser
-      });
+      // Track reviewer state (GitHub web UI mirroring: preserve important states like approvals)
+      const existingReviewer = reviewerMap.get(reviewer);
+      const reviewDate = new Date(review.submitted_at);
+      
+      // Priority order: APPROVED > CHANGES_REQUESTED > others (matches GitHub web behavior)
+      const shouldUpdateReviewer = () => {
+        if (!existingReviewer) return true;  // First review for this person
+        
+        // Always preserve APPROVED state (like GitHub web UI)
+        if (existingReviewer.state === 'approved' && mappedState !== 'approved') {
+          return false;  // Don't overwrite approval with lesser states
+        }
+        
+        // Always preserve CHANGES_REQUESTED state  
+        if (existingReviewer.state === 'changes_requested' && mappedState !== 'approved' && mappedState !== 'changes_requested') {
+          return false;  // Don't overwrite change requests with comments
+        }
+        
+        // For other states, use latest review
+        return !existingReviewer.date || new Date(existingReviewer.date) < reviewDate;
+      };
+      
+      if (shouldUpdateReviewer()) {
+        reviewerMap.set(reviewer, {
+          username: reviewer,
+          state: mappedState,
+          hasComments: hasCommentBody,
+          date: review.submitted_at,
+          isCurrentUser: reviewer === currentUser,
+          // Track if this is potentially stale (for future stale indicators)
+          isStale: mappedState === 'approved' && existingReviewer?.state === 'approved'
+        });
+      }
     });
 
     // Process general PR comments
@@ -422,12 +505,51 @@ const fetchPRDetails = async (repoUrl: string, prNumber: number, githubToken: st
       return a.username.localeCompare(b.username);
     });
 
-    // Debug: Processed reviewers are now working correctly
+    // Final debug summary for troubleshooting missing reviewers
+    console.log(`✅ PR #${prNumber} final reviewer summary:`, {
+      totalReviewers: sortedReviewers.length,
+      reviewers: sortedReviewers.map(r => `${r.username}:${r.state}${r.hasComments ? '(has-comments)' : ''}`),
+      rawReviewsFound: reviews.length,
+      requestedReviewersFound: (prDetails?.requested_reviewers || []).length
+    });
+    
+    // 🔍 CRITICAL DEBUG: Check if zherman0 data was processed
+    const hasZherman0 = sortedReviewers.find(r => r.username === 'zherman0');
+    if (!hasZherman0) {
+      console.error(`❌ MISSING REVIEWER: zherman0 not found in final reviewer list for PR #${prNumber}`);
+      
+      // Simplified logging for missing reviewers (investigation complete)
+      console.log(`⚠️ Expected reviewer not found in PR #${prNumber} API data. This may be due to:`);
+      console.log(`   - Review was dismissed when new commits were pushed`);
+      console.log(`   - Reviewer never submitted a review for this PR`);
+      console.log(`   - Enterprise GitHub reviewer limitations`);
+      
+      // Show reviews with missing user.login
+      const reviewsWithoutUser = reviews.filter((r: any) => !r.user?.login);
+      if (reviewsWithoutUser.length > 0) {
+        console.log(`⚠️ Reviews without user.login (${reviewsWithoutUser.length}):`, reviewsWithoutUser.map((r: any) => ({
+          id: r.id,
+          state: r.state,
+          user: r.user,
+          submitted_at: r.submitted_at
+        })));
+      }
+    } else {
+      console.log(`✅ zherman0 found with state: ${hasZherman0.state}`);
+    }
+    
     return sortedReviewers;
     
   } catch (error) {
-    console.error('Error fetching PR details:', error);
-    return []; // Return empty array on error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`❌ Critical Error fetching PR #${prNumber} details:`, {
+      error: errorMessage,
+      repoUrl,
+      prNumber,
+      currentUser
+    });
+    // Instead of returning empty array, return partial data or throw to surface the issue
+    throw error; // Let the caller handle the error appropriately
   }
 };
 
@@ -449,8 +571,13 @@ export const enhancePRsWithReviewers = async (prs: GitHubPR[], githubToken: stri
         console.log(`✅ Enhanced PR #${pr.number} with ${reviewers.length} reviewers`);
         return { ...pr, reviewers };
       } catch (error) {
-        console.error(`❌ Failed to fetch reviewers for PR #${pr.number}:`, error);
-        return { ...pr, reviewers: [] };
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`❌ Failed to fetch reviewers for PR #${pr.number}:`, {
+          error: errorMessage,
+          pr: { number: pr.number, title: pr.title?.substring(0, 50), url: pr.repository_url || pr.url }
+        });
+        // Return PR with empty reviewers but log the issue for debugging
+        return { ...pr, reviewers: [], _reviewerFetchError: errorMessage };
       }
     })
   );

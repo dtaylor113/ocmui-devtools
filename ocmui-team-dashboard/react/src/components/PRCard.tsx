@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { GitHubReviewer } from '../hooks/useApiQueries';
 import { usePRConversation } from '../hooks/useApiQueries';
 import { useSettings } from '../contexts/SettingsContext';
@@ -55,6 +55,13 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false, hasInv
   const { userPreferences } = useSettings();
   const [selectedReviewer, setSelectedReviewer] = useState<string | null>(null);
   const [showJiraWarning, setShowJiraWarning] = useState(false);
+  
+  // Debug: Only log when there are unexpected reviewer issues
+  useEffect(() => {
+    if (pr.reviewers?.length === 0) {
+      console.log(`📊 PRCard #${pr.number}: No reviewers found`);
+    }
+  }, [pr.number, pr.reviewers]);
   
   // Get PR conversation data to access comments count
   const repoName = getRepoName(pr);
