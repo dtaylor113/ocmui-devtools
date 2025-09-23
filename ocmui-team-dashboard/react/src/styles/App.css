@@ -3148,3 +3148,298 @@ body.dark-theme .github-image-fallback:hover {
   border-color: #9ca3af;
   color: #f3f4f6;
 }
+
+/* ===== CONVERSATION THREADING STYLES ===== */
+
+/* Conversation Controls */
+.conversation-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #374151;
+  gap: 12px;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.toggle-btn {
+  background: #374151;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  background: #4b5563;
+  color: #f9fafb;
+}
+
+.toggle-btn.active {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.resolved-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #3b82f6;
+}
+
+/* Conversation Threads */
+.conversation-threads {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Individual Thread Styles */
+.conversation-thread {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.conversation-thread.resolved {
+  opacity: 0.75;
+  border-color: #22c55e;
+}
+
+.thread-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.thread-header:hover {
+  background: #252f3f;
+}
+
+.thread-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.thread-icon {
+  font-size: 14px;
+}
+
+.thread-description {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  color: #d1d5db;
+}
+
+.thread-file {
+  color: #60a5fa;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-weight: 500;
+}
+
+.thread-line {
+  color: #9ca3af;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.thread-comment-count {
+  color: #9ca3af;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.resolved-badge {
+  background: #22c55e;
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.thread-toggle {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.thread-toggle:hover {
+  background: #374151;
+  color: #d1d5db;
+}
+
+/* Thread Content */
+.thread-content {
+  position: relative;
+  padding: 0;
+}
+
+.thread-line {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 1px;
+}
+
+.thread-comments {
+  padding: 12px;
+  padding-left: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Individual Thread Comment Styles */
+.thread-comment {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 8px 12px;
+  position: relative;
+}
+
+.thread-comment-reply {
+  margin-left: 16px;
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.thread-comment-reply::before {
+  content: '↳';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Resolved Threads Notice */
+.resolved-threads-notice {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.show-resolved-btn {
+  background: none;
+  border: none;
+  color: #60a5fa;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 4px;
+  text-decoration: underline;
+}
+
+.show-resolved-btn:hover {
+  color: #93c5fd;
+}
+
+/* Review State Indicators in Threads */
+.conversation-thread .review-state {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+
+.conversation-thread .review-state-approved {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.conversation-thread .review-state-changes-requested {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.conversation-thread .review-state-commented {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .conversation-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .view-toggle {
+    justify-content: center;
+  }
+  
+  .thread-comments {
+    padding-left: 24px;
+  }
+  
+  .thread-line {
+    left: 12px;
+  }
+}
+
+/* ===== GITHUB-STYLE CONVERSATION GROUPING ===== */
+
+/* Grouped inline comments (for GitHub Default mode) */
+.grouped-inline-comment {
+  margin-top: 4px;
+  margin-left: 16px;
+  border-left: 2px solid #3b82f6;
+  padding-left: 8px;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.grouped-inline-comment .comment-header {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.grouped-inline-comment .inline-comment-indicator {
+  display: none; /* Hide file icon for grouped comments */
+}

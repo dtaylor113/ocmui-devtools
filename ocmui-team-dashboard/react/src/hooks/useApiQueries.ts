@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSettings } from '../contexts/SettingsContext';
-import type { GitHubComment } from '../utils/formatting';
 
 // Query keys for different data types
 export const queryKeys = {
@@ -82,10 +81,11 @@ interface MyPRsResponse {
   hasMore?: boolean;
 }
 
-interface PRConversationResponse {
-  description: string;
-  comments: GitHubComment[];
-}
+// Legacy interface - kept for backward compatibility but replaced by EnhancedPRConversationResponse
+// interface PRConversationResponse {
+//   description: string;
+//   comments: GitHubComment[];
+// }
 
 // API fetch functions
 const fetchSprintJiras = async (jiraUsername: string, jiraToken: string): Promise<SprintJirasResponse> => {
@@ -587,12 +587,33 @@ export const enhancePRsWithReviewers = async (prs: GitHubPR[], githubToken: stri
   return enhanced;
 };
 
-const fetchPRConversation = async (repoName: string, prNumber: number, githubToken: string): Promise<PRConversationResponse> => {
+// Enhanced conversation data types for threading support
+export interface ConversationThread {
+  id: string;
+  type: 'review_thread' | 'general_thread';
+  path?: string;
+  line?: number;
+  side?: string;
+  comments: any[];
+  isResolved?: boolean;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EnhancedPRConversationResponse {
+  description: string;
+  comments: any[];
+  threads: ConversationThread[];
+}
+
+const fetchPRConversation = async (repoName: string, prNumber: number, githubToken: string): Promise<EnhancedPRConversationResponse> => {
   console.log(`🔍 fetchPRConversation starting for ${repoName}#${prNumber}`);
   
   const headers = {
     'Authorization': `Bearer ${githubToken}`,
-    'Accept': 'application/vnd.github.v3+json',
+    'Accept': 'application/vnd.github+json', // Updated to v4 API for better threading support
     'User-Agent': 'OCMUI-Team-Dashboard'
   };
   
@@ -600,9 +621,9 @@ const fetchPRConversation = async (repoName: string, prNumber: number, githubTok
     // Fetch ALL comment types: PR details, reviews, general comments, and inline review comments
     const [prResponse, reviewsResponse, commentsResponse, reviewCommentsResponse] = await Promise.all([
       fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}`, { headers }),
-      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/reviews`, { headers }), // ✅ ADDED: PR reviews
+      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/reviews`, { headers }),
       fetch(`https://api.github.com/repos/${repoName}/issues/${prNumber}/comments`, { headers }),
-      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/comments`, { headers }) // Inline review comments
+      fetch(`https://api.github.com/repos/${repoName}/pulls/${prNumber}/comments`, { headers })
     ]);
     
     if (!prResponse.ok || !reviewsResponse.ok || !commentsResponse.ok || !reviewCommentsResponse.ok) {
@@ -614,49 +635,122 @@ const fetchPRConversation = async (repoName: string, prNumber: number, githubTok
     const generalComments = await commentsResponse.json();
     const reviewComments = await reviewCommentsResponse.json();
     
-    // Combine ALL comment types: reviews, general comments, and inline review comments
-    const allComments = [
-      // 1. PR Reviews (high-level review comments like "Changes requested", "Approved")
-      ...reviews
-        .filter((review: any) => review.body && review.body.trim()) // Only reviews with actual content
-        .map((review: any) => ({
-          ...review,
-          comment_type: 'review',
-          created_at: review.submitted_at, // Reviews use submitted_at instead of created_at
-          body: `**${review.state.toUpperCase()} Review by @${review.user?.login}**\n\n${review.body}`,
-          user: review.user,
-          id: `review-${review.id}` // Prefix to avoid ID conflicts
-        })),
+    // Create conversation threads for better organization
+    const threads: ConversationThread[] = [];
+    
+    // 1. Process ONLY review events that have actual comment text (like GitHub does)
+    const reviewEvents = reviews
+      .filter((review: any) => review.body && review.body.trim()) // Only reviews with content
+      .map((review: any) => ({
+        ...review,
+        comment_type: 'review',
+        created_at: review.submitted_at,
+        body: `**${review.state.toUpperCase()} Review by @${review.user?.login}**\n\n${review.body}`,
+        user: review.user,
+        id: `review-${review.id}`,
+        has_body: true
+      }));
+    
+    // 2. Process general PR comments (main conversation thread)
+    const generalThreadComments = generalComments.map((comment: any) => ({
+      ...comment,
+      comment_type: 'general',
+      body: `**@${comment.user?.login}** commented:\n\n${comment.body}`,
+      thread_id: 'main-conversation'
+    }));
+    
+    // 3. Group inline review comments by conversation threads
+    const reviewThreads = new Map<string, ConversationThread>();
+    
+    reviewComments.forEach((comment: any) => {
+      // Create thread key based on file path and line - this groups related comments
+      const threadKey = comment.in_reply_to_id ? 
+        `reply-${comment.in_reply_to_id}` : 
+        `${comment.path}:${comment.line || comment.original_line}:${comment.side || 'RIGHT'}`;
       
-      // 2. General PR comments (main conversation thread)
-      ...generalComments.map((comment: any) => ({
-        ...comment,
-        comment_type: 'general',
-        body: `**@${comment.user?.login}** commented:\n\n${comment.body}`
-      })),
+      if (!reviewThreads.has(threadKey)) {
+        reviewThreads.set(threadKey, {
+          id: threadKey,
+          type: 'review_thread',
+          path: comment.path,
+          line: comment.line || comment.original_line,
+          side: comment.side || 'RIGHT',
+          comments: [],
+          isResolved: false, // TODO: Add resolved state detection logic
+          created_at: comment.created_at,
+          updated_at: comment.updated_at
+        });
+      }
       
-      // 3. Inline review comments (specific code line comments)
-      ...reviewComments.map((comment: any) => ({
+      const processedComment = {
         ...comment,
         comment_type: 'inline',
-        // Enhanced context for inline comments
+        thread_id: threadKey,
         body: `**@${comment.user?.login}** commented on code:\n\n${comment.body}` + 
-              (comment.path ? `\n\n*📄 File: \`${comment.path}\`${comment.line ? ` (Line ${comment.line})` : ''}*` : '')
-      }))
+              (comment.path ? `\n\n*📄 File: \`${comment.path}\`${comment.line ? ` (Line ${comment.line})` : ''}*` : ''),
+        is_reply: !!comment.in_reply_to_id
+      };
+      
+      reviewThreads.get(threadKey)!.comments.push(processedComment);
+    });
+    
+    // Convert review threads to array and sort comments within each thread (most recent first)
+    reviewThreads.forEach(thread => {
+      thread.comments.sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return dateB - dateA; // Most recent first within each thread
+      });
+      thread.updated_at = thread.comments[thread.comments.length - 1]?.created_at || thread.created_at;
+      threads.push(thread);
+    });
+    
+    // Create main conversation thread for general comments and review events
+    const mainConversationComments = [...reviewEvents, ...generalThreadComments];
+    if (mainConversationComments.length > 0) {
+      // Sort main conversation comments by date (most recent first)
+      mainConversationComments.sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || a.submitted_at).getTime();
+        const dateB = new Date(b.created_at || b.submitted_at).getTime();
+        return dateB - dateA; // Most recent first
+      });
+      
+      threads.push({
+        id: 'main-conversation',
+        type: 'general_thread',
+        comments: mainConversationComments,
+        created_at: mainConversationComments[mainConversationComments.length - 1]?.created_at || mainConversationComments[mainConversationComments.length - 1]?.submitted_at,
+        updated_at: mainConversationComments[0]?.created_at || mainConversationComments[0]?.submitted_at
+      });
+    }
+    
+    // Sort threads by most recent activity (for threaded view)
+    threads.sort((a, b) => {
+      const dateA = new Date(a.updated_at).getTime();
+      const dateB = new Date(b.updated_at).getTime();
+      return dateB - dateA; // Most recently active threads first
+    });
+    
+    // Combine all comments for backward compatibility (flat chronological view)
+    const allComments = [
+      ...reviewEvents,
+      ...generalThreadComments,
+      ...Array.from(reviewThreads.values()).flatMap(thread => thread.comments)
     ];
     
-    // Sort ALL comments chronologically by creation/submission date
+    // Sort all comments chronologically (most recent first for chronological view)
     allComments.sort((a: any, b: any) => {
       const dateA = new Date(a.created_at || a.submitted_at).getTime();
       const dateB = new Date(b.created_at || b.submitted_at).getTime();
-      return dateA - dateB; // Oldest first for chronological conversation flow
+      return dateB - dateA; // Most recent first
     });
     
-    console.log(`✅ fetchPRConversation completed for ${repoName}#${prNumber}: ${prData.body?.length || 0} chars description, ${allComments?.length || 0} total comments (${reviews.filter((r: any) => r.body?.trim()).length} reviews + ${generalComments?.length || 0} general + ${reviewComments?.length || 0} inline)`);
+    console.log(`✅ fetchPRConversation completed for ${repoName}#${prNumber}: ${threads.length} conversation threads, ${allComments.length} total comments`);
     
     return {
       description: prData.body || '',
-      comments: allComments || []
+      comments: allComments,
+      threads: threads
     };
     
   } catch (error) {
@@ -744,7 +838,7 @@ export const usePRConversation = (repoName: string, prNumber: number) => {
     enabled: !!repoName && !!prNumber && !!apiTokens.github
   });
 
-  return useQuery({
+  return useQuery<EnhancedPRConversationResponse>({
     queryKey: queryKeys.prConversation(repoName, prNumber),
     queryFn: () => fetchPRConversation(repoName, prNumber, apiTokens.github),
     enabled: !!repoName && !!prNumber && !!apiTokens.github,
