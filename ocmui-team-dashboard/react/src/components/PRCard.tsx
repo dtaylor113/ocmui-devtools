@@ -3,6 +3,13 @@ import type { GitHubReviewer } from '../hooks/useApiQueries';
 import { usePRConversation } from '../hooks/useApiQueries';
 import { useSettings } from '../contexts/SettingsContext';
 import { formatRelativeDateInTimezone } from '../utils/formatting';
+import { 
+  initializeReviewerTimestamps, 
+  getNotificationInfo, 
+  updateLastClickedTime,
+  cleanupOldNotifications 
+} from '../utils/reviewerNotifications';
+import { setupNotificationDebugTools } from '../utils/debugNotifications';
 import ReviewerCommentsModal from './ReviewerCommentsModal';
 import CollapsibleSection from './CollapsibleSection';
 import PRDescription from './PRDescription';
@@ -56,6 +63,21 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false, hasInv
   const [selectedReviewer, setSelectedReviewer] = useState<string | null>(null);
   const [showJiraWarning, setShowJiraWarning] = useState(false);
   
+  // Initialize notification system and cleanup old data
+  useEffect(() => {
+    if (pr.reviewers && pr.reviewers.length > 0) {
+      // Initialize timestamps for fresh start approach
+      const reviewerUsernames = pr.reviewers.map(r => r.username);
+      initializeReviewerTimestamps(getRepoName(pr), pr.number, reviewerUsernames);
+    }
+    
+    // Periodic cleanup of old notification data (once per session)
+    cleanupOldNotifications();
+    
+    // Setup debug tools (once per session)
+    setupNotificationDebugTools();
+  }, [pr.reviewers, pr.number]);
+
   // Debug: Only log when there are unexpected reviewer issues
   useEffect(() => {
     if (pr.reviewers?.length === 0) {
@@ -71,6 +93,9 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false, hasInv
   const handleReviewerClick = (e: React.MouseEvent, reviewer: string) => {
     e.stopPropagation(); // Prevent PR card click
     setSelectedReviewer(reviewer);
+    
+    // Update last clicked timestamp to clear notification for this reviewer
+    updateLastClickedTime(getRepoName(pr), pr.number, reviewer);
   };
 
   const closeReviewerModal = () => {
@@ -185,16 +210,40 @@ const PRCard: React.FC<PRCardProps> = ({ pr, onClick, isSelected = false, hasInv
       <div className="pr-card-reviewers">
         <span className="pr-reviewers-label">Reviewers:</span>
         {pr.reviewers && pr.reviewers.length > 0 ? (
-          pr.reviewers.map((reviewer) => (
-            <span 
-              key={reviewer.username}
-              className={`reviewer-badge ${getReviewerBadgeClass(reviewer)} ${reviewer.hasComments ? 'clickable-reviewer' : ''}`} 
-              onClick={reviewer.hasComments ? (e) => handleReviewerClick(e, reviewer.username) : undefined}
-              title={`${reviewer.username}${reviewer.isCurrentUser ? ' (You)' : ''}: ${getReviewerStateText(reviewer.state)}${reviewer.hasComments ? ' - Click to view comments' : ''}`}
-            >
-              {getReviewerStateIcon(reviewer.state)} {reviewer.username}{reviewer.isCurrentUser ? ' (You)' : ''}
-            </span>
-          ))
+          pr.reviewers.map((reviewer) => {
+            // Get notification info including count and age-based urgency
+            const notificationInfo = reviewer.hasComments && conversationData?.comments ? 
+              getNotificationInfo(getRepoName(pr), pr.number, reviewer.username, conversationData.comments) : 
+              { count: 0, urgency: 'none' as const, newestCommentAge: 0 };
+            
+            const { count: newCommentsCount, urgency } = notificationInfo;
+            
+            // Debug: Log notification badge rendering for this reviewer
+            if (reviewer.hasComments && conversationData?.comments) {
+              console.log(`🎯 PRCard rendering reviewer ${reviewer.username} for PR #${pr.number}:`, {
+                hasComments: reviewer.hasComments,
+                commentsAvailable: conversationData.comments.length,
+                notificationInfo,
+                willShowBadge: newCommentsCount > 0
+              });
+            }
+            
+            return (
+              <span 
+                key={reviewer.username}
+                className={`reviewer-badge ${getReviewerBadgeClass(reviewer)} ${reviewer.hasComments ? 'clickable-reviewer' : ''}`} 
+                onClick={reviewer.hasComments ? (e) => handleReviewerClick(e, reviewer.username) : undefined}
+                title={`${reviewer.username}${reviewer.isCurrentUser ? ' (You)' : ''}: ${getReviewerStateText(reviewer.state)}${reviewer.hasComments ? ' - Click to view comments' : ''}${newCommentsCount > 0 ? ` • ${newCommentsCount} new comment${newCommentsCount > 1 ? 's' : ''}!` : ''}`}
+              >
+                {getReviewerStateIcon(reviewer.state)} {reviewer.username}{reviewer.isCurrentUser ? ' (You)' : ''}
+                {newCommentsCount > 0 && (
+                  <span className={`notification-badge notification-${urgency}`}>
+                    {newCommentsCount}
+                  </span>
+                )}
+              </span>
+            );
+          })
         ) : (
           <span className="reviewer-badge reviewer-none">No reviewers assigned</span>
         )}

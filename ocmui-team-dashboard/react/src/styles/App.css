@@ -3443,3 +3443,58 @@ body.dark-theme .github-image-fallback:hover {
 .grouped-inline-comment .inline-comment-indicator {
   display: none; /* Hide file icon for grouped comments */
 }
+
+/* ===== REVIEWER NOTIFICATION BADGES ===== */
+
+/* Notification count badge for reviewer badges */
+.notification-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  border-radius: 8px;
+  margin-left: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0 4px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+/* Age-based urgency colors */
+.notification-badge.notification-normal {
+  border-color: #ffffff; /* White - less than 1 day old */
+}
+
+.notification-badge.notification-warning {
+  border-color: #fbbf24; /* Yellow - 1+ days old */
+  color: #fbbf24;
+}
+
+.notification-badge.notification-urgent {
+  border-color: #ef4444; /* Red - 2+ days old */
+  color: #ef4444;
+}
+
+/* Enhanced tooltip for notifications */
+.reviewer-badge:has(.notification-badge) {
+  position: relative;
+}
+
+/* Hover effect for notification badges */
+.reviewer-badge:has(.notification-badge):hover .notification-badge {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.reviewer-badge:has(.notification-badge.notification-warning):hover .notification-badge.notification-warning {
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.reviewer-badge:has(.notification-badge.notification-urgent):hover .notification-badge.notification-urgent {
+  background: rgba(239, 68, 68, 0.1);
+}

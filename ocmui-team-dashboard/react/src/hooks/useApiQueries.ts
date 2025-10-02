@@ -842,7 +842,9 @@ export const usePRConversation = (repoName: string, prNumber: number) => {
     queryKey: queryKeys.prConversation(repoName, prNumber),
     queryFn: () => fetchPRConversation(repoName, prNumber, apiTokens.github),
     enabled: !!repoName && !!prNumber && !!apiTokens.github,
-    staleTime: 5 * 60 * 1000, // 5 minutes for PR conversation data
+    staleTime: 2 * 60 * 1000, // 2 minutes for PR conversation data
+    refetchInterval: 3 * 60 * 1000, // Auto-refresh every 3 minutes to pick up new comments
+    refetchIntervalInBackground: true, // Continue refreshing when window not focused
   });
 };
 
